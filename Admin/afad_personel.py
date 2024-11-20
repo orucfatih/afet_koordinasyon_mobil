@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QColor
 import os
 from datetime import datetime
+from sample_data import AFAD_TEAMS
 
 class PersonelDetayDialog(QDialog):
     """Personel detaylarını gösteren dialog"""
@@ -432,46 +433,8 @@ class PersonelYonetimTab(QWidget):
 
     def load_teams(self):
         """Kaydedilmiş ekipleri yükler"""
-        # Örnek veri - gerçek uygulamada bir veritabanından yüklenebilir
-        self.ekipler = {
-            "Arama Kurtarma Ekibi 1": {
-                "type": "Arama Kurtarma Ekibi",
-                "status": "Aktif Görevde",
-                "active_task": "Deprem bölgesinde arama çalışması",
-                "task_location": "Kahramanmaraş Merkez",
-                "task_start_time": "2024-03-16 08:00",
-                "task_priority": "Acil",
-                "personnel": [
-                    {
-                        "name": "Ahmet Yılmaz",
-                        "title": "Ekip Lideri",
-                        "phone": "555-0001",
-                        "home_phone": "312-0001",
-                        "email": "ahmet@example.com",
-                        "address": "Ankara, Çankaya",
-                        "specialization": "Arama Kurtarma Uzmanı",
-                        "experience": "10",
-                        "status": "Aktif",
-                        "last_location": "Kahramanmaraş",
-                        "last_update": "10 dk önce"
-                    },
-                    {
-                        "name": "Mehmet Demir",
-                        "title": "Kurtarma Uzmanı",
-                        "phone": "555-0002",
-                        "home_phone": "312-0002",
-                        "email": "mehmet@example.com",
-                        "address": "Ankara, Keçiören",
-                        "specialization": "Teknik Kurtarma",
-                        "experience": "8",
-                        "status": "Aktif",
-                        "last_location": "Kahramanmaraş",
-                        "last_update": "15 dk önce"
-                    }
-                ]
-            }
-        }
-        
+        # Örnek veriyi sample_data modülünden al
+        self.ekipler = AFAD_TEAMS
         # Ekipleri ağaca ekle
         self.update_team_tree()
 

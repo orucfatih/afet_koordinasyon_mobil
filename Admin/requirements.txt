@@ -1,0 +1,5 @@
+folium==0.18.0
+geopy==2.4.1
+osmnx==1.9.4
+PyQt5==5.15.11
+PyQt5_sip==12.15.0
