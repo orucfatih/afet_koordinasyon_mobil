@@ -191,10 +191,10 @@ class OperationManagementTab(QWidget):
         # Görevlendirme Paneli
         assignment_group = QGroupBox("Ekip Görevlendirme")
         assignment_layout = QFormLayout()
-        
+
         self.team_combo = QComboBox()
         self.team_combo.setStyleSheet(COMBOBOX_STYLE)
-        
+
         self.location_input = QLineEdit()
         self.location_input.setPlaceholderText("Görev lokasyonu")
         self.location_input.setStyleSheet(LINE_EDIT_STYLE)
@@ -202,21 +202,28 @@ class OperationManagementTab(QWidget):
         self.task_description = QTextEdit()
         self.task_description.setPlaceholderText("Görev detayları...")
         self.task_description.setStyleSheet(TEXT_EDIT_STYLE)
-        
+
+        # Görevlendirme Önceliği
+        self.priority_combo = QComboBox()
+        self.priority_combo.addItems(["Düşük", "Orta", "Yüksek", "Acil"])
+        self.priority_combo.setCurrentIndex(1)  # Varsayılan olarak "Orta" seçili
+        self.priority_combo.setStyleSheet(COMBOBOX_STYLE)
+
         assign_button = QPushButton("Görevi Ata")
         assign_button.clicked.connect(self.assign_task)
         assign_button.setStyleSheet(BUTTON_STYLE)
-        
+
         contact_button = QPushButton("Ekip ile İletişime Geç")
         contact_button.clicked.connect(self.contact_team)
         contact_button.setStyleSheet(GREEN_BUTTON_STYLE)
-        
+
         assignment_layout.addRow("Ekip Seçimi:", self.team_combo)
         assignment_layout.addRow("Lokasyon:", self.location_input)
         assignment_layout.addRow("Görev Detayları:", self.task_description)
+        assignment_layout.addRow("Öncelik Seviyesi:", self.priority_combo)  # Yeni eklenen satır
         assignment_layout.addRow("", assign_button)
         assignment_layout.addRow("", contact_button)
-        
+
         assignment_group.setLayout(assignment_layout)
         
         # Alt panel layout düzenleme
@@ -358,28 +365,36 @@ class OperationManagementTab(QWidget):
         if not self.team_combo.currentText() or not self.location_input.text() or not self.task_description.toPlainText():
             QMessageBox.warning(self, "Uyarı", "Lütfen tüm alanları doldurun!")
             return
-                
-        reply = QMessageBox.question(self, 'Görev Atama Onayı',
-                                f'Seçili ekibe görevi atamak istediğinize emin misiniz?\n\n'
-                                f'Ekip: {self.team_combo.currentText()}\n'
-                                f'Lokasyon: {self.location_input.text()}\n'
-                                f'Görev: {self.task_description.toPlainText()[:50]}...',
-                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        selected_priority = self.priority_combo.currentText()  # Seçili öncelik seviyesini al
+
+        reply = QMessageBox.question(
+            self, 'Görev Atama Onayı',
+            f'Seçili ekibe görevi atamak istediğinize emin misiniz?\n\n'
+            f'Ekip: {self.team_combo.currentText()}\n'
+            f'Lokasyon: {self.location_input.text()}\n'
+            f'Öncelik: {selected_priority}\n'
+            f'Görev: {self.task_description.toPlainText()[:50]}...',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
 
         if reply == QMessageBox.Yes:
             # Görev metnini oluştur
             task_text = (f"Ekip: {self.team_combo.currentText()}\n"
                         f"Lokasyon: {self.location_input.text()}\n"
+                        f"Öncelik: {selected_priority}\n"
                         f"Görev: {self.task_description.toPlainText()}")
-            
+
             # Aktif görevler listesine ekle
             self.tasks_list.addItem(task_text)
-            
+
             QMessageBox.information(self, "Başarılı", "Görev başarıyla atandı ve aktif görevlere eklendi!")
-            
+
             # Formu temizle
             self.location_input.clear()
             self.task_description.clear()
+            self.priority_combo.setCurrentIndex(1)  # Öncelik seviyesini varsayılana sıfırla
+
 
     def contact_team(self):
         """Seçili ekip ile iletişim penceresini açar"""

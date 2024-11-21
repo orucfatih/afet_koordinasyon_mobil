@@ -3,11 +3,9 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                            QGroupBox, QLineEdit, QFormLayout, 
                            QTableWidget, QTableWidgetItem, QMessageBox,
                            QTreeWidget, QTreeWidgetItem, QDialog,
-                           QTextBrowser)
-from PyQt5.QtCore import Qt
+                           QTextBrowser, QListWidget)
+from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon, QColor
-import os
-from datetime import datetime
 from sample_data import AFAD_TEAMS
 
 class PersonelDetayDialog(QDialog):
@@ -155,7 +153,7 @@ class PersonelYonetimTab(QWidget):
     def initUI(self):
         layout = QHBoxLayout()
         
-        # Sol Panel - Ekipler Listesi ve Durum Özeti
+        # Sol Panel - Ekipler Listesi ve Kurum Özeti
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
         
@@ -168,7 +166,7 @@ class PersonelYonetimTab(QWidget):
         
         # Filtre combo box
         self.filter_combo = QComboBox()
-        self.filter_combo.addItems(["Tüm Ekipler", "Aktif Görevde", "Müsait"])
+        self.filter_combo.addItems(["AFAD", "STK", "DİĞER"])
         self.filter_combo.currentTextChanged.connect(self.filter_teams)
         search_layout.addWidget(self.filter_combo)
         
@@ -240,69 +238,40 @@ class PersonelYonetimTab(QWidget):
         
         # Personel listesi
         self.personnel_table = QTableWidget()
-        self.personnel_table.setColumnCount(6)
+        self.personnel_table.setColumnCount(8)
         self.personnel_table.setHorizontalHeaderLabels([
-            "Ad Soyad", "Görevi", "Telefon", "Durum", "Son Konum", "Son Güncelleme"
+            "Ad Soyad", "Telefon", "Ev Telefonu", "E-posta", "Adres", "Ünvan", "Uzmanlık", "Son Güncelleme"
         ])
         self.personnel_table.itemDoubleClicked.connect(self.show_personnel_details_from_table)
         middle_layout.addWidget(self.personnel_table)
         
-        # Sağ Panel - Görev Yönetimi
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
+        # Personel yönetim butonları
+        personel_action_layout = QHBoxLayout()
         
-        # Aktif görev bilgisi
-        active_task_group = QGroupBox("Aktif Görev")
-        active_task_layout = QVBoxLayout()
+        add_personel_btn = QPushButton("Personel Ekle")
+        add_personel_btn.clicked.connect(self.add_personnel)
         
-        self.active_task_text = QTextBrowser()
-        active_task_layout.addWidget(self.active_task_text)
+        remove_personel_btn = QPushButton("Personel Çıkar")
+        remove_personel_btn.clicked.connect(self.remove_personnel)
         
-        task_buttons = QHBoxLayout()
+        edit_personel_btn = QPushButton("Personel Düzenle")
+        edit_personel_btn.clicked.connect(self.edit_personnel)
         
-        update_task_btn = QPushButton("Görevi Güncelle")
-        update_task_btn.clicked.connect(self.update_task)
+        personel_action_layout.addWidget(add_personel_btn)
+        personel_action_layout.addWidget(remove_personel_btn)
+        personel_action_layout.addWidget(edit_personel_btn)
         
-        complete_task_btn = QPushButton("Görevi Tamamla")
-        complete_task_btn.clicked.connect(self.complete_task)
-        
-        task_buttons.addWidget(update_task_btn)
-        task_buttons.addWidget(complete_task_btn)
-        
-        active_task_layout.addLayout(task_buttons)
-        active_task_group.setLayout(active_task_layout)
-        right_layout.addWidget(active_task_group)
-        
-        # Yeni görev atama
-        new_task_group = QGroupBox("Yeni Görev Ata")
-        new_task_layout = QFormLayout()
-        
-        self.task_location = QLineEdit()
-        self.task_description = QTextEdit()
-        self.task_priority = QComboBox()
-        self.task_priority.addItems(["Normal", "Öncelikli", "Acil"])
-        
-        new_task_layout.addRow("Görev Lokasyonu:", self.task_location)
-        new_task_layout.addRow("Görev Açıklaması:", self.task_description)
-        new_task_layout.addRow("Öncelik:", self.task_priority)
-        
-        assign_task_btn = QPushButton("Görevi Ata")
-        assign_task_btn.clicked.connect(self.assign_task)
-        new_task_layout.addRow(assign_task_btn)
-        
-        new_task_group.setLayout(new_task_layout)
-        right_layout.addWidget(new_task_group)
+        middle_layout.addLayout(personel_action_layout)
         
         # Ana layout'a panelleri ekleme
         layout.addWidget(left_panel, stretch=1)
         layout.addWidget(middle_panel, stretch=2)
-        layout.addWidget(right_panel, stretch=1)
         
         self.setLayout(layout)
         
         # Varolan ekipleri yükle
         self.load_teams()
-        
+
     def show_personnel_details(self, item):
         """Personel detaylarını gösterir"""
         if not item.parent():  # Eğer ekip başlığına tıklandıysa
@@ -316,8 +285,7 @@ class PersonelYonetimTab(QWidget):
                 <h3>{team_name}</h3>
                 <p><b>Ekip Türü:</b> {team_info.get('type', '-')}</p>
                 <p><b>Personel Sayısı:</b> {len(team_info.get('personnel', []))}</p>
-                <p><b>Aktif Görev:</b> {team_info.get('active_task', 'Görev Yok')}</p>
-                <p><b>Durum:</b> {team_info.get('status', 'Müsait')}</p>
+                <p><b>Kurum:</b> {team_info.get('status', 'AFAD')}</p>
                 """
                 self.team_info_text.setHtml(info_text)
                 
@@ -327,26 +295,18 @@ class PersonelYonetimTab(QWidget):
                     row = self.personnel_table.rowCount()
                     self.personnel_table.insertRow(row)
                     self.personnel_table.setItem(row, 0, QTableWidgetItem(person['name']))
-                    self.personnel_table.setItem(row, 1, QTableWidgetItem(person.get('title', '-')))
-                    self.personnel_table.setItem(row, 2, QTableWidgetItem(person.get('phone', '-')))
-                    self.personnel_table.setItem(row, 3, QTableWidgetItem(person.get('status', 'Müsait')))
-                    self.personnel_table.setItem(row, 4, QTableWidgetItem(person.get('last_location', '-')))
-                    self.personnel_table.setItem(row, 5, QTableWidgetItem(person.get('last_update', '-')))
-                
-                # Aktif görev bilgisini güncelle
-                if 'active_task' in team_info:
-                    task_text = f"""
-                    <h3>Aktif Görev Detayları</h3>
-                    <p><b>Görev:</b> {team_info['active_task']}</p>
-                    <p><b>Lokasyon:</b> {team_info.get('task_location', '-')}</p>
-                    <p><b>Başlangıç:</b> {team_info.get('task_start_time', '-')}</p>
-                    <p><b>Öncelik:</b> {team_info.get('task_priority', 'Normal')}</p>
-                    """
-                    self.active_task_text.setHtml(task_text)
+                    self.personnel_table.setItem(row, 1, QTableWidgetItem(person.get('phone', '-')))
+                    self.personnel_table.setItem(row, 2, QTableWidgetItem(person.get('home_phone', '-')))
+                    self.personnel_table.setItem(row, 3, QTableWidgetItem(person.get('email', '-')))
+                    self.personnel_table.setItem(row, 4, QTableWidgetItem(person.get('address', '-')))
+                    self.personnel_table.setItem(row, 5, QTableWidgetItem(person.get('title', '-')))
+                    self.personnel_table.setItem(row, 6, QTableWidgetItem(person.get('specialization', '-')))
+                    self.personnel_table.setItem(row, 7, QTableWidgetItem(person.get('last_update', '-')))
                 
                 # Current team'i güncelle
                 self.current_team = team_name
                 return
+
                 
         # Personel detaylarını göster
         if ":" in item.text(0):  # Eğer personel satırına tıklandıysa
@@ -416,7 +376,7 @@ class PersonelYonetimTab(QWidget):
             if filter_status != "Tüm Ekipler":
                 team_name = team_item.text(0)
                 if team_name in self.ekipler:
-                    team_status = self.ekipler[team_name].get('status', 'Müsait')
+                    team_status = self.ekipler[team_name].get('status', 'AFAD')
                     if filter_status != team_status:
                         show_team = False
             
@@ -448,9 +408,9 @@ class PersonelYonetimTab(QWidget):
             team_item.setIcon(0, QIcon("icons/team.png"))  # İkon eklenebilir
             
             # Ekip durumuna göre renklendirme
-            if team_data.get('status') == "Aktif Görevde":
+            if team_data.get('status') == "STK/DİĞER":
                 team_item.setBackground(0, QColor("#4c9161"))  
-            elif team_data.get('status') == "Müsait":
+            elif team_data.get('status') == "AFAD":
                 team_item.setBackground(0, QColor("#4c9161")) 
             
             # Personel listesi
@@ -478,7 +438,7 @@ class PersonelYonetimTab(QWidget):
         # Yeni ekip oluştur
         self.ekipler[team_name] = {
             "type": team_type,
-            "status": "Müsait",
+            "status": "AFAD",
             "personnel": []
         }
         
@@ -503,8 +463,7 @@ class PersonelYonetimTab(QWidget):
                 <h3>{team_name}</h3>
                 <p><b>Ekip Türü:</b> {team_info.get('type', '-')}</p>
                 <p><b>Personel Sayısı:</b> {len(team_info.get('personnel', []))}</p>
-                <p><b>Aktif Görev:</b> {team_info.get('active_task', 'Görev Yok')}</p>
-                <p><b>Durum:</b> {team_info.get('status', 'Müsait')}</p>
+                <p><b>Kurum:</b> {team_info.get('status', 'AFAD')}</p>
                 """
                 self.team_info_text.setHtml(info_text)
                 
@@ -513,28 +472,18 @@ class PersonelYonetimTab(QWidget):
                 for person in team_info.get('personnel', []):
                     row = self.personnel_table.rowCount()
                     self.personnel_table.insertRow(row)
-                    self.personnel_table.setItem(row, 0, QTableWidgetItem(person['name']))
-                    self.personnel_table.setItem(row, 1, QTableWidgetItem(person.get('title', '-')))
-                    self.personnel_table.setItem(row, 2, QTableWidgetItem(person.get('phone', '-')))
-                    self.personnel_table.setItem(row, 3, QTableWidgetItem(person.get('status', 'Müsait')))
-                    self.personnel_table.setItem(row, 4, QTableWidgetItem(person.get('last_location', '-')))
-                    self.personnel_table.setItem(row, 5, QTableWidgetItem(person.get('last_update', '-')))
-                
-                # Aktif görev bilgisini güncelle
-                if 'active_task' in team_info:
-                    task_text = f"""
-                    <h3>Aktif Görev Detayları</h3>
-                    <p><b>Görev:</b> {team_info['active_task']}</p>
-                    <p><b>Lokasyon:</b> {team_info.get('task_location', '-')}</p>
-                    <p><b>Başlangıç:</b> {team_info.get('task_start_time', '-')}</p>
-                    <p><b>Öncelik:</b> {team_info.get('task_priority', 'Normal')}</p>
-                    """
-                    self.active_task_text.setHtml(task_text)
-                else:
-                    self.active_task_text.setHtml("<p>Aktif görev bulunmuyor.</p>")
+                    self.personnel_table.setItem(row, 0, QTableWidgetItem(person['name']))  # Ad Soyad
+                    self.personnel_table.setItem(row, 1, QTableWidgetItem(person.get('phone', '-')))  # Telefon
+                    self.personnel_table.setItem(row, 2, QTableWidgetItem(person.get('home_phone', '-')))  # Ev Telefonu
+                    self.personnel_table.setItem(row, 3, QTableWidgetItem(person.get('email', '-')))  # E-posta
+                    self.personnel_table.setItem(row, 4, QTableWidgetItem(person.get('address', '-')))  # Adres
+                    self.personnel_table.setItem(row, 5, QTableWidgetItem(person.get('title', '-')))  # Ünvan
+                    self.personnel_table.setItem(row, 6, QTableWidgetItem(person.get('specialization', '-')))  # Uzmanlık
+                    self.personnel_table.setItem(row, 7, QTableWidgetItem(person.get('last_update', '-')))  # Son Güncelleme
                 
                 # Current team'i güncelle
                 self.current_team = team_name
+
 
     def show_personnel_details_from_table(self, item):
         """Tablodan personel detaylarını gösterir"""
@@ -553,79 +502,284 @@ class PersonelYonetimTab(QWidget):
                 dialog.exec_()
                 return
 
-    def update_task(self):
-        """Aktif görevi günceller"""
+
+    def add_personnel(self):
+        """Personel ekleme işlemi"""
         if not self.current_team:
             QMessageBox.warning(self, "Uyarı", "Lütfen önce bir ekip seçin!")
             return
         
-        # Burada görev güncelleme dialogu açılabilir
-        QMessageBox.information(self, "Bilgi", "Bu özellik henüz eklenmedi.")
-
-    def complete_task(self):
-        """Aktif görevi tamamlar"""
-        if not self.current_team:
-            QMessageBox.warning(self, "Uyarı", "Lütfen önce bir ekip seçin!")
-            return
+        dialog = PersonelEkleDialog(self.current_team, self)
+        if dialog.exec_():
+            # Yeni personel bilgilerini al
+            new_personnel = dialog.get_personnel_info()
             
-        team = self.ekipler[self.current_team]
-        if 'active_task' not in team:
-            QMessageBox.warning(self, "Uyarı", "Aktif görev bulunmuyor!")
-            return
+            # Ekibe personel ekle
+            self.ekipler[self.current_team]['personnel'].append(new_personnel)
             
-        reply = QMessageBox.question(self, 'Onay', 
-                                f"{self.current_team} ekibinin aktif görevi tamamlandı olarak işaretlensin mi?",
-                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                                
-        if reply == QMessageBox.Yes:
-            # Görevi tamamla
-            team.pop('active_task', None)
-            team.pop('task_location', None)
-            team.pop('task_start_time', None)
-            team.pop('task_priority', None)
-            team['status'] = 'Müsait'
-            
-            # Arayüzü güncelle
+            # Ekranı güncelle
+            self.update_team_tree()
             self.show_team_details(self.team_tree.findItems(self.current_team, Qt.MatchExactly)[0])
-            QMessageBox.information(self, "Başarılı", "Görev tamamlandı olarak işaretlendi!")
-
-    def assign_task(self):
-        """Yeni görev atar"""
+            
+            QMessageBox.information(self, "Başarılı", f"{new_personnel['name']} ekibe eklendi!")
+    
+    def remove_personnel(self):
+        """Personel çıkarma işlemi"""
         if not self.current_team:
             QMessageBox.warning(self, "Uyarı", "Lütfen önce bir ekip seçin!")
             return
-            
-        location = self.task_location.text().strip()
-        description = self.task_description.toPlainText().strip()
-        priority = self.task_priority.currentText()
         
-        if not location or not description:
-            QMessageBox.warning(self, "Uyarı", "Lütfen görev lokasyonu ve açıklaması girin!")
+        # Mevcut personel listesini al
+        team_personnel = self.ekipler[self.current_team]['personnel']
+        
+        if not team_personnel:
+            QMessageBox.warning(self, "Uyarı", "Ekipte personel bulunmamaktadır!")
             return
+        
+        # Personel seçim dialogu
+        dialog = PersonelSecDialog(team_personnel, self)
+        if dialog.exec_():
+            # Seçilen personeli sil
+            selected_personnel = dialog.get_selected_personnel()
             
-        team = self.ekipler[self.current_team]
+            # Personeli listeden çıkar
+            self.ekipler[self.current_team]['personnel'] = [
+                p for p in team_personnel if p != selected_personnel
+            ]
+            
+            # Ekranı güncelle
+            self.update_team_tree()
+            self.show_team_details(self.team_tree.findItems(self.current_team, Qt.MatchExactly)[0])
+            
+            QMessageBox.information(self, "Başarılı", f"{selected_personnel['name']} ekipten çıkarıldı!")
+    
+    def edit_personnel(self):
+        """Personel bilgilerini düzenleme"""
+        if not self.current_team:
+            QMessageBox.warning(self, "Uyarı", "Lütfen önce bir ekip seçin!")
+            return
         
-        # Aktif görev varsa uyar
-        if 'active_task' in team:
-            reply = QMessageBox.question(self, 'Uyarı', 
-                                    f"{self.current_team} ekibinin aktif bir görevi var. Yeni görev atamak istiyor musunuz?",
-                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.No:
-                return
+        # Mevcut personel listesini al
+        team_personnel = self.ekipler[self.current_team]['personnel']
         
-        # Yeni görevi ata
-        team['active_task'] = description
-        team['task_location'] = location
-        team['task_start_time'] = datetime.now().strftime("%Y-%m-%d %H:%M")
-        team['task_priority'] = priority
-        team['status'] = 'Aktif Görevde'
+        if not team_personnel:
+            QMessageBox.warning(self, "Uyarı", "Ekipte personel bulunmamaktadır!")
+            return
         
-        # Arayüzü güncelle
-        self.show_team_details(self.team_tree.findItems(self.current_team, Qt.MatchExactly)[0])
+        # Personel seçim dialogu
+        dialog = PersonelSecDialog(team_personnel, self, edit_mode=True)
+        if dialog.exec_():
+            # Seçilen personeli al
+            selected_personnel = dialog.get_selected_personnel()
+            
+            # Personel düzenleme dialogu
+            edit_dialog = PersonelDuzenleDialog(selected_personnel, self)
+            if edit_dialog.exec_():
+                # Güncellenmiş personel bilgilerini al
+                updated_personnel = edit_dialog.get_updated_personnel()
+                
+                # Listedeki personeli güncelle
+                for i, person in enumerate(team_personnel):
+                    if person == selected_personnel:
+                        team_personnel[i] = updated_personnel
+                        break
+                
+                # Ekranı güncelle
+                self.update_team_tree()
+                self.show_team_details(self.team_tree.findItems(self.current_team, Qt.MatchExactly)[0])
+                
+                QMessageBox.information(self, "Başarılı", f"{updated_personnel['name']} bilgileri güncellendi!")
+
+
+
+
+
+
+# Yardımcı Dialog Sınıfları
+class PersonelEkleDialog(QDialog):
+    """Yeni personel ekleme dialog penceresi"""
+    def __init__(self, team_name, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"{team_name} - Personel Ekle")
+        self.setupUI()
+    
+    def setupUI(self):
+        layout = QFormLayout()
         
-        # Formu temizle
-        self.task_location.clear()
-        self.task_description.clear()
-        self.task_priority.setCurrentIndex(0)
+        # Giriş alanlarını tanımlama
+        self.name_input = QLineEdit()
+        self.phone_input = QLineEdit()
+        self.home_phone_input = QLineEdit()
+        self.email_input = QLineEdit()
+        self.address_input = QLineEdit()
+        self.title_input = QLineEdit()
+        self.specialization_input = QLineEdit()
+        self.experience_input = QLineEdit()
         
-        QMessageBox.information(self, "Başarılı", f"{self.current_team} ekibine yeni görev atandı!")
+        # Formdaki her bir satır için etiket ve giriş alanlarını ekleyin
+        layout.addRow("Ad Soyad:", self.name_input)
+        layout.addRow("Telefon:", self.phone_input)
+        layout.addRow("Ev Telefonu:", self.home_phone_input)
+        layout.addRow("E-posta:", self.email_input)
+        layout.addRow("Ev Adresi:", self.address_input)
+        layout.addRow("Ünvan:", self.title_input)
+        layout.addRow("Uzmanlık:", self.specialization_input)
+        layout.addRow("Tecrübe (Yıl):", self.experience_input)
+        
+        # Kaydet ve İptal butonları
+        btn_layout = QHBoxLayout()
+        kaydet_btn = QPushButton("Kaydet")
+        kaydet_btn.clicked.connect(self.accept)
+        iptal_btn = QPushButton("İptal")
+        iptal_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(kaydet_btn)
+        btn_layout.addWidget(iptal_btn)
+        
+        layout.addRow(btn_layout)
+        
+        self.setLayout(layout)
+    
+    def collect_personnel_info(self):
+        """Personel bilgilerini toplar"""
+        return {
+            "name": self.name_input.text(),
+            "phone": self.phone_input.text(),
+            "home_phone": self.home_phone_input.text(),
+            "email": self.email_input.text(),
+            "address": self.address_input.text(),
+            "title": self.title_input.text(),
+            "specialization": self.specialization_input.text(),
+            "experience": self.experience_input.text(),
+            "last_update": QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
+        }
+
+    def get_personnel_info(self):
+        """Girilen personel bilgilerini toplar"""
+        return self.collect_personnel_info()
+
+
+class PersonelSecDialog(QDialog):
+    """Personel seçim dialog penceresi"""
+    def __init__(self, personnel_list, parent=None, edit_mode=False):
+        super().__init__(parent)
+        self.personnel_list = personnel_list
+        self.edit_mode = edit_mode
+        self.setWindowTitle("Personel Seç" if not edit_mode else "Personel Düzenle")
+        self.setupUI()
+    
+    def setupUI(self):
+        layout = QVBoxLayout()
+        
+        self.personel_listesi = QListWidget()
+        for person in self.personnel_list:
+            self.personel_listesi.addItem(f"{person['name']} - {person['title']}")
+        
+        layout.addWidget(self.personel_listesi)
+        
+        btn_layout = QHBoxLayout()
+        sec_btn = QPushButton("Seç" if not self.edit_mode else "Düzenle")
+        sec_btn.clicked.connect(self.accept)
+        iptal_btn = QPushButton("İptal")
+        iptal_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(sec_btn)
+        btn_layout.addWidget(iptal_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        self.setLayout(layout)
+    
+    def get_selected_personnel(self):
+        """Seçilen personeli döner"""
+        secili_index = self.personel_listesi.currentRow()
+        return self.personnel_list[secili_index]
+
+class PersonelDuzenleDialog(QDialog):
+    """Personel bilgileri düzenleme dialog penceresi"""
+    def __init__(self, personnel, parent=None):
+        super().__init__(parent)
+        self.personnel = personnel
+        self.setWindowTitle("Personel Bilgilerini Düzenle")
+        self.setupUI()
+    
+    def setupUI(self):
+        layout = QFormLayout()
+        
+        # Yeni giriş alanlarını tanımladık
+        self.name_input = QLineEdit(self.personnel['name'])
+        self.phone_input = QLineEdit(self.personnel.get('phone', ''))
+        self.home_phone_input = QLineEdit(self.personnel.get('home_phone', ''))
+        self.email_input = QLineEdit(self.personnel.get('email', ''))
+        self.address_input = QLineEdit(self.personnel.get('address', ''))
+        self.title_input = QLineEdit(self.personnel.get('title', ''))
+        self.specialization_input = QLineEdit(self.personnel.get('specialization', ''))
+        self.experience_input = QLineEdit(self.personnel.get('experience', ''))
+        
+        # Mevcut personel bilgilerini alanlarda göstermek için
+        layout.addRow("Ad Soyad:", self.name_input)
+        layout.addRow("Telefon:", self.phone_input)
+        layout.addRow("Ev Telefonu:", self.home_phone_input)
+        layout.addRow("E-posta:", self.email_input)
+        layout.addRow("Ev Adresi:", self.address_input)
+        layout.addRow("Ünvan:", self.title_input)
+        layout.addRow("Uzmanlık:", self.specialization_input)
+        layout.addRow("Tecrübe (Yıl):", self.experience_input)
+        
+        # Kurum seçimi için combo box
+        self.status_combo = QComboBox()
+        status_options = ["AFAD", "STK", "DİĞER"]
+        self.status_combo.addItems(status_options)
+        current_status_index = status_options.index(self.personnel.get('status', 'AFAD'))
+        self.status_combo.setCurrentIndex(current_status_index)
+        
+        layout.addRow("Kurum:", self.status_combo)
+        
+        # Kaydet ve İptal butonları
+        btn_layout = QHBoxLayout()
+        kaydet_btn = QPushButton("Kaydet")
+        kaydet_btn.clicked.connect(self.accept)
+        iptal_btn = QPushButton("İptal")
+        iptal_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(kaydet_btn)
+        btn_layout.addWidget(iptal_btn)
+        
+        layout.addRow(btn_layout)
+        
+        self.setLayout(layout)
+    
+    def collect_personnel_info(self):
+        """Güncellenmiş personel bilgilerini toplar"""
+        return {
+            "name": self.name_input.text(),
+            "phone": self.phone_input.text(),
+            "home_phone": self.home_phone_input.text(),
+            "email": self.email_input.text(),
+            "address": self.address_input.text(),
+            "title": self.title_input.text(),
+            "specialization": self.specialization_input.text(),
+            "experience": self.experience_input.text(),
+            "status": self.status_combo.currentText(),
+            "last_location": self.address_input.text(),  # "last_location" yerine "address" bilgisi alındı
+            "last_update": QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
+        }
+
+    def get_updated_personnel(self):
+        """Güncellenmiş personel bilgilerini toplar ve geri döner"""
+        updated_personnel = self.personnel.copy()
+        updated_personnel.update(self.collect_personnel_info())
+        return updated_personnel
+
+    
+
+
+# personel ekle düzeldikten sonra aynı işlemleri personel düzenle dialog sınıfı içinde yap
+# ekle kısmına             ("Ad Soyad:", "name"),
+                        # ("Telefon:", "phone"),
+                        # ("Ev Telefonu:", "home_phone"),
+                        # ("E-posta:", "email"),
+                        # ("Ev Adresi:", "address"),
+                        # ("Ünvan:", "title"),
+                        # ("Uzmanlık:", "specialization"),
+                        # ("Tecrübe (Yıl):", "experience"),    bunları ekle
