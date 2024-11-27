@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon, QColor
 from sample_data import AFAD_TEAMS
+from styles import *
 
 class PersonelDetayDialog(QDialog):
     """Personel detaylarını gösteren dialog"""
@@ -48,15 +49,18 @@ class PersonelDetayDialog(QDialog):
         iletisim_group = QGroupBox("Hızlı İletişim")
         iletisim_layout = QHBoxLayout()
         
-        ara_btn = QPushButton("Ara")
+        ara_btn = QPushButton(" Ara")
+        ara_btn.setStyleSheet(BUTTON_STYLE)
         ara_btn.setIcon(QIcon("icons/call.png"))  # Icon eklenebilir
         ara_btn.clicked.connect(lambda: self.ara(self.personel_data["phone"]))
         
-        mesaj_btn = QPushButton("Mesaj Gönder")
+        mesaj_btn = QPushButton(" Mesaj Gönder")
+        mesaj_btn.setStyleSheet(BUTTON_STYLE)
         mesaj_btn.setIcon(QIcon("icons/message.png"))  # Icon eklenebilir
         mesaj_btn.clicked.connect(lambda: self.mesaj_gonder(self.personel_data["phone"]))
         
-        konum_iste_btn = QPushButton("Konum İste")
+        konum_iste_btn = QPushButton(" Konum İste")
+        konum_iste_btn.setStyleSheet(BUTTON_STYLE)
         konum_iste_btn.setIcon(QIcon("icons/location.png"))  # Icon eklenebilir
         konum_iste_btn.clicked.connect(lambda: self.konum_iste(self.personel_data["phone"]))
         
@@ -124,8 +128,10 @@ class MesajDialog(QDialog):
         # Butonlar
         buttons_layout = QHBoxLayout()
         gonder_btn = QPushButton("Gönder")
+        gonder_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         gonder_btn.clicked.connect(self.mesaj_gonder)
         iptal_btn = QPushButton("İptal")
+        iptal_btn.setStyleSheet(RED_BUTTON_STYLE)
         iptal_btn.clicked.connect(self.reject)
         
         buttons_layout.addWidget(gonder_btn)
@@ -174,6 +180,7 @@ class PersonelYonetimTab(QWidget):
         
         # Ekipler ağacı
         self.team_tree = QTreeWidget()
+        self.team_tree.setStyleSheet(TEAM_TREE_STYLE)
         self.team_tree.setHeaderLabels(["Ekipler ve Personel"])
         self.team_tree.itemClicked.connect(self.show_team_details)
         self.team_tree.itemDoubleClicked.connect(self.show_personnel_details)
@@ -198,7 +205,9 @@ class PersonelYonetimTab(QWidget):
         quick_team_layout.addRow("Ekip Adı:", self.quick_team_name)
         quick_team_layout.addRow("Tür:", self.quick_team_type)
         
-        create_btn = QPushButton("Ekip Oluştur")
+        create_btn = QPushButton(" Ekip Oluştur")
+        create_btn.setStyleSheet(GREEN_BUTTON_STYLE)
+        create_btn.setIcon(QIcon('icons/add-group.png'))
         create_btn.clicked.connect(self.quick_create_team)
         quick_team_layout.addRow(create_btn)
         
@@ -219,13 +228,19 @@ class PersonelYonetimTab(QWidget):
         # Hızlı iletişim butonları
         quick_actions = QHBoxLayout()
         
-        mesaj_btn = QPushButton("Tüm Ekibe Mesaj")
+        mesaj_btn = QPushButton(" Tüm Ekibe Mesaj")
+        mesaj_btn.setStyleSheet(BUTTON_STYLE)
+        mesaj_btn.setIcon(QIcon('icons/message.png'))
         mesaj_btn.clicked.connect(self.send_team_message)
         
-        durum_btn = QPushButton("Durum Bilgisi İste")
+        durum_btn = QPushButton(" Durum Bilgisi İste")
+        durum_btn.setStyleSheet(BUTTON_STYLE)
+        durum_btn.setIcon(QIcon('icons/share.png'))
         durum_btn.clicked.connect(self.request_team_status)
         
-        konum_btn = QPushButton("Konum Bilgisi İste")
+        konum_btn = QPushButton(" Konum Bilgisi İste")
+        konum_btn.setStyleSheet(BUTTON_STYLE)
+        konum_btn.setIcon(QIcon('icons/location-info.png'))
         konum_btn.clicked.connect(self.request_team_location)
         
         quick_actions.addWidget(mesaj_btn)
@@ -238,6 +253,7 @@ class PersonelYonetimTab(QWidget):
         
         # Personel listesi
         self.personnel_table = QTableWidget()
+        self.personnel_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.personnel_table.setColumnCount(8)
         self.personnel_table.setHorizontalHeaderLabels([
             "Ad Soyad", "Telefon", "Ev Telefonu", "E-posta", "Adres", "Ünvan", "Uzmanlık", "Son Güncelleme"
@@ -248,13 +264,19 @@ class PersonelYonetimTab(QWidget):
         # Personel yönetim butonları
         personel_action_layout = QHBoxLayout()
         
-        add_personel_btn = QPushButton("Personel Ekle")
+        add_personel_btn = QPushButton(" Personel Ekle")
+        add_personel_btn.setStyleSheet(GREEN_BUTTON_STYLE)
+        add_personel_btn.setIcon(QIcon('icons/add.png'))
         add_personel_btn.clicked.connect(self.add_personnel)
         
-        remove_personel_btn = QPushButton("Personel Çıkar")
+        remove_personel_btn = QPushButton(" Personel Çıkar")
+        remove_personel_btn.setStyleSheet(RED_BUTTON_STYLE)
+        remove_personel_btn.setIcon(QIcon('icons/delete.png'))
         remove_personel_btn.clicked.connect(self.remove_personnel)
         
-        edit_personel_btn = QPushButton("Personel Düzenle")
+        edit_personel_btn = QPushButton(" Personel Düzenle")
+        edit_personel_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        edit_personel_btn.setIcon(QIcon('icons/custom.png'))
         edit_personel_btn.clicked.connect(self.edit_personnel)
         
         personel_action_layout.addWidget(add_personel_btn)
@@ -405,7 +427,7 @@ class PersonelYonetimTab(QWidget):
         for team_name, team_data in self.ekipler.items():
             # Ekip başlığı
             team_item = QTreeWidgetItem([team_name])
-            team_item.setIcon(0, QIcon("icons/team.png"))  # İkon eklenebilir
+            team_item.setIcon(0, QIcon("icons/group-users.png"))  # İkon eklenebilir
             
             # Ekip durumuna göre renklendirme
             if team_data.get('status') == "STK/DİĞER":
@@ -629,8 +651,11 @@ class PersonelEkleDialog(QDialog):
         # Kaydet ve İptal butonları
         btn_layout = QHBoxLayout()
         kaydet_btn = QPushButton("Kaydet")
+        kaydet_btn.setStyleSheet(BUTTON_STYLE)
+        kaydet_btn.setIcon(QIcon('icons/save.png'))
         kaydet_btn.clicked.connect(self.accept)
         iptal_btn = QPushButton("İptal")
+        iptal_btn.setStyleSheet(RED_BUTTON_STYLE)
         iptal_btn.clicked.connect(self.reject)
         
         btn_layout.addWidget(kaydet_btn)
@@ -679,8 +704,10 @@ class PersonelSecDialog(QDialog):
         
         btn_layout = QHBoxLayout()
         sec_btn = QPushButton("Seç" if not self.edit_mode else "Düzenle")
+        sec_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         sec_btn.clicked.connect(self.accept)
         iptal_btn = QPushButton("İptal")
+        iptal_btn.setStyleSheet(RED_BUTTON_STYLE)
         iptal_btn.clicked.connect(self.reject)
         
         btn_layout.addWidget(sec_btn)
@@ -737,9 +764,12 @@ class PersonelDuzenleDialog(QDialog):
         
         # Kaydet ve İptal butonları
         btn_layout = QHBoxLayout()
-        kaydet_btn = QPushButton("Kaydet")
-        kaydet_btn.clicked.connect(self.accept)
+        kaydet_btn = QPushButton(" Kaydet")
+        kaydet_btn.setStyleSheet(BUTTON_STYLE)
+        kaydet_btn.setIcon(QIcon('icons/save.png'))
+        kaydet_btn.clicked.connect(GREEN_BUTTON_STYLE)
         iptal_btn = QPushButton("İptal")
+        iptal_btn.setStyleSheet(RED_BUTTON_STYLE)
         iptal_btn.clicked.connect(self.reject)
         
         btn_layout.addWidget(kaydet_btn)

@@ -10,7 +10,6 @@ if platform.system() == "Linux":
 elif platform.system() == "Windows":
     os.environ["QT_QPA_PLATFORM"] = "windows"
 
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = AfetYonetimAdmin()

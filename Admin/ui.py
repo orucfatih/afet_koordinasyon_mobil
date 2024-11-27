@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                            QTextEdit, QComboBox, QTabWidget, 
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget, QTableWidgetItem, 
-                           QMessageBox, QDialog, QListWidgetItem)
+                           QMessageBox, QDialog, QListWidgetItem, QApplication, QMainWindow)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtGui import QBrush, QColor, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from stk_yonetim import STKYonetimTab
 from kaynak_yonetimi import KaynakYonetimTab
@@ -15,6 +15,7 @@ from harita import HaritaYonetimi
 from styles import *
 from sample_data import (TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, 
                         NOTIFICATION_DETAILS, TASK_DETAILS)
+import sys
 
 
 class NotificationDetailDialog(QDialog):
@@ -34,7 +35,8 @@ class NotificationDetailDialog(QDialog):
 
 
         # Kapat butonu
-        close_button = QPushButton("Kapat")
+        close_button = QPushButton(" Kapat")
+        close_button.setIcon(QIcon('icons/close.png'))
         close_button.clicked.connect(self.accept)
         close_button.setStyleSheet(BUTTON_STYLE)
         
@@ -79,9 +81,10 @@ class OperationManagementTab(QWidget):
         map_header_layout = QHBoxLayout(map_header)
         
         map_title = QLabel("Afet Bölgesi Haritası")
-        map_title.setStyleSheet(TITLE_LABEL_STYLE)        
+        map_title.setStyleSheet(MAP_STYLE)        
 
-        refresh_map_btn = QPushButton("Haritayı Yenile")
+        refresh_map_btn = QPushButton(" Haritayı Yenile")
+        refresh_map_btn.setIcon(QIcon('icons/refresh.png'))
         refresh_map_btn.setStyleSheet(REFRESH_BUTTON_STYLE)
         
         map_header_layout.addWidget(map_title)
@@ -126,13 +129,15 @@ class OperationManagementTab(QWidget):
         buttons_layout = QVBoxLayout(buttons_container)
         
         # Düzenle butonu
-        edit_task_btn = QPushButton("Düzenle")
-        edit_task_btn.setStyleSheet(BUTTON_STYLE)
+        edit_task_btn = QPushButton(" Düzenle")
+        edit_task_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        edit_task_btn.setIcon(QIcon('icons/equalizer.png'))
         edit_task_btn.clicked.connect(self.edit_selected_task)
         
         # Sil butonu
-        delete_task_btn = QPushButton("Sil")
+        delete_task_btn = QPushButton(" Sil")
         delete_task_btn.setStyleSheet(RED_BUTTON_STYLE)
+        delete_task_btn.setIcon(QIcon('icons/bin.png'))
         delete_task_btn.clicked.connect(self.delete_selected_task)
         
         # Butonları dikey düzene ekle
@@ -172,12 +177,14 @@ class OperationManagementTab(QWidget):
         # Butonlar için alt layout
         button_layout = QHBoxLayout()
 
-        add_team_button = QPushButton("Ekip Ekle")
+        add_team_button = QPushButton(" Ekip Ekle")
         add_team_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        add_team_button.setIcon(QIcon('icons/add-group.png'))
         add_team_button.clicked.connect(self.add_team)
 
-        remove_team_button = QPushButton("Ekip Çıkar")
+        remove_team_button = QPushButton(" Ekip Çıkar")
         remove_team_button.setStyleSheet(RED_BUTTON_STYLE)
+        remove_team_button.setIcon(QIcon('icons/delete-group.png'))
         remove_team_button.clicked.connect(self.remove_selected_team)
 
         button_layout.addWidget(add_team_button)
@@ -213,9 +220,10 @@ class OperationManagementTab(QWidget):
         assign_button.clicked.connect(self.assign_task)
         assign_button.setStyleSheet(BUTTON_STYLE)
 
-        contact_button = QPushButton("Ekip ile İletişime Geç")
+        contact_button = QPushButton(" Ekip ile İletişime Geç")
         contact_button.clicked.connect(self.contact_team)
         contact_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        contact_button.setIcon(QIcon('icons/customer-service.png'))
 
         assignment_layout.addRow("Ekip Seçimi:", self.team_combo)
         assignment_layout.addRow("Lokasyon:", self.location_input)
@@ -259,7 +267,8 @@ class OperationManagementTab(QWidget):
         contact_input = QLineEdit()
 
         # Kaydet butonunu tanımla
-        save_button = QPushButton("Kaydet")
+        save_button = QPushButton(" Kaydet")
+        save_button.setIcon(QIcon('icons/save.png'))
         save_button.clicked.connect(lambda: self.save_new_team(dialog, team_id_input, leader_input, institution_input, status_combo, contact_input))
         save_button.setStyleSheet(BUTTON_STYLE)
 
@@ -421,8 +430,9 @@ class OperationManagementTab(QWidget):
         message_input.setPlaceholderText("Mesajınızı yazın...")
         message_input.setStyleSheet(TEXT_EDIT_STYLE)
         
-        send_button = QPushButton("Mesaj Gönder")
-        send_button.setStyleSheet(BUTTON_STYLE)
+        send_button = QPushButton(" Mesaj Gönder")
+        send_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        send_button.setIcon(QIcon('icons/paper-plane.png'))
         
         layout.addWidget(info_label)
         layout.addWidget(message_input)
@@ -501,7 +511,8 @@ class OperationManagementTab(QWidget):
         task_edit.setStyleSheet(TEXT_EDIT_STYLE)
         
         # Kaydet butonu
-        save_btn = QPushButton("Kaydet")
+        save_btn = QPushButton(" Kaydet")
+        save_btn.setIcon(QIcon('icons/save.png'))
         save_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         save_btn.clicked.connect(lambda: self.save_edited_task(current_item, task_edit.toPlainText(), dialog))
         
@@ -545,7 +556,7 @@ class AfetYonetimAdmin(QMainWindow):
     def initUI(self):
         self.setWindowTitle("Afet Yönetim Sistemi - Admin Paneli")
         self.setGeometry(100, 100, 1400, 800)
-        
+        self.setStyleSheet(DARK_THEME_STYLE)
 
         # Ana widget ve layout
         central_widget = QWidget()
@@ -554,10 +565,32 @@ class AfetYonetimAdmin(QMainWindow):
 
         # Tab widget oluşturma
         tabs = QTabWidget()
+        tabs.setStyleSheet(TAB_WIDGET_STYLE)
         tabs.addTab(OperationManagementTab(), "Operasyon Yönetimi")
         tabs.addTab(STKYonetimTab(), "STK Yönetimi")
         tabs.addTab(KaynakYonetimTab(), "Kaynak Yönetimi")
         tabs.addTab(RaporYonetimTab(), "Rapor")
         tabs.addTab(PersonelYonetimTab(), "Personel Yönetim")
 
+
         layout.addWidget(tabs)
+
+    def closeEvent(self, event):
+        """Kapatma butonu (çarpı) tıklanınca uyarı verir."""
+        reply = QMessageBox.question(
+            self,
+            "Çıkış Onayı",
+            "Uygulamayı kapatmak istediğinizden emin misiniz?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.No:
+            event.ignore()  # Kapatma işlemini iptal et
+        else:
+            event.accept()  # Kapatma işlemini onayla
+        if __name__ == "__main__":
+           app = QApplication(sys.argv)
+           window = AfetYonetimAdmin()
+           window.show()
+           sys.exit(app.exec_())    

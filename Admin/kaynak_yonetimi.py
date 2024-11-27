@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget, QTableWidgetItem, 
                            QMessageBox)
+from styles import *
+from PyQt5.QtGui import QIcon
 
 class KaynakYonetimTab(QWidget):
     """Kaynak Yönetim Sekmesi"""
@@ -33,7 +35,9 @@ class KaynakYonetimTab(QWidget):
         form_layout.addRow("Miktar:", self.resource_amount)
         form_layout.addRow("Konum:", self.resource_location)
         
-        add_button = QPushButton("Kaynak Ekle")
+        add_button = QPushButton(" Kaynak Ekle")
+        add_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        add_button.setIcon(QIcon('icons/add1.png'))
         add_button.clicked.connect(self.add_resource)
         form_layout.addRow(add_button)
         
@@ -44,6 +48,7 @@ class KaynakYonetimTab(QWidget):
         list_layout = QVBoxLayout()
         
         self.resource_table = QTableWidget()
+        self.resource_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.resource_table.setColumnCount(5)
         self.resource_table.setHorizontalHeaderLabels(["Kaynak Adı", "Tür", "Miktar", "Konum", "Durum"])
         self.resource_table.itemClicked.connect(self.show_resource_details)
@@ -81,7 +86,9 @@ class KaynakYonetimTab(QWidget):
         dist_layout.addRow("Hedef Konum:", self.dist_location)
         dist_layout.addRow("Öncelik:", self.dist_priority)
         
-        distribute_button = QPushButton("Dağıtımı Başlat")
+        distribute_button = QPushButton(" Dağıtımı Başlat")
+        distribute_button.setStyleSheet(BUTTON_STYLE)
+        distribute_button.setIcon(QIcon('icons/play.png'))
         distribute_button.clicked.connect(self.distribute_resources)
         dist_layout.addRow(distribute_button)
         

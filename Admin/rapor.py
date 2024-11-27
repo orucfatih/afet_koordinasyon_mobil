@@ -4,8 +4,10 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                            QTableWidget, QTableWidgetItem, QDateTimeEdit,
                            QMessageBox)
 from PyQt5.QtCore import Qt, QDateTime
+from PyQt5.QtGui import QIcon, QColor
 import json
 import os
+from styles import *
 from datetime import datetime
 
 class RaporYonetimTab(QWidget):
@@ -76,9 +78,13 @@ class RaporYonetimTab(QWidget):
         
         # Butonlar
         buttons_layout = QHBoxLayout()
-        self.save_button = QPushButton("Raporu Kaydet")
+        self.save_button = QPushButton(" Raporu Kaydet")
+        self.save_button.setStyleSheet(BUTTON_STYLE)
+        self.save_button.setIcon(QIcon('icons/save.png'))
         self.save_button.clicked.connect(self.save_report)
-        self.clear_button = QPushButton("Formu Temizle")
+        self.clear_button = QPushButton(" Formu Temizle")
+        self.clear_button.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        self.clear_button.setIcon(QIcon('icons/broom.png'))
         self.clear_button.clicked.connect(self.clear_form)
         buttons_layout.addWidget(self.save_button)
         buttons_layout.addWidget(self.clear_button)
@@ -110,6 +116,7 @@ class RaporYonetimTab(QWidget):
         # Rapor Tablosu
         self.reports_table = QTableWidget()
         self.reports_table.setColumnCount(4)
+        self.reports_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.reports_table.setHorizontalHeaderLabels([
             "Tarih", "Bölge", "Tür", "Özet"
         ])
@@ -130,7 +137,9 @@ class RaporYonetimTab(QWidget):
 
 
         # Sağ Panel - Silme Butonu Eklenmesi
-        self.delete_button = QPushButton("Seçili Raporu Sil")
+        self.delete_button = QPushButton(" Seçili Raporu Sil")
+        self.delete_button.setStyleSheet(RED_BUTTON_STYLE)
+        self.delete_button.setIcon(QIcon('icons/bin.png'))
         self.delete_button.clicked.connect(self.delete_selected_report)
         right_layout.addWidget(self.delete_button)
 

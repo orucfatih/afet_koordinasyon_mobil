@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget, QTableWidgetItem, 
                            QMessageBox, )
-
+from styles import *
+from PyQt5.QtGui import QIcon, QColor
 
 
 class STKYonetimTab(QWidget):
@@ -38,6 +39,8 @@ class STKYonetimTab(QWidget):
         form_layout.addRow("Faaliyet Bölgesi:", self.ngo_region)
         
         add_button = QPushButton("STK Ekle")
+        add_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        add_button.setIcon(QIcon('icons/add1.png'))
         add_button.clicked.connect(self.add_ngo)
         form_layout.addRow(add_button)
         
@@ -48,6 +51,7 @@ class STKYonetimTab(QWidget):
         list_layout = QVBoxLayout()
         
         self.ngo_table = QTableWidget()
+        self.ngo_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.ngo_table.setColumnCount(6)
         self.ngo_table.setHorizontalHeaderLabels(["STK Adı", "Tür", "İletişim", "Kapasite", "Bölge", "Durum"])
         self.ngo_table.itemClicked.connect(self.show_ngo_details)
@@ -80,6 +84,8 @@ class STKYonetimTab(QWidget):
         self.message_text.setPlaceholderText("Mesajınızı yazın...")
         
         send_button = QPushButton("Mesaj Gönder")
+        send_button.setStyleSheet(GREEN_BUTTON_STYLE)
+        send_button.setIcon(QIcon('icons/paper/plane.png'))
         send_button.clicked.connect(self.send_message)
         
         comm_layout.addWidget(self.message_text)
