@@ -1,5 +1,6 @@
 # Qt bileşenleri için stil tanımlamaları
-# Genel Stil Tanımları
+
+
 DARK_THEME_STYLE = """
     /* Genel arka plan */
     QWidget {

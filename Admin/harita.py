@@ -1,5 +1,3 @@
-from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
 import folium
 from folium import plugins
 from folium.plugins import MarkerCluster
@@ -8,6 +6,8 @@ from geopy.distance import geodesic
 import osmnx as ox
 import json
 import os
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+
 
 class HaritaYonetimi:
     def __init__(self):
@@ -17,43 +17,30 @@ class HaritaYonetimi:
         self.markers = []
         self.geocoder = Nominatim(user_agent="afet_yonetim_sistemi")
         
-    def initialize_map(self, height=400):
-        """OpenStreetMap tabanlı haritayı başlatır"""
-        # Türkiye'nin merkezi koordinatları
-        center_coords = [39.9334, 32.8597]
+    def initialize_map(self, height=600):
+        """Afet yönetimi için gelişmiş harita başlatır"""
+        center_coords = [39.9334, 32.8597]  # Türkiye merkezi
         
-        # Temel haritayı oluştur
         self.map = folium.Map(
             location=center_coords,
             zoom_start=6,
             width='100%',
             height=height,
-            tiles='OpenStreetMap',  # OpenStreetMap taban haritası
-            control_scale=True      # Ölçek çubuğu
+            tiles='OpenStreetMap',
+            control_scale=True
         )
         
-        # Marker cluster oluştur
+        # Gelişmiş özellikler
         self.marker_cluster = MarkerCluster().add_to(self.map)
         
-        # Alternatif harita katmanları ekle
+        # Afet yönetimi için ek katmanlar
         folium.TileLayer(
             tiles='https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-            attr='OpenStreetMap Hot',
-            name='OSM Hot'
+            attr='Humanitarian OpenStreetMap',
+            name='Afet Haritası'
         ).add_to(self.map)
         
-
-        # Katman kontrolü ekle
-        folium.LayerControl().add_to(self.map)
-        
-        # Konum bulma kontrolü
-        plugins.LocateControl(
-            position='topleft',
-            strings={'title': 'Konumumu bul'},
-            keepCurrentZoomLevel=True
-        ).add_to(self.map)
-        
-        # Çizim araçları
+        # Konum ve çizim araçları
         plugins.Draw(
             export=True,
             position='topleft',
@@ -62,28 +49,26 @@ class HaritaYonetimi:
                 'polygon': {'allowIntersection': False},
                 'circle': True,
                 'rectangle': True,
-                'marker': True,
-                'circlemarker': False
-            },
-            edit_options={'poly': {'allowIntersection': False}}
+                'marker': True
+            }
         ).add_to(self.map)
         
-        # Mesafe ölçüm aracı
+        # Mesafe ve alan ölçüm aracı
         plugins.MeasureControl(
             position='topleft',
             primary_length_unit='kilometers',
-            secondary_length_unit=None,
-            primary_area_unit='square kilometers',
-            secondary_area_unit=None
+            primary_area_unit='square kilometers'
         ).add_to(self.map)
         
-        # Haritayı görüntüle
+        # Katman kontrolü
+        folium.LayerControl().add_to(self.map)
+        
         data = self.map._repr_html_()
         self.map_view.setHtml(data)
         return self.map_view
     
     def add_marker(self, lat, lon, popup_text="", icon_type="info"):
-        """Haritaya özel simgeli işaretçi ekler"""
+        """Afet yönetimi için özelleştirilmiş işaretçi ekler"""
         icon_mapping = {
             "info": "info-sign",
             "warning": "warning-sign",
@@ -114,31 +99,31 @@ class HaritaYonetimi:
         self._refresh_map()
 
     def search_location(self, address):
-        """OpenStreetMap üzerinden adres araması yapar"""
+        """Konumu detaylı olarak arar ve döndürür"""
         try:
             location = self.geocoder.geocode(address)
             if location:
-                # Bulunan konuma haritayı odakla
                 self.map.location = [location.latitude, location.longitude]
                 self.map.zoom_start = 15
                 self._refresh_map()
                 return {
                     'lat': location.latitude,
                     'lon': location.longitude,
-                    'address': location.address
+                    'address': location.address,
+                    'raw': location.raw
                 }
             return None
         except Exception as e:
-            print(f"Arama hatası: {e}")
+            print(f"Konum arama hatası: {e}")
             return None
 
     def calculate_route(self, start_coords, end_coords):
-        """OpenStreetMap üzerinden iki nokta arası rota hesaplar"""
+        """Afet senaryoları için optimize edilmiş rota hesaplama"""
         try:
-            # Graf oluştur
+            # Geniş bir alan için graf oluştur
             graph = ox.graph_from_point(
                 start_coords,
-                dist=max(geodesic(start_coords, end_coords).kilometers * 1000, 1000),
+                dist=max(geodesic(start_coords, end_coords).kilometers * 1500, 2000),
                 network_type='drive'
             )
             
@@ -147,7 +132,7 @@ class HaritaYonetimi:
             dest_node = ox.nearest_nodes(graph, end_coords[1], end_coords[0])
             route = ox.shortest_path(graph, orig_node, dest_node)
             
-            # Rotayı haritaya çiz
+            # Rota koordinatlarını topla
             route_coords = []
             for node in route:
                 point = graph.nodes[node]
@@ -162,58 +147,54 @@ class HaritaYonetimi:
             # Rotayı haritaya ekle
             folium.PolyLine(
                 route_coords,
-                weight=4,
-                color='blue',
+                weight=5,
+                color='red',
                 opacity=0.8,
-                popup=f'Mesafe: {distance:.2f} km'
+                popup=f'Afet Rota Mesafesi: {distance:.2f} km'
             ).add_to(self.map)
             
             # Başlangıç ve bitiş işaretçileri
             self.add_marker(
-                start_coords[0],
-                start_coords[1],
-                "Başlangıç Noktası",
-                "info"
+                start_coords[0], start_coords[1], 
+                "Başlangıç Noktası", "info"
             )
             self.add_marker(
-                end_coords[0],
-                end_coords[1],
-                "Bitiş Noktası",
-                "info"
+                end_coords[0], end_coords[1], 
+                "Hedef Nokta", "danger"
             )
             
             self._refresh_map()
             return distance
         except Exception as e:
             print(f"Rota hesaplama hatası: {e}")
-            # Basit düz çizgi rotası göster
             return self._draw_direct_route(start_coords, end_coords)
 
     def _draw_direct_route(self, start_coords, end_coords):
-        """İki nokta arası düz çizgi çizer (rota hesaplanamadığında)"""
+        """Alternatif rota çizimi"""
         distance = geodesic(start_coords, end_coords).kilometers
         folium.PolyLine(
             locations=[start_coords, end_coords],
-            weight=2,
-            color='red',
-            opacity=0.8,
-            popup=f'Yaklaşık mesafe: {distance:.2f} km (düz çizgi)'
+            weight=3,
+            color='orange',
+            opacity=0.7,
+            popup=f'Doğrudan Mesafe: {distance:.2f} km'
         ).add_to(self.map)
         self._refresh_map()
         return distance
 
-    def add_area_highlight(self, coordinates, color='red', popup_text=""):
-        """Belirli bir alanı vurgular"""
+    def add_area_highlight(self, coordinates, color='red', popup_text="Afet Bölgesi"):
+        """Alan vurgulama fonksiyonu"""
         folium.Polygon(
             locations=coordinates,
             color=color,
             fill=True,
+            fill_opacity=0.3,
             popup=popup_text
         ).add_to(self.map)
         self._refresh_map()
 
-    def save_markers(self, filename="markers.json"):
-        """İşaretçileri JSON dosyasına kaydeder"""
+    def save_markers(self, filename="afet_isaretcileri.json"):
+        """İşaretçileri kaydet"""
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(self.markers, f, ensure_ascii=False, indent=4)
@@ -222,8 +203,8 @@ class HaritaYonetimi:
             print(f"Kaydetme hatası: {e}")
             return False
 
-    def load_markers(self, filename="markers.json"):
-        """İşaretçileri JSON dosyasından yükler"""
+    def load_markers(self, filename="afet_isaretcileri.json"):
+        """İşaretçileri yükle"""
         try:
             if os.path.exists(filename):
                 with open(filename, 'r', encoding='utf-8') as f:
@@ -248,5 +229,5 @@ class HaritaYonetimi:
 
     def clear_map(self):
         """Haritayı temizler"""
-        self.initialize_map(self.map.height)
+        self.initialize_map()
         self.markers = []
