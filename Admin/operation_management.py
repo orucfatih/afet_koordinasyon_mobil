@@ -7,13 +7,14 @@ from harita import HaritaYonetimi
 from dialogs import NotificationDetailDialog  
 from styles import *
 from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
+from harita import MapWidget
 
 
 class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
     def __init__(self):
         super().__init__()
-        self.harita = HaritaYonetimi()
+        self.harita = HaritaYonetimi()  # Harita yönetimi örneği
         self.initUI()
 
     def initUI(self):
@@ -23,32 +24,10 @@ class OperationManagementTab(QWidget):
         top_panel = QWidget()
         top_layout = QHBoxLayout(top_panel)
 
-        self.messages_list = QListWidget()  # home sayfasında ekip mesajlaşma kısmı oluşturuluyor
+        self.messages_list = QListWidget()  # Ekip mesajlaşma kısmı
         
         # Harita Bölümü
-        map_widget = QWidget()
-        map_layout = QVBoxLayout(map_widget)
-        
-        # Harita başlığı ve kontroller
-        map_header = QWidget()
-        map_header_layout = QHBoxLayout(map_header)
-        
-        map_title = QLabel("Afet Bölgesi Haritası")
-        map_title.setStyleSheet(MAP_STYLE)        
-
-        refresh_map_btn = QPushButton(" Haritayı Yenile")
-        refresh_map_btn.setIcon(QIcon('icons/refresh.png'))
-        refresh_map_btn.setStyleSheet(REFRESH_BUTTON_STYLE)
-        
-        map_header_layout.addWidget(map_title)
-        map_header_layout.addWidget(refresh_map_btn)
-        map_header_layout.addStretch()
-        
-        # Harita görünümü
-        self.map_view = self.harita.initialize_map(height=470)
-        
-        map_layout.addWidget(map_header)
-        map_layout.addWidget(self.map_view)
+        self.map_widget = MapWidget(self.harita)  # Harita widget'ını kullanıyoruz
         
         # Sağ Panel - Bildirimler ve Görevler
         right_info_panel = QWidget()
@@ -64,54 +43,45 @@ class OperationManagementTab(QWidget):
         notifications_layout.addWidget(self.notification_list)
         notifications_group.setLayout(notifications_layout)
         
-        # Görevler Listesi - YENİ KOD BAŞLANGICI
+        # Görevler Listesi
         tasks_group = QGroupBox("Aktif Görevler")
         tasks_layout = QVBoxLayout()
         
-        # Görev listesi ve butonlar için container widget
         tasks_container = QWidget()
         tasks_container_layout = QHBoxLayout(tasks_container)
         
-        # Görevler listesi
         self.tasks_list = QListWidget()
         self.tasks_list.itemDoubleClicked.connect(self.show_task_details)
         self.tasks_list.setStyleSheet(LIST_WIDGET_STYLE)
         
-        # Butonlar için dikey düzen
         buttons_container = QWidget()
         buttons_layout = QVBoxLayout(buttons_container)
         
-        # Düzenle butonu
         edit_task_btn = QPushButton(" Düzenle")
         edit_task_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
         edit_task_btn.setIcon(QIcon('icons/equalizer.png'))
         edit_task_btn.clicked.connect(self.edit_selected_task)
         
-        # Sil butonu
         delete_task_btn = QPushButton(" Sil")
         delete_task_btn.setStyleSheet(RED_BUTTON_STYLE)
         delete_task_btn.setIcon(QIcon('icons/bin.png'))
         delete_task_btn.clicked.connect(self.delete_selected_task)
         
-        # Butonları dikey düzene ekle
         buttons_layout.addWidget(edit_task_btn)
         buttons_layout.addWidget(delete_task_btn)
         buttons_layout.addStretch()
         
-        # Liste ve butonları container'a ekle
         tasks_container_layout.addWidget(self.tasks_list)
         tasks_container_layout.addWidget(buttons_container)
         
-        # Container'ı tasks layout'a ekle
         tasks_layout.addWidget(tasks_container)
         tasks_group.setLayout(tasks_layout)
-        # YENİ KOD SONU
         
         right_info_layout.addWidget(notifications_group)
         right_info_layout.addWidget(tasks_group)
         
-        # Üst panel layout düzenleme
-        top_layout.addWidget(map_widget, stretch=2)
+        # Üst panel düzenleme
+        top_layout.addWidget(self.map_widget, stretch=2)  # Harita widget'ı burada
         top_layout.addWidget(right_info_panel, stretch=1)
         
         # Alt Panel - Ekip Yönetimi
@@ -127,7 +97,6 @@ class OperationManagementTab(QWidget):
         self.team_list.setHorizontalHeaderLabels(["Ekip ID", "Ekip Lideri", "Kurum", "Durum", "İletişim"])
         self.team_list.setStyleSheet(TABLE_WIDGET_STYLE)
         
-        # Butonlar için alt layout
         button_layout = QHBoxLayout()
 
         add_team_button = QPushButton(" Ekip Ekle")
@@ -163,10 +132,9 @@ class OperationManagementTab(QWidget):
         self.task_description.setPlaceholderText("Görev detayları...")
         self.task_description.setStyleSheet(TEXT_EDIT_STYLE)
 
-        # Görevlendirme Önceliği
         self.priority_combo = QComboBox()
         self.priority_combo.addItems(["Düşük", "Orta", "Yüksek", "Acil"])
-        self.priority_combo.setCurrentIndex(1)  # Varsayılan olarak "Orta" seçili
+        self.priority_combo.setCurrentIndex(1)
         self.priority_combo.setStyleSheet(COMBOBOX_STYLE)
 
         assign_button = QPushButton("Görevi Ata")
@@ -181,17 +149,16 @@ class OperationManagementTab(QWidget):
         assignment_layout.addRow("Ekip Seçimi:", self.team_combo)
         assignment_layout.addRow("Lokasyon:", self.location_input)
         assignment_layout.addRow("Görev Detayları:", self.task_description)
-        assignment_layout.addRow("Öncelik Seviyesi:", self.priority_combo)  # Yeni eklenen satır
+        assignment_layout.addRow("Öncelik Seviyesi:", self.priority_combo)
         assignment_layout.addRow("", assign_button)
         assignment_layout.addRow("", contact_button)
 
         assignment_group.setLayout(assignment_layout)
         
-        # Alt panel layout düzenleme
         bottom_layout.addWidget(team_list_group, stretch=2)
         bottom_layout.addWidget(assignment_group, stretch=1)
         
-        # Ana layout'a panelleri ekleme
+        # Ana layout
         main_layout.addWidget(top_panel, stretch=2)
         main_layout.addWidget(bottom_panel, stretch=1)
         
@@ -200,6 +167,12 @@ class OperationManagementTab(QWidget):
         # Örnek verileri yükle
         self.load_sample_data()
         self.load_team_data()
+
+
+    def refresh_map(self):
+        self.harita.clear_map()  # Haritayı temizle
+        self.map_view = self.harita.initialize_map(height=470)  # Yeniden başlat
+
 
     def add_team(self):
         """Yeni ekip eklemek için bir dialog açar."""
