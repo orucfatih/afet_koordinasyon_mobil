@@ -2,13 +2,65 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                            QPushButton, QTextEdit, QComboBox,
                            QGroupBox, QLineEdit, QFormLayout, 
                            QTableWidget, QTableWidgetItem, QDateTimeEdit,
-                           QMessageBox)
+                           QMessageBox, QRadioButton, QDialog, QButtonGroup)
 from PyQt5.QtCore import Qt, QDateTime
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QIcon
 import json
 import os
 from styles import *
-from datetime import datetime
+from datetime import datetime   
+import subprocess
+
+
+
+
+class FormatSecimDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Dosya Formatı Seçimi")
+        self.format = None
+        
+        layout = QVBoxLayout()
+        
+        # Radio butonları oluştur
+        self.json_radio = QRadioButton("JSON")
+        self.txt_radio = QRadioButton("TXT")
+        
+        # Button group oluştur
+        self.button_group = QButtonGroup()
+        self.button_group.addButton(self.json_radio)
+        self.button_group.addButton(self.txt_radio)
+        
+        # Default seçim
+        self.json_radio.setChecked(True)
+        
+        layout.addWidget(self.json_radio)
+        layout.addWidget(self.txt_radio)
+        
+        # Tamam ve İptal butonları
+        btn_layout = QHBoxLayout()
+        tamam_btn = QPushButton("Tamam")
+        iptal_btn = QPushButton("İptal")
+        
+        tamam_btn.clicked.connect(self.accept)
+        iptal_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(tamam_btn)
+        btn_layout.addWidget(iptal_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        self.setLayout(layout)
+    
+    def accept(self):
+        # Seçilen formatı kaydet
+        if self.json_radio.isChecked():
+            self.format = "JSON"
+        else:
+            self.format = "TXT"
+        super().accept()
+
+
 
 class RaporYonetimTab(QWidget):
     """Rapor Yönetim Sekmesi"""
@@ -115,11 +167,12 @@ class RaporYonetimTab(QWidget):
         
         # Rapor Tablosu
         self.reports_table = QTableWidget()
-        self.reports_table.setColumnCount(4)
+        self.reports_table.setColumnCount(5)
         self.reports_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.reports_table.setHorizontalHeaderLabels([
-            "Tarih", "Bölge", "Tür", "Özet"
+            "Tarih", "Bölge", "Tür", "Özet", "Format"  
         ])
+        self.reports_table.itemDoubleClicked.connect(self.open_report_file)
         self.reports_table.itemClicked.connect(self.show_report_details)
         list_layout.addWidget(self.reports_table)
         
@@ -143,41 +196,58 @@ class RaporYonetimTab(QWidget):
         self.delete_button.clicked.connect(self.delete_selected_report)
         right_layout.addWidget(self.delete_button)
 
-        
+
+
+    def create_report_file(self):
+        """Rapor klasör oluştur"""
+        if not os.path.exists('reports'):
+            os.makedirs('reports')
+
+
     def save_report(self):
-        """Raporu JSON formatında kaydeder"""
-        report_data = {
-            "datetime": self.date_time_edit.dateTime().toString(Qt.ISODate),
-            "location": self.location_input.text(),
-            "type": self.report_type.currentText(),
-            "summary": self.summary_text.toPlainText(),
-            "details": self.details_text.toPlainText(),
-            "needs": self.needs_text.toPlainText()
-        }
-        
-        # Basit doğrulama
-        if not all([report_data["location"], report_data["summary"]]):
-            QMessageBox.warning(self, "Uyarı", 
-                              "Lütfen en azından bölge ve özet bilgilerini doldurun.")
-            return
+        # Format seçim dialogunu aç
+        format_dialog = FormatSecimDialog(self)
+        if format_dialog.exec_() == QDialog.Accepted:
+            secilen_format = format_dialog.format
             
-        try:
-            # reports klasörünü kontrol et/oluştur
-            if not os.path.exists("reports"):
-                os.makedirs("reports")
+            # Rapor verilerini topla
+            rapor_verileri = {
+                "tarih": self.date_time_edit.dateTime().toString(Qt.ISODate),
+                "bolge": self.location_input.text(),
+                "tur": self.report_type.currentText(),
+                "ozet": self.summary_text.toPlainText(),
+                "detaylar": self.details_text.toPlainText(),
+                "ihtiyaclar": self.needs_text.toPlainText()
+            }
             
-            # Benzersiz dosya adı oluştur
-            filename = f"reports/report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            # Zorunlu alanları kontrol et
+            if not all([rapor_verileri["bolge"]]):
+                QMessageBox.warning(self, "Uyarı", "Lütfen Bölge bilgilerini doldurun.")
+                return
             
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(report_data, f, ensure_ascii=False, indent=4)
+            # Raporlar klasörünü oluştur
+            self.create_report_file()
             
-            QMessageBox.information(self, "Başarılı", "Rapor başarıyla kaydedildi.")
-            self.clear_form()
-            self.load_reports()
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Rapor kaydedilirken hata oluştu: {str(e)}")
+            try:
+                # Dosya adını oluştur
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                
+                if secilen_format == "JSON":
+                    dosya_yolu = os.path.join('reports', f"rapor_{timestamp}.json")
+                    with open(dosya_yolu, 'w', encoding='utf-8') as f:
+                        json.dump(rapor_verileri, f, ensure_ascii=False, indent=4)
+                else:
+                    dosya_yolu = os.path.join('reports', f"rapor_{timestamp}.txt")
+                    with open(dosya_yolu, 'w', encoding='utf-8') as f:
+                        for anahtar, deger in rapor_verileri.items():
+                            f.write(f"{anahtar.capitalize()}: {deger}\n")
+                
+                QMessageBox.information(self, "Başarılı", f"Rapor {secilen_format} formatında kaydedildi: {os.path.basename(dosya_yolu)}")
+                self.clear_form()
+                self.load_reports()
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Rapor kaydedilemedi: {str(e)}")
     
     def clear_form(self):
         """Form alanlarını temizler"""
@@ -187,6 +257,7 @@ class RaporYonetimTab(QWidget):
         self.summary_text.clear()
         self.details_text.clear()
         self.needs_text.clear()
+
     
     def load_reports(self):
         """Kaydedilmiş raporları yükler"""
@@ -194,31 +265,36 @@ class RaporYonetimTab(QWidget):
         
         if not os.path.exists("reports"):
             return
+        
+        for dosya_adi in os.listdir("reports"):
+            dosya_yolu = os.path.join("reports", dosya_adi)
+            format_adi = "JSON" if dosya_adi.endswith(".json") else "TXT"
             
-        for filename in os.listdir("reports"):
-            if filename.endswith(".json"):
-                try:
-                    with open(os.path.join("reports", filename), 'r', encoding='utf-8') as f:
-                        report_data = json.load(f)
-                        
-                    row = self.reports_table.rowCount()
-                    self.reports_table.insertRow(row)
-                    
-                    # Tarih formatını düzenle
-                    date_obj = QDateTime.fromString(report_data["datetime"], Qt.ISODate)
-                    formatted_date = date_obj.toString("dd.MM.yyyy HH:mm")
-                    
-                    self.reports_table.setItem(row, 0, QTableWidgetItem(formatted_date))
-                    self.reports_table.setItem(row, 1, QTableWidgetItem(report_data["location"]))
-                    self.reports_table.setItem(row, 2, QTableWidgetItem(report_data["type"]))
-                    self.reports_table.setItem(row, 3, QTableWidgetItem(
-                        report_data["summary"][:50] + "..." if len(report_data["summary"]) > 50 
-                        else report_data["summary"]
-                    ))
-                    
-                except Exception as e:
-                    print(f"Rapor yüklenirken hata: {str(e)}")
-    
+            try:
+                # Ortak yükleme mantığı
+                with open(dosya_yolu, 'r', encoding='utf-8') as f:
+                    rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
+                
+                # Tabloya ekle
+                satir = self.reports_table.rowCount()
+                self.reports_table.insertRow(satir)
+                
+                # Tarih formatını düzenle
+                tarih = QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate)
+                
+                self.reports_table.setItem(satir, 0, QTableWidgetItem(tarih.toString("dd.MM.yyyy HH:mm")))
+                self.reports_table.setItem(satir, 1, QTableWidgetItem(rapor_verileri["bolge"]))
+                self.reports_table.setItem(satir, 2, QTableWidgetItem(rapor_verileri["tur"]))
+                self.reports_table.setItem(satir, 3, QTableWidgetItem(
+                    rapor_verileri["ozet"][:50] + "..." if len(rapor_verileri["ozet"]) > 50 
+                    else rapor_verileri["ozet"]
+                ))
+                self.reports_table.setItem(satir, 4, QTableWidgetItem(format_adi))
+                
+            except Exception as e:
+                print(f"Rapor yüklenemedi: {str(e)}")
+
+
     def filter_reports(self):
         """Raporları arama metni ve türe göre filtreler"""
         search_text = self.search_input.text().lower()
@@ -253,67 +329,126 @@ class RaporYonetimTab(QWidget):
         
         # İlgili rapor dosyasını bul ve yükle
         for filename in os.listdir("reports"):
-            if filename.endswith(".json"):
-                with open(os.path.join("reports", filename), 'r', encoding='utf-8') as f:
-                    report_data = json.load(f)
+            full_path = os.path.join("reports", filename)
+            try:
+                if filename.endswith(".json"):
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        report_data = json.load(f)
                     
-                report_date = QDateTime.fromString(
-                    report_data["datetime"], 
-                    Qt.ISODate
-                ).toString("dd.MM.yyyy HH:mm")
-                
-                if (report_date == date_item and 
-                    report_data["location"] == location_item):
-                    # Form alanlarını doldur
-                    self.date_time_edit.setDateTime(
-                        QDateTime.fromString(report_data["datetime"], Qt.ISODate)
-                    )
-                    self.location_input.setText(report_data["location"])
-                    self.report_type.setCurrentText(report_data["type"])
-                    self.summary_text.setText(report_data["summary"])
-                    self.details_text.setText(report_data["details"])
-                    self.needs_text.setText(report_data["needs"])
-                    break
+                    # Tarih formatını düzelt
+                    report_date = QDateTime.fromString(
+                        report_data["tarih"], 
+                        Qt.ISODate
+                    ).toString("dd.MM.yyyy HH:mm")
+                    
+                    if (report_date == date_item and 
+                        report_data["bolge"] == location_item):
+                        # Form alanlarını doldur
+                        self.date_time_edit.setDateTime(
+                            QDateTime.fromString(report_data["tarih"], Qt.ISODate)
+                        )
+                        self.location_input.setText(report_data["bolge"])
+                        self.report_type.setCurrentText(report_data["tur"])
+                        self.summary_text.setText(report_data["ozet"])
+                        self.details_text.setText(report_data["detaylar"])
+                        self.needs_text.setText(report_data["ihtiyaclar"])
+                        break
+            except Exception as e:
+                print(f"Rapor yüklenirken hata: {e}")
+
+
+
+    def read_txt_file(self, dosya):
+        """TXT dosyasını okur ve sözlük formatına çevirir"""
+        rapor_verileri = {}
+        for satir in dosya:
+            anahtar, deger = satir.split(": ", 1)
+            rapor_verileri[anahtar.lower()] = deger.strip()
+        return rapor_verileri
+
 
 
     def delete_selected_report(self):
         """Seçili raporu siler"""
-        selected_items = self.reports_table.selectedItems()
+        secili_satirlar = self.reports_table.selectedItems()
         
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir rapor seçin.")
+        if not secili_satirlar:
+            QMessageBox.warning(self, "Uyarı", "Silinecek raporu seçin.")
             return
         
-        # Seçili satırdan tarih ve bölge bilgilerini al
-        selected_row = selected_items[0].row()
-        date_item = self.reports_table.item(selected_row, 0).text()
-        location_item = self.reports_table.item(selected_row, 1).text()
+        # Silme işlemi için gerekli bilgileri al
+        secili_satir = secili_satirlar[0].row()
+        tarih = self.reports_table.item(secili_satir, 0).text()
+        bolge = self.reports_table.item(secili_satir, 1).text()
+        format_adi = self.reports_table.item(secili_satir, 4).text()
         
-        # İlgili dosyayı bul ve sil
-        for filename in os.listdir("reports"):
-            if filename.endswith(".json"):
-                file_path = os.path.join("reports", filename)
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    report_data = json.load(f)
+        # Dosya uzantısını belirle
+        dosya_uzantisi = ".json" if format_adi == "JSON" else ".txt"
+        
+        # Tüm dosyaları tara ve sil
+        for dosya_adi in os.listdir("reports"):
+            if dosya_adi.endswith(dosya_uzantisi):
+                dosya_yolu = os.path.join("reports", dosya_adi)
                 
-                report_date = QDateTime.fromString(report_data["datetime"], Qt.ISODate).toString("dd.MM.yyyy HH:mm")
-                
-                if report_date == date_item and report_data["location"] == location_item:
-                    # Onay mesajı
-                    reply = QMessageBox.question(
-                        self, "Onay", f"{filename} dosyasını silmek istediğinizden emin misiniz?",
-                        QMessageBox.Yes | QMessageBox.No
-                    )
+                # Dosyayı oku ve kontrol et
+                try:
+                    with open(dosya_yolu, 'r', encoding='utf-8') as f:
+                        rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
                     
-                    if reply == QMessageBox.Yes:
-                        try:
-                            os.remove(file_path)
-                            QMessageBox.information(self, "Başarılı", "Rapor başarıyla silindi.")
-                            self.load_reports()  # Tabloyu güncelle
-                        except Exception as e:
-                            QMessageBox.critical(self, "Hata", f"Rapor silinirken hata oluştu: {str(e)}")
-                    return
+                    # Tarih ve bölge kontrolü
+                    if (QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate).toString("dd.MM.yyyy HH:mm") == tarih and 
+                        rapor_verileri["bolge"] == bolge):
+                        
+                        # Silme onayı
+                        onay = QMessageBox.question(
+                            self, "Onay", f"{dosya_adi} dosyasını silmek istediğinizden emin misiniz?",
+                            QMessageBox.Yes | QMessageBox.No
+                        )
+                        
+                        if onay == QMessageBox.Yes:
+                            os.remove(dosya_yolu)
+                            QMessageBox.information(self, "Başarılı", "Rapor silindi.")
+                            self.load_reports()
+                        return
+                
+                except Exception as e:
+                    QMessageBox.critical(self, "Hata", f"Rapor silinemedi: {str(e)}")
+
+
+    def open_report_file(self, item):
+        """Seçilen raporu açar"""
+        row = item.row()
         
-        QMessageBox.warning(self, "Uyarı", "Seçilen rapor bulunamadı veya silinemedi.")
-
-
+        # Dosya formatını ve adını al
+        format_item = self.reports_table.item(row, 4)
+        tarih_item = self.reports_table.item(row, 0)
+        bolge_item = self.reports_table.item(row, 1)
+        
+        if not (format_item and tarih_item and bolge_item):
+            return
+        
+        # Dosya adını bul
+        format_adi = format_item.text()
+        dosya_uzantisi = ".json" if format_adi == "JSON" else ".txt"
+        
+        for dosya_adi in os.listdir("reports"):
+            if dosya_adi.endswith(dosya_uzantisi):
+                try:
+                    with open(os.path.join("reports", dosya_adi), 'r', encoding='utf-8') as f:
+                        rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
+                    
+                    # Tarih ve bölge kontrolü
+                    if (QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate).toString("dd.MM.yyyy HH:mm") == tarih_item.text() and 
+                        rapor_verileri["bolge"] == bolge_item.text()):
+                        
+                        # Dosyayı sistem varsayılan uygulamasıyla aç
+                        dosya_yolu = os.path.join("reports", dosya_adi)
+                        if os.name == 'nt':  # Windows
+                            os.startfile(dosya_yolu)
+                        elif os.name == 'posix':  # macOS ve Linux
+                            subprocess.run(['xdg-open' if os.uname().sysname == 'Linux' else 'open', dosya_yolu])
+                        
+                        return
+                
+                except Exception as e:
+                    QMessageBox.critical(self, "Hata", f"Dosya açılamadı: {str(e)}")
