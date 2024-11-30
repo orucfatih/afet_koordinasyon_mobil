@@ -3,7 +3,8 @@ from geopy.geocoders import Nominatim
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
 from PyQt5.QtGui import QIcon
-from styles import MAP_STYLE, REFRESH_BUTTON_STYLE
+from styles_dark import MAP_STYLE, REFRESH_BUTTON_STYLE
+from styles_light import *
 
 
 class MapWidget(QWidget):

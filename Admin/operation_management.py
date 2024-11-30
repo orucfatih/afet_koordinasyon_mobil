@@ -5,7 +5,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
 from harita import HaritaYonetimi
 from dialogs import NotificationDetailDialog  
-from styles import *
+from styles_dark import *
+from styles_light import *
+
 from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
 from harita import MapWidget
 

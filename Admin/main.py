@@ -3,6 +3,7 @@ from ui import AfetYonetimAdmin
 from PyQt5.QtWidgets import QApplication
 import os
 import platform
+from login import LoginPage
 
 # İşletim sistemine göre QT_QPA_PLATFORM ayarı
 if platform.system() == "Linux":
@@ -12,6 +13,6 @@ elif platform.system() == "Windows":
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = AfetYonetimAdmin()
-    window.show()
+    login_window = LoginPage()
+    login_window.show()
     sys.exit(app.exec_())

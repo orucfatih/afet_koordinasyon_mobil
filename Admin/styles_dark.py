@@ -1,6 +1,49 @@
 # Qt bileşenleri için stil tanımlamaları
 
 
+
+
+# Dark tema renkleri ve stil tanımları
+DARK_BACKGROUND = "#2c3e50"
+DARK_TEXT_COLOR = "#ffffff"
+DARK_INPUT_BG = "rgba(255, 255, 255, 0.1)"
+DARK_INPUT_FOCUS_BG = "rgba(255, 255, 255, 0.2)"
+DARK_BUTTON_BG = "#3498db"
+DARK_BUTTON_HOVER_BG = "#2980b9"
+
+# Login page stil tanımları
+LOGIN_DARK_STYLES = f"""
+    QWidget {{
+        background-color: {DARK_BACKGROUND};
+        color: {DARK_TEXT_COLOR};
+        font-family: Arial, sans-serif;
+    }}
+    QLineEdit {{
+        background-color: {DARK_INPUT_BG};
+        border: none;
+        color: {DARK_TEXT_COLOR};
+        padding: 10px;
+        border-radius: 5px;
+    }}
+    QLineEdit:focus {{
+        background-color: {DARK_INPUT_FOCUS_BG};
+    }}
+    QPushButton {{
+        background-color: {DARK_BUTTON_BG};
+        color: {DARK_TEXT_COLOR};
+        border: none;
+        padding: 12px;
+        border-radius: 5px;
+        font-weight: bold;
+    }}
+    QPushButton:hover {{
+        background-color: {DARK_BUTTON_HOVER_BG};
+    }}
+"""
+
+
+
+
 DARK_THEME_STYLE = """
     /* Genel arka plan */
     QWidget {
@@ -8,6 +51,9 @@ DARK_THEME_STYLE = """
         color: white; /* Yazı rengi */
     }
     """
+
+
+
 # Buton stilleri (Daha açık siyah ton)
 BUTTON_STYLE = """
     QPushButton {

@@ -7,7 +7,9 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon, QColor
 from sample_data import AFAD_TEAMS
-from styles import *
+from styles_dark import *
+from styles_light import *
+
 
 class PersonelDetayDialog(QDialog):
     """Personel detaylarını gösteren dialog"""

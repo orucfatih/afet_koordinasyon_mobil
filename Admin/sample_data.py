@@ -1,5 +1,3 @@
-# sample_data.py
-
 TEAM_DATA = [
     ("T001", "Ahmet Yılmaz", "AFAD", "Müsait", "0555-111-2233"),
     ("T002", "Mehmet Demir", "STK-A", "Görevde", "0555-222-3344"),

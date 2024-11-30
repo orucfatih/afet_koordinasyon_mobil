@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget, QTableWidgetItem, 
                            QMessageBox, )
-from styles import *
+from styles_dark import *
+from styles_light import *
 from PyQt5.QtGui import QIcon, QColor
 
 

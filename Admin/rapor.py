@@ -7,7 +7,8 @@ from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon
 import json
 import os
-from styles import *
+from styles_dark import *
+from styles_light import *
 from datetime import datetime   
 import subprocess
 
