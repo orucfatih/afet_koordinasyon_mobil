@@ -1,0 +1,137 @@
+{
+  "emergencies": {
+    "Durum 1": {
+      "Boylam": "-74.0060",
+      "Durum_ID": 1,
+      "Enlem": "40.7128",
+      "photo": "image"
+    },
+    "Durum 2": {
+      "Boylam": "28.9784",
+      "Durum_ID": 2,
+      "Enlem": "41.0082",
+      "photo": "image2"
+    }
+  },
+  "teams": {
+    "Ekip 1": {
+      "Ekip_ID": 1,
+      "location": "Ankara, Çankaya",
+      "members": [
+        {
+          "Members_ID": 1,
+          "TC": 11111111111,
+          "adSoyad": "Ahmet Yılmaz",
+          "adres": "Ankara, Çankaya",
+          "ePosta": "ahmet@example.com",
+          "evTelefonu": "312-0001",
+          "sonGuncelleme": "10 dk önce",
+          "tecrube": "4.Yıl",
+          "telefon": "555-0001",
+          "unvan": "Ekip Lideri",
+          "uzmanlik": "Arama Kurtarma"
+        },
+        {
+          "Members_ID": 2,
+          "TC": 22222222222,
+          "adSoyad": "Zeynep Kılıç",
+          "adres": "İstanbul, Beşiktaş",
+          "ePosta": "zeynep@example.com",
+          "evTelefonu": "312-0003",
+          "sonGuncelleme": "5 dk önce",
+          "tecrube": "2.Yıl",
+          "telefon": "555-0003",
+          "unvan": "Sağlık Personeli",
+          "uzmanlik": "İlk Yardım"
+        }
+      ],
+      "name": "Ekip 1",
+      "status": "AFAD",
+      "type": "Arama Kurtarma Ekibi"
+    },
+    "Ekip 2": {
+      "Ekip_ID": 2,
+      "location": "Ankara, Keçiören",
+      "members": [
+        {
+          "Members_ID": 1,
+          "TC": 33333333333,
+          "adSoyad": "Mehmet Özdemir",
+          "adres": "Ankara, Keçiören",
+          "ePosta": "mehmet@example.com",
+          "evTelefonu": "312-0011",
+          "sonGuncelleme": "15 dk önce",
+          "tecrube": "3.Yıl",
+          "telefon": "555-0011",
+          "unvan": "Lojistik Koordinatörü",
+          "uzmanlik": "Depolama ve Dağıtım"
+        },
+        {
+          "Members_ID": 2,
+          "TC": 44444444444,
+          "adSoyad": "Fatma Aksoy",
+          "adres": "Bursa, Nilüfer",
+          "ePosta": "fatma@example.com",
+          "evTelefonu": "224-0002",
+          "sonGuncelleme": "12 dk önce",
+          "tecrube": "1.Yıl",
+          "telefon": "555-0002",
+          "unvan": "Taşıma Personeli",
+          "uzmanlik": "Nakliye"
+        },
+        {
+          "Members_ID": 3,
+          "TC": "88888888888",
+          "adSoyad": "deneme8",
+          "adres": "deneme8",
+          "ePosta": "deneme8@example.com",
+          "evTelefonu": "232-8888",
+          "sonGuncelleme": "01.12.2024 21:34",
+          "tecrube": "8.Yıl",
+          "telefon": "555-8888",
+          "unvan": "deneme8",
+          "uzmanlik": "deneme8"
+        }
+      ],
+      "name": "Ekip 2",
+      "status": "STK",
+      "type": "Lojistik Ekibi"
+    },
+    "Ekip 3": {
+      "Ekip_ID": 3,
+      "location": "İstanbul, Kadıköy",
+      "members": [
+        {
+          "Members_ID": 1,
+          "TC": "55555555555",
+          "adSoyad": "deneme5",
+          "adres": "deneme5",
+          "ePosta": "deneme5@example.com",
+          "evTelefonu": "232-456-1222",
+          "sonGuncelleme": "06.12.2024 15:06",
+          "tecrube": "5.Yıl",
+          "telefon": "555-230-2122",
+          "unvan": "deneme6",
+          "uzmanlik": "deneme6"
+        }
+      ],
+      "name": "Ekip 3",
+      "status": "AFAD",
+      "type": "Lojistik Ekibi"
+    },
+    "Ekip 5": {
+      "Ekip_ID": 5,
+      "location": "İstanbul, Kadıköy",
+      "name": "Ekip 5",
+      "status": "AFAD",
+      "type": "Lojistik Ekibi"
+    },
+    "Ekip 6": {
+      "Ekip_ID": 6,
+      "location": "İstanbul, Kadıköy",
+      "name": "Ekip 6",
+      "status": "AFAD",
+      "type": "Arama Kurtarma Ekibi"
+    }
+  }
+}
