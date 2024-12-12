@@ -11,9 +11,9 @@ const UserStack = () => {
         initialRouteName='TemporaryHome'
         screenOptions={{headerShown:false}}>
 
-        <Stack.Screen name='Home' component={HomePage}/>
+        <Stack.Screen name='HomePage' component={HomePage}/>
         
-        <Stack.Screen name='Profile' component={ProfilePage}/>
+        <Stack.Screen name='ProfilePage' component={ProfilePage}/>
 
         <Stack.Screen name='TemporaryHome' component={TemporaryHome}/>
 

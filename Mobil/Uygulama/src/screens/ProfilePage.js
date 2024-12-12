@@ -38,7 +38,7 @@ const HomePage = () => {
     try {
       const querySnapshot = await getDocs(collection(db, "lessons"));
     querySnapshot.forEach((doc) => {
-    allData.push(doc.data())})
+    allData.push({...doc.data(), id: doc.id})})
     setData(allData);
     } 
     catch (error) {
@@ -47,25 +47,29 @@ const HomePage = () => {
 
   }
 
-  // Delete data
-  // const deleteData = async() => {
-  //  await deleteDoc(doc(db, "lessons", "id eklenecek"))
-  // }
+  //Delete data
+  const deleteData = async(id) => {
+    try {
+      await deleteDoc(doc(db, "lessons", id))
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
-  // Update Data
-  // const updateData = async() => {
-  //  try{
-  //  const lessonData = doc(db, "lessons", "id eklenecek");
+  //Update Data
+  const updateData = async(id) => {
+    try{
+      const lessonData = doc(db, "lessons", id);
+      
+      await updateDoc(lessonData, {
+      lesson: 145}
+      
+      );}
+    catch(error){
+      console.log(error)
+    }
   
-  //  await updateDoc(lessonData, {
-  //  lesson: 145}
-  
-  //  );}
-  //  catch(error){
-  //    console.log(error)
-  //  }
-  
-  // }
+  }
 
   return (
     <View style={styles.container}>

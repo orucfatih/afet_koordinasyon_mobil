@@ -10,7 +10,7 @@ const SignUpPage = ({navigation}) => {
     return (
     <SafeAreaView style={styles.container}>
         <View style={styles.signUp}>
-          <Text style={{fontSize:30,fontWeight:"bold"}}>Sign Up</Text>
+          <Text style={{fontSize:30,fontWeight:"bold"}}>Kaydol</Text>
 
           <Image
               style={[styles.image,
@@ -20,10 +20,10 @@ const SignUpPage = ({navigation}) => {
 
         <View style={styles.textInput}>
 
-            <Text>Name</Text>
+            <Text>İsim</Text>
             <CustomTextInput
                 secureTextEntry={false}
-                placeholder='Enter Your Name'
+                placeholder='İsminizi Girin'
                 onChangeText={setName}
                 value={name}
             />
@@ -31,15 +31,15 @@ const SignUpPage = ({navigation}) => {
             <Text>Email</Text>
             <CustomTextInput
                 secureTextEntry={false}
-                placeholder='Enter Your Email'
+                placeholder='Email Adresinizi Girin'
                 onChangeText={setEmail}
                 value={email}
             />
 
-            <Text>Password</Text>
+            <Text>Şifre</Text>
             <CustomTextInput
                 secureTextEntry={true}
-                placeholder='Create Password'
+                placeholder='Bir Şifre Oluşturun'
                 onChangeText={setPassword}
                 value={password}
             />
@@ -48,13 +48,13 @@ const SignUpPage = ({navigation}) => {
         <View style={styles.buttons}>
             <CustomButton
                 onPress={()=> console.log(name+" "+email+" "+password)}
-                title="Sign Up"/>
+                title="Kaydol"/>
 
             <View style={styles.bottomText}>
-                <Text style={{textAlign:"center"}}>Already have an account? </Text>
+                <Text style={{textAlign:"center"}}>Zaten bir hesabınız varmı? </Text>
 
-                <Pressable onPress={()=> navigation.navigate("Login")}>
-                    <Text style={{fontWeight:"bold"}}>Login</Text>
+                <Pressable onPress={()=> navigation.navigate("LoginPage")}>
+                    <Text style={{fontWeight:"bold"}}>Giriş yapmak için tıklayın.</Text>
                 </Pressable>
             </View>
 

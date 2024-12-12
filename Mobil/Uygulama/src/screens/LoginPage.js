@@ -26,7 +26,7 @@ const LoginPage = ({navigation}) => {
     return (
       <View style={styles.container}>
       
-      <Text style={{fontSize:30,fontWeight:"bold"}}>Welcome</Text>
+      <Text style={{fontSize:30,fontWeight:"bold"}}>Hoşgeldiniz</Text>
 
       <Image
       style={[styles.image,
@@ -40,16 +40,16 @@ const LoginPage = ({navigation}) => {
 
         <CustomTextInput
           secureTextEntry={false}
-          placeholder='Enter Your Email'
+          placeholder='Email Adresinizi Girin'
           onChangeText={(email) => setEmail(email)}
           value={email}
         />
 
-        <Text>Password</Text>
+        <Text>Şifre</Text>
 
         <CustomTextInput
           secureTextEntry={true}
-          placeholder='Enter Your Password'
+          placeholder='Şifre Girin'
           onChangeText={(password)=> setPassword(password)}
           value={password}
         />
@@ -58,11 +58,11 @@ const LoginPage = ({navigation}) => {
 
           <CustomButton
             onPress={()=> dispatch(login({email, password}))}
-            title="Login"/>
+            title="Giriş Yap"/>
 
           <CustomButton
-            onPress={()=> navigation.navigate("SignUp")}
-            title="Sign Up"/>
+            onPress={()=> navigation.navigate("SignUpPage")}
+            title="Kaydol"/>
 
           {isLoading ? <Loading changeIsLoading={()=> dispatch(setIsLoading(false))}/> : null}
   

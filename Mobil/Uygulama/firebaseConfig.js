@@ -5,6 +5,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 //authentication çalışıyor ama firestore database çalışmıyor.
+//firestore database kuralları değişmeli.
 
 const firebaseConfig = {
   apiKey: "AIzaSyD9ogbozKtQyppbbJG6U8WA9D8MVfs4ZE0",

@@ -7,10 +7,10 @@ const TemporaryHome = ({navigation}) => {
     <View style={styles.container}>
       <CustomButton
         title={"Go to Profile Page"}
-        onPress={()=> navigation.navigate("Profile")}/>
+        onPress={()=> navigation.navigate("ProfilePage")}/>
         <CustomButton
         title={"Go to Home Page"}
-        onPress={()=> navigation.navigate("Home")}/>
+        onPress={()=> navigation.navigate("HomePage")}/>
     </View>
   )
 }
