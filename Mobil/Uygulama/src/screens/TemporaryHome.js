@@ -1,8 +1,24 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import CustomButton from '../components/CustomButton'
+import {CustomButton, Loading} from '../components/index.js'
+import { useDispatch, useSelector } from 'react-redux'
+import { logout } from '../redux/userSlice'
 
 const TemporaryHome = ({navigation}) => {
+
+  const dispatch = useDispatch()
+
+  const {isLoading} = useSelector(state=>state.user)
+
+   //LOGOUT
+   const handleLogout = () => {
+    dispatch(logout())
+  }
+
+  if(isLoading){
+    return <Loading/>
+  }
+
   return (
     <View style={styles.container}>
       <CustomButton
@@ -11,6 +27,7 @@ const TemporaryHome = ({navigation}) => {
         <CustomButton
         title={"Go to Home Page"}
         onPress={()=> navigation.navigate("HomePage")}/>
+        <CustomButton title={"Logout"} onPress={handleLogout}/>
     </View>
   )
 }

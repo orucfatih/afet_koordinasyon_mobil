@@ -1,14 +1,29 @@
-import { StyleSheet, Text, View, SafeAreaView, Image, Pressable,} from 'react-native'
+import { StyleSheet, Text, View,Image, Pressable,} from 'react-native'
 import React, {useState} from 'react'
-import { CustomButton, CustomTextInput } from '../components'
+import { CustomButton, CustomTextInput, Loading } from '../components'
+import { useDispatch, useSelector } from 'react-redux'
+import { register } from '../redux/userSlice'
 
 const SignUpPage = ({navigation}) => {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
+    const dispatch= useDispatch()
+
+    const {isLoading} = useSelector(state=>state.user)
+
+    const signUp = () => {
+      dispatch(register({email,password}))
+    }
+
+    if(isLoading){
+      return <Loading/>
+    }
+
     return (
-    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+
         <View style={styles.signUp}>
           <Text style={{fontSize:30,fontWeight:"bold"}}>Kaydol</Text>
 
@@ -41,13 +56,13 @@ const SignUpPage = ({navigation}) => {
                 secureTextEntry={true}
                 placeholder='Bir Şifre Oluşturun'
                 onChangeText={setPassword}
-                value={password}
-            />
+                value={password}/>
+
         </View>
 
         <View style={styles.buttons}>
             <CustomButton
-                onPress={()=> console.log(name+" "+email+" "+password)}
+                onPress={signUp}
                 title="Kaydol"/>
 
             <View style={styles.bottomText}>
@@ -60,7 +75,7 @@ const SignUpPage = ({navigation}) => {
 
         </View>
 
-    </SafeAreaView> 
+    </View>
     )
 }
 
@@ -71,7 +86,6 @@ const styles = StyleSheet.create({
     flex:1,
     alignItems:"center",
     justifyContent:"center",
-    width:"100%",
   },
   signUp:{
     flex:2,
@@ -93,13 +107,6 @@ const styles = StyleSheet.create({
   image: {
     width:"100",
     height:"100"
-  },
-  textInputStyle: {
-    borderBottomWidth:1,
-    width:"100%",
-    height:"40",
-    textAlign:"center",
-    color:"black",
   },
   bottomText:{
     marginBottom:20,

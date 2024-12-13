@@ -5,6 +5,11 @@ import { db } from '../../firebaseConfig'
 import CustomButton from '../components/CustomButton'
 import { isAsyncThunkAction } from '@reduxjs/toolkit'
 
+
+
+//BURADAKİ FONKSİYONLAR İLERİDE GEREKTİĞİ YERLERDE KULLANILABİLMESİ İÇİN YAZILDI
+
+
 const HomePage = () => {
 
   //yerel hafıza
@@ -13,11 +18,12 @@ const HomePage = () => {
 
   console.log("data: ", data)
 
-  useEffect(() => {
-      getData()
-    }, [isSaved])
-  
+  //Her sayfaya girildiğinde çalışması sağlanıyor
+  // useEffect(() => {
+  //     getData()
+  //   }, [isSaved])
 
+  
   //Send data to firebase
   const sendData = async() => {
     try {

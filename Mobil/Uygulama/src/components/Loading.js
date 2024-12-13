@@ -12,7 +12,7 @@ const Loading = (props) => {
         <ActivityIndicator
         size={"large"}
         />
-        <Text style={styles.loadingTextStyle}>Loading...</Text>
+        <Text style={styles.loadingTextStyle}>Yükleniyor</Text>
     </View>
   )
 }
