@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList,} from 'react-native';
+import {ProfileScreen, SettingsScreen, ChatScreen} from "../components/index"
 import Icon from 'react-native-vector-icons/MaterialIcons'; // İkon setini seçebilirsiniz
 
 
@@ -83,25 +84,6 @@ const EarthquakeScreen = () => {
   );
 };
 
-const ProfileScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="person" size={100} color="white" />
-    <Text style={styles.screenText}>Profil Sayfası</Text>
-  </View>
-);
-
-const SettingsScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="settings" size={100} color="white" />
-    <Text style={styles.screenText}>Ayarlar Sayfası</Text>
-  </View>
-);
-const ChatScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="chat" size={100} color="white" />
-    <Text style={styles.screenText}>Chat Sayfası</Text>
-  </View>
-);
 // Ana Bileşen
 const HomePage = () => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
@@ -157,7 +139,7 @@ const HomePage = () => {
 export default HomePage;
 
 // Stiller
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
