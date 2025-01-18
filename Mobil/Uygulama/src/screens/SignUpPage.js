@@ -14,7 +14,7 @@ const SignUpPage = ({navigation}) => {
     const {isLoading} = useSelector(state=>state.user)
 
     const signUp = () => {
-      dispatch(register({email,password}))
+      dispatch(register({email,password,name}))
     }
 
     if(isLoading){

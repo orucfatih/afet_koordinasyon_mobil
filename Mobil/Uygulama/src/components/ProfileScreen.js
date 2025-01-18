@@ -1,12 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity,} from 'react-native';
-import { useDispatch, useSelector} from 'react-redux';
-import {logout} from '../redux/userSlice';
-import {Loading, CustomButton} from './index.js';
+import { useDispatch, useSelector,} from 'react-redux';
+import { useState, useEffect } from 'react';
+import {getUser, logout} from '../redux/userSlice';
+import {Loading, CustomButton, UpdatePassword} from './index.js';
 
 const ProfileScreen = () => {
 
   const dispatch = useDispatch()
+  
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+
+  useEffect(() => {
+    const user = getUser();
+
+    if (user) {
+      setName(user.displayName || ""); // Kullanıcının adı yoksa boş string
+      setEmail(user.email || "");     // Kullanıcının e-posta adresi
+    }
+  }, []); // Sadece bileşen ilk kez yüklendiğinde çalışır
+
+  //Şifre değiştirme
+  const [updatingScreen, setUpdatingScreen] = useState(false)
 
   const {isLoading} = useSelector(state=>state.user)
 
@@ -19,9 +35,9 @@ const ProfileScreen = () => {
     return <Loading/>
   }
 
-  const handleEditProfile = () => {
-    alert('Profili düzenle seçeneği');
-  };
+  if(updatingScreen){
+    return <UpdatePassword setUpdatingScreen={setUpdatingScreen}/>
+  }
 
   return (
     <View style={styles.container}>
@@ -32,12 +48,12 @@ const ProfileScreen = () => {
       />
 
       {/* Kullanıcı Bilgileri */}
-      <Text style={styles.userName}>Ahmet Yılmaz</Text>
-      <Text style={styles.userEmail}>test@test.com</Text>
+      <Text style={styles.userName}>{name}</Text>
+      <Text style={styles.userEmail}>{email}</Text>
 
-      {/* Düzenle Butonu */}
-      <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-        <Text style={styles.editButtonText}>Profili Düzenle</Text>
+      {/* şifre Yenileme */}
+      <TouchableOpacity style={styles.editButton} onPress={() => setUpdatingScreen(true)}>
+        <Text style={styles.editButtonText}>Şifre Yenile</Text>
       </TouchableOpacity>
 
       {/* Çıkış Yap Butonu */}

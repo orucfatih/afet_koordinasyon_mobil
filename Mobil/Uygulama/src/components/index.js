@@ -4,6 +4,7 @@ import CustomButton from "./CustomButton";
 import ProfileScreen from "./ProfileScreen";
 import SettingsScreen from "./SettingsScreen";
 import ChatScreen from "./ChatScreen";
+import UpdatePassword from "./UpdatePassword";
 
 export{
     Loading,
@@ -12,4 +13,5 @@ export{
     ProfileScreen,
     SettingsScreen,
     ChatScreen,
+    UpdatePassword,
 }

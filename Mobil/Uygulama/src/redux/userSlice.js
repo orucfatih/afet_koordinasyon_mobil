@@ -1,5 +1,8 @@
 import { createSlice,createAsyncThunk } from "@reduxjs/toolkit";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification} from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, 
+    updatePassword ,updateProfile, 
+    EmailAuthProvider, reauthenticateWithCredential, 
+    signInWithEmailAndPassword, signOut, sendEmailVerification} from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
@@ -25,6 +28,47 @@ export const login = createAsyncThunk('user/login', async({email,password})=> {
         throw error
     }
 })
+
+//Şifre Değiştirme
+export const updateCipher = createAsyncThunk(
+    'user/updatePassword',
+    async ({ oldPassword, newPassword, confirmPassword }, { rejectWithValue }) => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+  
+      if (!user) {
+        return rejectWithValue('Kullanıcı oturumu açık değil.');
+      }
+  
+      if (newPassword !== confirmPassword) {
+        return rejectWithValue('Yeni şifreler birbiriyle eşleşmiyor.');
+      }
+  
+      try {
+        // Eski şifre ile kullanıcıyı yeniden doğrula
+        const credential = EmailAuthProvider.credential(user.email, oldPassword);
+        await reauthenticateWithCredential(user, credential);
+  
+        // Şifreyi güncelle
+        await updatePassword(user, newPassword);
+        return 'Şifreniz başarıyla güncellendi!';
+      } catch (error) {
+        if (error.code === 'auth/wrong-password') {
+          return rejectWithValue('Eski şifreniz hatalı.');
+        } else if (error.code === 'auth/weak-password') {
+          return rejectWithValue('Yeni şifreniz yeterince güçlü değil.');
+        }
+        return rejectWithValue('Şifre güncellenirken bir hata oluştu.');
+      }
+    }
+  );
+
+//Kullanıcı bilgilerini alma
+export const getUser = () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    return user;
+}
 
 //Otomatik giriş
 
@@ -58,13 +102,15 @@ export const logout = createAsyncThunk('user/logout', async () => {
 })
 
 //Kaydol
-export const register = createAsyncThunk('user/register', async ({email, password}) => {
+export const register = createAsyncThunk('user/register', async ({email, password, name}) => {
     try {
         const auth = getAuth()
         const userCredantial = await createUserWithEmailAndPassword(auth, email, password)
 
         const user = userCredantial.user
         const token = user.stsTokenManager.accessToken
+
+        await updateProfile(user, {displayName:name,});
 
         await sendEmailVerification(user)
 
@@ -163,6 +209,17 @@ export const userSlice = createSlice({
                 state.isLoading= false
                 state.isAuth= false
                 state.error= "Geçersiz email veya şifre."
+            })
+
+            .addCase(updateCipher.pending, (state)=> {
+                state.isLoading= true
+            })
+            .addCase(updateCipher.fulfilled, (state)=> {
+                state.isLoading= false
+            })
+            .addCase(updateCipher.rejected, (state)=> {
+                state.isLoading= false
+                state.error= "Geçersiz şifre."
             })
     }
 })
