@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import {ProfileScreen, SettingsScreen, ChatScreen} from "../components/index"
 import axios from 'axios';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // İkon setini seçebilirsiniz
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get('window'); // Ekran genişliği
 
+// Ekran Bileşenleri
 const EarthquakeScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [earthquakeData, setEarthquakeData] = useState([]);
@@ -31,11 +33,12 @@ const EarthquakeScreen = () => {
     };
 
     fetchEarthquakeData();
-  }, []); // Bu efekt sadece bileşen ilk render edildiğinde çalışacak
+  }, []);
 
   const handleScroll = (event) => {
     const scrollX = event.nativeEvent.contentOffset.x;
-    setCurrentIndex(Math.round(scrollX / width));
+    const activeIndex = Math.round(scrollX / width);
+    setCurrentIndex(activeIndex);
   };
 
   const renderEarthquakeCard = ({ item }) => (
@@ -53,6 +56,7 @@ const EarthquakeScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Üst Bar */}
       <View style={styles.topBar}>
         <Image source={require('../../assets/images/afad-logo2.png')} style={styles.logoImage} />
         <TouchableOpacity>
@@ -60,6 +64,7 @@ const EarthquakeScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Son Depremler Başlık */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Son Depremler</Text>
         <TouchableOpacity>
@@ -67,6 +72,7 @@ const EarthquakeScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Deprem Kartları */}
       <FlatList
         data={earthquakeData}
         renderItem={renderEarthquakeCard}
@@ -78,6 +84,7 @@ const EarthquakeScreen = () => {
         style={styles.slider}
       />
 
+      {/* Sayfa Göstergesi */}
       <View style={styles.pagination}>
         {earthquakeData.map((_, index) => (
           <View
@@ -87,6 +94,7 @@ const EarthquakeScreen = () => {
         ))}
       </View>
 
+      {/* Enkaz Altındayım Butonu */}
       <TouchableOpacity style={styles.bigButton}>
         <Text style={styles.bigButtonText}>ENKAZ ALTINDAYIM</Text>
       </TouchableOpacity>
@@ -110,32 +118,11 @@ const EarthquakeScreen = () => {
           />
         ))}
       </MapView>
-
     </ScrollView>
   );
 };
 
-const ProfileScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="person" size={100} color="white" />
-    <Text style={styles.screenText}>Profil Sayfası</Text>
-  </View>
-);
-
-const SettingsScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="settings" size={100} color="white" />
-    <Text style={styles.screenText}>Ayarlar Sayfası</Text>
-  </View>
-);
-
-const ChatScreen = () => (
-  <View style={styles.screen}>
-    <Icon name="chat" size={100} color="white" />
-    <Text style={styles.screenText}>Chat Sayfası</Text>
-  </View>
-);
-
+// Ana Bileşen
 const HomePage = () => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
 
@@ -145,10 +132,10 @@ const HomePage = () => {
         return <EarthquakeScreen />;
       case 'Profile':
         return <ProfileScreen />;
-      case 'Settings':
+      case 'Settings':  
         return <SettingsScreen />;
       case 'Chat':
-        return <ChatScreen />;
+        return <ChatScreen />  
       default:
         return <EarthquakeScreen />;
     }
@@ -162,25 +149,25 @@ const HomePage = () => {
           onPress={() => setCurrentTab('Earthquake')}
           style={[styles.tab, currentTab === 'Earthquake' && styles.activeTab]}
         >
-          <Icon name="home" size={30} color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} />
+          <Icon name="home" size={currentTab === 'Earthquake' ? 30 : 24} color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Profile')}
           style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}
         >
-          <Icon name="person" size={30} color={currentTab === 'Profile' ? '#fff' : '#ccc'} />
+          <Icon name="person" size={currentTab === 'Profile' ? 30 : 24} color={currentTab === 'Profile' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Settings')}
           style={[styles.tab, currentTab === 'Settings' && styles.activeTab]}
         >
-          <Icon name="settings" size={30} color={currentTab === 'Settings' ? '#fff' : '#ccc'} />
+          <Icon name="settings" size={currentTab === 'Settings' ? 30 : 24} color={currentTab === 'Settings' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Chat')}
           style={[styles.tab, currentTab === 'Chat' && styles.activeTab]}
         >
-          <Icon name="chat" size={30} color={currentTab === 'Chat' ? '#fff' : '#ccc'} />
+          <Icon name="chat" size={currentTab === 'Chat' ? 30 : 24} color={currentTab === 'Chat' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
       </View>
     </View>
@@ -189,10 +176,8 @@ const HomePage = () => {
 
 export default HomePage;
 
-
-
 // Stiller
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -243,6 +228,9 @@ const styles = StyleSheet.create({
   pagination: { flexDirection: 'row', justifyContent: 'center', marginTop: 10 },
   dot: { height: 10, width: 10, borderRadius: 5, backgroundColor: '#CCC', marginHorizontal: 5 },
   activeDot: { backgroundColor: '#007AFF' },
+  slider: {
+    marginTop: 10,
+  },
   slider: {
     marginTop: 10,
   },
