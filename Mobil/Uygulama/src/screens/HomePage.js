@@ -1,26 +1,41 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList,} from 'react-native';
-import {ProfileScreen, SettingsScreen, ChatScreen} from "../components/index"
-import Icon from 'react-native-vector-icons/MaterialIcons'; // İkon setini seçebilirsiniz
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import axios from 'axios';
 
+const { width } = Dimensions.get('window');
 
-const { width } = Dimensions.get('window'); // Ekran genişliği
-
-// Ekran Bileşenleri
 const EarthquakeScreen = () => {
-  const [currentIndex, setCurrentIndex] = useState(0); // Sayfa göstergesi için state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [earthquakeData, setEarthquakeData] = useState([]);
 
-  const earthquakeData = [
-    { id: '1', magnitude: '3.6', location: 'OLUCAK - NURDAĞI (GAZİANTEP)', time: '14:35', date: '09.12.2024' },
-    { id: '2', magnitude: '4.2', location: 'İSTANBUL (SARIYER)', time: '12:45', date: '09.12.2024' },
-    { id: '3', magnitude: '2.8', location: 'ANKARA (ÇANKAYA)', time: '11:15', date: '09.12.2024' },
-    // Daha fazla deprem verisi buraya eklenebilir
-  ];
+  useEffect(() => {
+    // Kandilli Rasathanesi API URL'si
+    const fetchEarthquakeData = async () => {
+      try {
+        const response = await axios.get('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
+        const data = response.data.features.map(item => ({
+          id: item.id,
+          magnitude: item.properties.mag,
+          location: item.properties.place,
+          time: new Date(item.properties.time).toLocaleTimeString(),
+          date: new Date(item.properties.time).toLocaleDateString(),
+          lat: item.geometry.coordinates[1],
+          lon: item.geometry.coordinates[0],
+        }));
+        setEarthquakeData(data); // Veriyi state'e kaydediyoruz
+      } catch (error) {
+        console.error('Error fetching earthquake data', error);
+      }
+    };
+
+    fetchEarthquakeData();
+  }, []); // Bu efekt sadece bileşen ilk render edildiğinde çalışacak
 
   const handleScroll = (event) => {
     const scrollX = event.nativeEvent.contentOffset.x;
-    const activeIndex = Math.round(scrollX / width);
-    setCurrentIndex(activeIndex);
+    setCurrentIndex(Math.round(scrollX / width));
   };
 
   const renderEarthquakeCard = ({ item }) => (
@@ -38,7 +53,6 @@ const EarthquakeScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Üst Bar */}
       <View style={styles.topBar}>
         <Image source={require('../../assets/images/afad-logo2.png')} style={styles.logoImage} />
         <TouchableOpacity>
@@ -46,7 +60,6 @@ const EarthquakeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Son Depremler Başlık */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Son Depremler</Text>
         <TouchableOpacity>
@@ -54,7 +67,6 @@ const EarthquakeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Deprem Kartları */}
       <FlatList
         data={earthquakeData}
         renderItem={renderEarthquakeCard}
@@ -66,7 +78,6 @@ const EarthquakeScreen = () => {
         style={styles.slider}
       />
 
-      {/* Sayfa Göstergesi */}
       <View style={styles.pagination}>
         {earthquakeData.map((_, index) => (
           <View
@@ -76,15 +87,55 @@ const EarthquakeScreen = () => {
         ))}
       </View>
 
-      {/* Enkaz Altındayım Butonu */}
       <TouchableOpacity style={styles.bigButton}>
         <Text style={styles.bigButtonText}>ENKAZ ALTINDAYIM</Text>
       </TouchableOpacity>
+
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: 38.9637, // Türkiye'nin ortalama koordinatları
+          longitude: 35.2433,
+          latitudeDelta: 5,
+          longitudeDelta: 5,
+        }}
+      >
+        {earthquakeData.map((item) => (
+          <Marker
+            key={item.id}
+            coordinate={{ latitude: item.lat, longitude: item.lon }}
+            title={item.location}
+            description={`Şiddet: ${item.magnitude}`}
+            pinColor="red"
+          />
+        ))}
+      </MapView>
+
     </ScrollView>
   );
 };
 
-// Ana Bileşen
+const ProfileScreen = () => (
+  <View style={styles.screen}>
+    <Icon name="person" size={100} color="white" />
+    <Text style={styles.screenText}>Profil Sayfası</Text>
+  </View>
+);
+
+const SettingsScreen = () => (
+  <View style={styles.screen}>
+    <Icon name="settings" size={100} color="white" />
+    <Text style={styles.screenText}>Ayarlar Sayfası</Text>
+  </View>
+);
+
+const ChatScreen = () => (
+  <View style={styles.screen}>
+    <Icon name="chat" size={100} color="white" />
+    <Text style={styles.screenText}>Chat Sayfası</Text>
+  </View>
+);
+
 const HomePage = () => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
 
@@ -94,10 +145,10 @@ const HomePage = () => {
         return <EarthquakeScreen />;
       case 'Profile':
         return <ProfileScreen />;
-      case 'Settings':  
+      case 'Settings':
         return <SettingsScreen />;
       case 'Chat':
-        return <ChatScreen />  
+        return <ChatScreen />;
       default:
         return <EarthquakeScreen />;
     }
@@ -111,25 +162,25 @@ const HomePage = () => {
           onPress={() => setCurrentTab('Earthquake')}
           style={[styles.tab, currentTab === 'Earthquake' && styles.activeTab]}
         >
-          <Icon name="home" size={currentTab === 'Earthquake' ? 30 : 24} color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} />
+          <Icon name="home" size={30} color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Profile')}
           style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}
         >
-          <Icon name="person" size={currentTab === 'Profile' ? 30 : 24} color={currentTab === 'Profile' ? '#fff' : '#ccc'} />
+          <Icon name="person" size={30} color={currentTab === 'Profile' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Settings')}
           style={[styles.tab, currentTab === 'Settings' && styles.activeTab]}
         >
-          <Icon name="settings" size={currentTab === 'Settings' ? 30 : 24} color={currentTab === 'Settings' ? '#fff' : '#ccc'} />
+          <Icon name="settings" size={30} color={currentTab === 'Settings' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setCurrentTab('Chat')}
           style={[styles.tab, currentTab === 'Chat' && styles.activeTab]}
         >
-          <Icon name="chat" size={currentTab === 'Chat' ? 30 : 24} color={currentTab === 'Chat' ? '#fff' : '#ccc'} />
+          <Icon name="chat" size={30} color={currentTab === 'Chat' ? '#fff' : '#ccc'} />
         </TouchableOpacity>
       </View>
     </View>
@@ -138,8 +189,10 @@ const HomePage = () => {
 
 export default HomePage;
 
+
+
 // Stiller
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -185,6 +238,11 @@ export const styles = StyleSheet.create({
     color: '#D32F2F',
     fontWeight: 'bold',
   },
+  map: { height: 300, marginVertical: 10 },
+  slider: { marginTop: 10 },
+  pagination: { flexDirection: 'row', justifyContent: 'center', marginTop: 10 },
+  dot: { height: 10, width: 10, borderRadius: 5, backgroundColor: '#CCC', marginHorizontal: 5 },
+  activeDot: { backgroundColor: '#007AFF' },
   slider: {
     marginTop: 10,
   },
@@ -273,3 +331,4 @@ export const styles = StyleSheet.create({
     borderBottomColor: 'white',
   },
 });
+
