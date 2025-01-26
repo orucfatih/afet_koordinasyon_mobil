@@ -6,7 +6,7 @@ import { getAuth, createUserWithEmailAndPassword,
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
-export const login = createAsyncThunk('user/login', async({email,password})=> {
+export const login = createAsyncThunk('user/login', async({email,password}, {rejectWithValue})=> {
     try {
         //auth nasıl çalışıyor bilmiyorum
         const auth =getAuth();
@@ -25,9 +25,21 @@ export const login = createAsyncThunk('user/login', async({email,password})=> {
         return userData;
 
     } catch (error) {
-        throw error
+        console.log('Hata kodu:', error.code); // Hata kodunu konsola yazdır
+  
+        // Hata türüne göre mesaj döndür
+        if (error.code === 'auth/user-not-found') {
+            return rejectWithValue('Kullanıcı bulunamadı. Lütfen kayıt olun.');
+        } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            return rejectWithValue('Hatalı kullanıcı adı veya şifre. Lütfen tekrar deneyin.');
+        } else if (error.code === 'auth/too-many-requests') {
+            return rejectWithValue('Çok fazla giriş denemesi. Daha sonra tekrar deneyin.');
+        } else {
+            return rejectWithValue(`Bilinmeyen hata: ${error.message}`); // Daha detaylı bir mesaj döndür
+        }
     }
 })
+  
 
 //Şifre Değiştirme
 export const updateCipher = createAsyncThunk(
@@ -102,7 +114,7 @@ export const logout = createAsyncThunk('user/logout', async () => {
 })
 
 //Kaydol
-export const register = createAsyncThunk('user/register', async ({email, password, name}) => {
+export const register = createAsyncThunk('user/register', async ({email, password, name}, {rejectWithValue}) => {
     try {
         const auth = getAuth()
         const userCredantial = await createUserWithEmailAndPassword(auth, email, password)
@@ -119,7 +131,17 @@ export const register = createAsyncThunk('user/register', async ({email, passwor
         return token
 
     } catch (error) {
-        throw error
+        console.log('Hata kodu:', error.code); // Hata kodunu konsola yazdır
+
+        if (error.code === 'auth/email-already-in-use') {
+            return rejectWithValue('Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi deneyin.');
+          } else if (error.code === 'auth/weak-password') {
+            return rejectWithValue('Şifre çok zayıf. Lütfen daha güçlü bir şifre seçin.');
+          } else if (error.code === 'auth/invalid-email') {
+            return rejectWithValue('Geçersiz e-posta adresi. Lütfen geçerli bir e-posta adresi girin.');
+          } else {
+            return rejectWithValue('Kaydolma sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+          }
     }
 })
 

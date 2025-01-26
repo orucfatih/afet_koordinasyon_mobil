@@ -123,7 +123,7 @@ const EarthquakeScreen = () => {
 };
 
 // Ana Bileşen
-const HomePage = () => {
+const HomePage2 = () => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
 
   const renderScreen = () => {
@@ -174,7 +174,7 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage2;
 
 // Stiller
 export const styles = StyleSheet.create({

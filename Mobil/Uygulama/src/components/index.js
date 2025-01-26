@@ -5,6 +5,9 @@ import ProfileScreen from "./ProfileScreen";
 import SettingsScreen from "./SettingsScreen";
 import ChatScreen from "./ChatScreen";
 import UpdatePassword from "./UpdatePassword";
+import AnaMenu from "./AnaMenu";
+import AraMenu from "./AraMenu";
+import AraMenu2 from "./AraMenu2";
 
 export{
     Loading,
@@ -14,4 +17,7 @@ export{
     SettingsScreen,
     ChatScreen,
     UpdatePassword,
+    AnaMenu,
+    AraMenu,
+    AraMenu2,
 }

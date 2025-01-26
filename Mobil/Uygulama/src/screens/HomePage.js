@@ -319,4 +319,3 @@ export const styles = StyleSheet.create({
     borderBottomColor: 'white',
   },
 });
-
