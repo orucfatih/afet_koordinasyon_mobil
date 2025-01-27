@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View,Image, Pressable,} from 'react-native'
+import { StyleSheet, Text, View,Image, Pressable, Alert} from 'react-native'
 import React, {useState} from 'react'
 import { CustomButton, CustomTextInput, Loading } from '../components'
 import { useDispatch, useSelector } from 'react-redux'
@@ -14,7 +14,17 @@ const SignUpPage = ({navigation}) => {
     const {isLoading} = useSelector(state=>state.user)
 
     const signUp = () => {
+      if (!email || !password || !name) {
+                Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz.');
+                return;
+              }
+
       dispatch(register({email,password,name}))
+        .unwrap()
+        .catch((errorMessage) => {
+          console.log('Giriş başarısız:', errorMessage);
+          Alert.alert('Hata', errorMessage, [{ text: 'Tamam', style: 'destructive' }]);
+        });
     }
 
     if(isLoading){

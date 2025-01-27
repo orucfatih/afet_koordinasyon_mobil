@@ -9,6 +9,7 @@ const UpdatePassword = ({setUpdatingScreen}) => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const dispatch = useDispatch();
 
   const handleUpdatePassword = () => {
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   inputContainer: {
-    width: '70%', // Ebeveyn genişliğini kullan
+    width: '70%',
     marginBottom: 20,
   },
   closeButton:{
