@@ -9,20 +9,14 @@ from PyQt5.QtGui import QIcon, QColor, QRegExpValidator
 from sample_data import AFAD_TEAMS
 from styles_dark import *
 from styles_light import *
-import firebase_admin
-from firebase_admin import credentials, db
+import database as dtb
+
 import sys
 from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')  # UTF-8 ayarı
 # Firebase JSON kimlik dosyanızın tam yolu
-cred = credentials.Certificate("C:/Users/bbase/Downloads/afad-proje-firebase-adminsdk-asriu-b928e577ab.json")
-# Firebase bağlantısını başlat
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://afad-proje-default-rtdb.europe-west1.firebasedatabase.app/'
-})
 
-print("Firebase bağlantısı başarılı!")
 
 class PersonelDetayDialog(QDialog):
     """Personel detaylarını gösteren dialog"""
@@ -180,12 +174,8 @@ class PersonelYonetimTab(QWidget):
 
                 # Firebase'e bağlanma
         try:
-            cred = credentials.Certificate("C:/Users/bbase/Downloads/afad-proje-firebase-adminsdk-asriu-b928e577ab.json")
-            if not firebase_admin._apps:  # Zaten başlatılmışsa tekrar başlatma
-                firebase_admin.initialize_app(cred, {
-    "databaseURL": "https://afad-proje-default-rtdb.europe-west1.firebasedatabase.app/"
-                })
-            self.db = db.reference()  # Veritabanı referansı
+
+            self.db = dtb.db.reference()  # Veritabanı referansı
         except Exception as e:
             QMessageBox.critical(self, "Hata", f"Firebase başlatılamadı: {e}")
             return
@@ -231,6 +221,8 @@ class PersonelYonetimTab(QWidget):
         
         # Ekip adı
         self.quick_team_name = QLineEdit()
+        self.quick_longtidute = QLineEdit()
+        self.quick_latitude = QLineEdit()
         
         # Ekip tipi
         self.quick_team_type = QComboBox()
@@ -260,6 +252,8 @@ class PersonelYonetimTab(QWidget):
         quick_team_layout.addRow("Kurum Durumu:", self.quick_team_status)  # Yeni satır eklendi
         quick_team_layout.addRow("Şehir:", self.quick_team_location_city)
         quick_team_layout.addRow("İlçe:", self.quick_team_location_district)
+        quick_team_layout.addRow("Enlem:", self.quick_latitude)
+        quick_team_layout.addRow("Boylam:", self.quick_longtidute)
         
         create_btn = QPushButton(" Ekip Oluştur")
         create_btn.setStyleSheet(GREEN_BUTTON_STYLE)
@@ -382,7 +376,7 @@ class PersonelYonetimTab(QWidget):
 
         try:
             # Firebase'den ekip detaylarını al
-            teams_ref = db.reference('teams')
+            teams_ref = dtb.db.reference('teams')
             existing_teams = teams_ref.get()
 
 
@@ -675,6 +669,8 @@ class PersonelYonetimTab(QWidget):
         city = self.quick_team_location_city.currentText().strip()  # Şehir
         district = self.quick_team_location_district.currentText().strip()  # İlçe
         status = self.quick_team_status.currentText().strip()  # Ekip durumu
+        longtidute = self.quick_longtidute.text().strip()  # Boylam
+        latitude = self.quick_latitude.text().strip()  # Enlem
         
         # Şehir ve ilçe adı arasında virgül ve boşluk ile birleştir
         location = f"{city}, {district}"
@@ -711,6 +707,8 @@ class PersonelYonetimTab(QWidget):
             "status": status,  # Ekip durumu
             "type": team_type_input,  # Ekip tipi
             "location": location,  # Ekip konumu
+            "latitude": latitude,  # Enlem
+            "longtidute": longtidute,  # Boylam
             "members": []  # Başlangıçta üyeler boş bir liste olacak
         }
 
@@ -892,7 +890,7 @@ class PersonelYonetimTab(QWidget):
 
         try:
             # 5. Firebase'de ilgili ekibin referansını al
-            team_ref = db.reference(f"teams/{team_id}")
+            team_ref = dtb.db.reference(f"teams/{team_id}")
 
             # 6. Mevcut personelleri al
             team_data = team_ref.get()
@@ -909,7 +907,7 @@ class PersonelYonetimTab(QWidget):
                     return
 
             # 8. Diğer ekiplerde bu personelin bulunup bulunmadığını kontrol et
-            all_teams_data = db.reference("teams").get()  # Tüm ekipleri al
+            all_teams_data = dtb.db.reference("teams").get()  # Tüm ekipleri al
             for team_key, team_info in all_teams_data.items():
                 for person in team_info.get("members", []):
                     if person.get("TC") == tc_number:  # "TC:" yerine "TC"

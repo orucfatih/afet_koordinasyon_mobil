@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyALHn8H8cj_RraU7mmlpYhbf_WpV8I16x0"></script>
+    <script>
+        function initMap() {
+            var center = {lat: 40.0, lng: 33.0};  // Türkiye merkezi
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: center
+            });
+
+            // Firebase'den ekip verilerini alın
+            var ekipler = JSON.parse(document.getElementById('ekipler-data').textContent);
+
+            // Ekiplerin konumlarını haritaya ekleyin
+            ekipler.forEach(function(ekip) {
+                var marker = new google.maps.Marker({
+                    position: {lat: ekip.enlem, lng: ekip.boylam},
+                    map: map,
+                    title: 'Ekip Lideri: ' + ekip.lider
+                });
+
+                var infowindow = new google.maps.InfoWindow({
+                    content: 'Ekip Lideri: ' + ekip.lider
+                });
+
+                marker.addListener('click', function() {
+                    infowindow.open(map, marker);
+                });
+            });
+        }
+    </script>
+</head>
+<body onload="initMap()">
+    <div id="map" style="width: 100%; height: 100%;"></div>
+    <script type="application/json" id="ekipler-data">%s</script>
+</body>
+</html>

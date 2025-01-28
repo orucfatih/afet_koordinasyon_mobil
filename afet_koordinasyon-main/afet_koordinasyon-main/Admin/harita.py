@@ -5,28 +5,65 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayo
 from PyQt5.QtGui import QIcon
 from styles_dark import MAP_STYLE, REFRESH_BUTTON_STYLE
 from styles_light import *
-import firebase_admin
-from firebase_admin import credentials, db, storage
+import database as dtb
 import sys
 import os
+import io
+import json
+
+
 
 sys.stdout.reconfigure(encoding='utf-8')  # UTF-8 ayarı
 
 # Firebase bağlantısını başlat
-cred = credentials.Certificate("C:/Users/bbase/Downloads/afad-proje-firebase-adminsdk-asriu-b928e577ab.json")
 
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://afad-proje-default-rtdb.europe-west1.firebasedatabase.app/',
-        'storageBucket': 'afad-proje.appspot.com'  # Storage bucket adını doğru şekilde belirtin
-    })
+
+class HaritaYonetimi(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        # QWebEngineView bileşenini ekleyin
+        self.web_view = QWebEngineView()
+        layout.addWidget(self.web_view)
+
+        # Haritayı başlat
+        self.initialize_map()
+
+    def initialize_map(self):
+        # Firebase'den ekip verilerini alın
+        ekipler = self.get_teams_from_firebase()
+
+        # Ekip verilerini JSON formatına dönüştür
+        ekipler_json = json.dumps(ekipler)
+
+        # HTML dosyasını yükle ve ekip verilerini ekleyin
+        with open('harita.html', 'r') as file:
+            html_content = file.read()
+            html_content = html_content % ekipler_json
+
+        # QWebEngineView içinde HTML'yi yükle
+        self.web_view.setHtml(html_content)
+
+    def get_teams_from_firebase(self):
+        # Firebase'den ekip verilerini alın
+        ref = dtb.db.reference('teams')
+        ekipler = ref.get()
+        if ekipler:
+            return [ekip for ekip in ekipler.values()]
+        return []
+
 
 # Resim yükleme ve veritabanına kayıt fonksiyonu
 def upload_and_save_image(image_path, durum_id, enlem, boylam):
     """Resmi Firebase'e yükler ve URL ile veritabanına kaydeder."""
     try:
         # Firebase Storage bucket'ına bağlan
-        bucket = storage.bucket()
+        bucket = dtb.storage.bucket()
         blob = bucket.blob("images/" + os.path.basename(image_path))
         blob.upload_from_filename(image_path)
 
@@ -35,7 +72,7 @@ def upload_and_save_image(image_path, durum_id, enlem, boylam):
         print("Resim Firebase'e yüklendi. URL:", photo_url)
 
         # Veritabanına kayıt
-        ref = db.reference('emergencies')
+        ref = dtb.db.reference('emergencies')
         ref.push({
             'Durum_ID': durum_id,
             'Enlem': enlem,
@@ -110,7 +147,7 @@ class HaritaYonetimi:
 
     def get_data_from_firebase(self):
         try:
-            ref = db.reference('emergencies')
+            ref = dtb.db.reference('emergencies')
             data = ref.get()
             emergency_data = []
 
