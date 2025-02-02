@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, QMessageBox)
 from stk_yonetim import STKYonetimTab
-from kaynak_yonetimi import KaynakYonetimTab
+from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from rapor import RaporYonetimTab
-from afad_personel import PersonelYonetimTab
+from personnel import PersonelYonetimTab
 from styles_dark import *
 from styles_light import *
 from operation_management import OperationManagementTab

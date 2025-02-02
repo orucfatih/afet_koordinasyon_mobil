@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushBut
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
 from harita import HaritaYonetimi
-from dialogs import NotificationDetailDialog  
+from dialogs import NotificationDetailDialog
 from styles_dark import *
 from styles_light import *
 

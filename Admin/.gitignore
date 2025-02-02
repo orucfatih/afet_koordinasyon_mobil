@@ -1,0 +1,43 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python cache dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code geçici dosyaları
+.vscode/
+tempCodeRunnerFile.py
+
+# PyCharm dosyaları
+.idea/
+
+# Sistem dosyaları
+.DS_Store
+Thumbs.db
+
+# Log dosyaları
+*.log
+
+# Veritabanı dosyaları
+*.db
+*.sqlite3
+
+# Derleme dosyaları
+*.so
+*.dylib
+*.dll
+
+# Dağıtım dosyaları
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Ortam değişkenleri
+.env 

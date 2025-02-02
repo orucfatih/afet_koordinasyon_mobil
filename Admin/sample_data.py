@@ -120,3 +120,11 @@ AFAD_TEAMS = {
         ]
     }
 }
+
+#kaynak yönetimi sayfası için örnek veriler
+RESOURCE_DATA = [
+    ["İçme Suyu", "Su", "1000 Lt", "Ana Depo", "Hazır"],
+    ["Kuru Gıda", "Gıda", "500 Kg", "Batı Deposu", "Hazır"],
+    ["Ateş Düşürücü", "İlaç", "1000 Kutu", "Sağlık Deposu", "Hazır"],
+    ["Kışlık Çadır", "Çadır", "100 Adet", "Doğu Deposu", "Hazır"]
+]

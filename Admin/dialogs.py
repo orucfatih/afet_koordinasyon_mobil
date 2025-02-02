@@ -3,7 +3,6 @@ from PyQt5.QtGui import QIcon
 from styles_dark import *
 from styles_light import *
 
-
 class NotificationDetailDialog(QDialog):
     """Bildirim Detayları Dialog Penceresi"""
     def __init__(self, title, details, parent=None):
@@ -28,4 +27,4 @@ class NotificationDetailDialog(QDialog):
         layout.addWidget(self.detail_text)
         layout.addWidget(close_button)
         
-        self.setLayout(layout)
+        self.setLayout(layout) 

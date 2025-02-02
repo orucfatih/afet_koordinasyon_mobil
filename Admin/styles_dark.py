@@ -12,33 +12,65 @@ DARK_BUTTON_BG = "#3498db"
 DARK_BUTTON_HOVER_BG = "#2980b9"
 
 # Login page stil tanımları
-LOGIN_DARK_STYLES = f"""
-    QWidget {{
-        background-color: {DARK_BACKGROUND};
-        color: {DARK_TEXT_COLOR};
-        font-family: Arial, sans-serif;
-    }}
-    QLineEdit {{
-        background-color: {DARK_INPUT_BG};
+LOGIN_DARK_STYLES = """
+    QWidget {
+        background-color: #1a1a1a;
+        color: #ffffff;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    
+    #logoContainer {
+        background-color: transparent;
+    }
+    
+    #logoLabel {
+        color: #4CAF50;
+    }
+    
+    #titleLabel {
+        color: #ffffff;
+    }
+    
+    #inputContainer {
+        background-color: transparent;
+    }
+    
+    QLineEdit {
+        background-color: #2d2d2d;
+        border: 2px solid #2d2d2d;
+        border-radius: 8px;
+        padding: 5px 15px;
+        color: #ffffff;
+        font-size: 14px;
+    }
+    
+    QLineEdit:focus {
+        border: 2px solid #4CAF50;
+    }
+    
+    QLineEdit::placeholder {
+        color: #808080;
+    }
+    
+    #loginButton {
+        background-color: #4CAF50;
         border: none;
-        color: {DARK_TEXT_COLOR};
-        padding: 10px;
-        border-radius: 5px;
-    }}
-    QLineEdit:focus {{
-        background-color: {DARK_INPUT_FOCUS_BG};
-    }}
-    QPushButton {{
-        background-color: {DARK_BUTTON_BG};
-        color: {DARK_TEXT_COLOR};
-        border: none;
-        padding: 12px;
-        border-radius: 5px;
+        border-radius: 8px;
+        color: white;
         font-weight: bold;
-    }}
-    QPushButton:hover {{
-        background-color: {DARK_BUTTON_HOVER_BG};
-    }}
+    }
+    
+    #loginButton:hover {
+        background-color: #45a049;
+    }
+    
+    #loginButton:pressed {
+        background-color: #3d8b40;
+    }
+    
+    #themeContainer {
+        background-color: transparent;
+    }
 """
 
 
@@ -304,6 +336,180 @@ TEAM_TREE_STYLE = """
         font-weight: bold;
         padding: 5px;
         border: 1px solid #3a3f55; /* Başlık kenarlığı */
+    }
+"""
+
+# Arama ve filtreleme stilleri
+SEARCH_BOX_STYLE = """
+    QLineEdit {
+        background-color: #2e2e2e;
+        color: white;
+        padding: 5px;
+        border: 1px solid #555;
+        border-radius: 3px;
+    }
+"""
+
+COMBO_BOX_STYLE = """
+    QComboBox {
+        background-color: #2e2e2e;
+        color: white;
+        padding: 5px;
+        border: 1px solid #555;
+        border-radius: 3px;
+    }
+    QComboBox::drop-down {
+        border: none;
+    }
+    QComboBox::down-arrow {
+        image: url(icons/down-arrow.png);
+        width: 12px;
+        height: 12px;
+    }
+"""
+
+HEADER_STYLE = """
+    QHeaderView::section {
+        background-color: #2e2e2e;
+        color: white;
+        padding: 5px;
+        border: 1px solid #3a3f55;
+        font-weight: bold;
+    }
+"""
+
+# Düzenle butonu için özel mavi stil
+EDIT_BUTTON_STYLE = """
+QPushButton {
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #3498db;
+}
+QPushButton:pressed {
+    background-color: #2475a8;
+}
+"""
+
+# İletişim butonları için özel turuncu stil
+COMMUNICATION_BUTTON_STYLE = """
+QPushButton {
+    background-color: #d35400;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #e67e22;
+}
+QPushButton:pressed {
+    background-color: #c44e00;
+}
+"""
+
+# Kaynak Yönetimi Arama Widget Stili
+SEARCH_WIDGET_STYLE = """
+    QWidget {
+        background-color: #2a2a2a;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+"""
+
+# Kaynak Yönetimi Input Stili
+RESOURCE_INPUT_STYLE = """
+    QLineEdit {
+        padding: 8px;
+        border-radius: 4px;
+        background: #333;
+        color: white;
+        border: 1px solid #555;
+    }
+    QLineEdit:focus {
+        border: 1px solid #009688;
+    }
+"""
+
+# Kaynak Yönetimi Buton Stili
+RESOURCE_BUTTON_STYLE = """
+    QPushButton {
+        padding: 10px;
+        border-radius: 5px;
+        background: #2a2a2a;
+        color: white;
+        border: 1px solid #009688;
+    }
+    QPushButton:hover {
+        background: #009688;
+    }
+"""
+
+# Kaynak Yönetimi Tablo Stili
+RESOURCE_TABLE_STYLE = """
+    QTableWidget {
+        background-color: #2a2a2a;
+        border-radius: 8px;
+        padding: 5px;
+        gridline-color: #444;
+    }
+    QTableWidget::item {
+        padding: 8px;
+        border-bottom: 1px solid #444;
+    }
+    QHeaderView::section {
+        background-color: #009688;
+        padding: 8px;
+        border: none;
+        font-weight: bold;
+    }
+"""
+
+# Kaynak Yönetimi GroupBox Stili
+RESOURCE_GROUP_STYLE = """
+    QGroupBox {
+        background-color: #2a2a2a;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+    }
+    QGroupBox::title {
+        color: #009688;
+        subcontrol-position: top center;
+        padding: 5px;
+    }
+"""
+
+# Kaynak Yönetimi Ekle Buton Stili
+RESOURCE_ADD_BUTTON_STYLE = """
+    QPushButton {
+        padding: 10px;
+        border-radius: 5px;
+        background: #009688;
+        color: white;
+        border: none;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background: #00796b;
+    }
+"""
+
+# Kaynak Yönetimi TextEdit Stili
+RESOURCE_TEXT_EDIT_STYLE = """
+    QTextEdit {
+        background-color: #333;
+        border-radius: 4px;
+        padding: 10px;
+        color: white;
+        border: 1px solid #555;
     }
 """
 

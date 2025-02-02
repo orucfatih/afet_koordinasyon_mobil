@@ -3,7 +3,8 @@ from ui import AfetYonetimAdmin
 from PyQt5.QtWidgets import QApplication
 import os
 import platform
-from login import LoginPage
+from auth.login import LoginPage
+from resources_management.kaynak_yonetimi import KaynakYonetimTab
 
 # İşletim sistemine göre QT_QPA_PLATFORM ayarı
 if platform.system() == "Linux":

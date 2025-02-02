@@ -1,0 +1,1 @@
+from .afad_personel import PersonelYonetimTab 
