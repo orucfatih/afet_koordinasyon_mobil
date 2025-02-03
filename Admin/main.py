@@ -5,6 +5,7 @@ import os
 import platform
 from auth.login import LoginPage
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
+from operation_management.operation_management import OperationManagementTab
 
 # İşletim sistemine göre QT_QPA_PLATFORM ayarı
 if platform.system() == "Linux":

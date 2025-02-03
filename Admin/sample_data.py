@@ -1,9 +1,14 @@
 TEAM_DATA = [
-    ("T001", "Ahmet Yılmaz", "AFAD", "Müsait", "0555-111-2233"),
-    ("T002", "Mehmet Demir", "STK-A", "Görevde", "0555-222-3344"),
-    ("T003", "Ayşe Kaya", "AFAD", "Müsait", "0555-333-4455"),
-    ("T004", "Ali Öztürk", "STK-B", "Görevde", "0555-444-5566"),
-    ("T005", "Fatma Şahin", "AFAD", "Müsait", "0555-555-6677")
+    ["EKP001", "Ahmet Yılmaz", "AFAD", "Müsait", "0532xxxxxxx", "USAR (Arama-Kurtarma)", "8", "Tam Donanımlı"],
+    ["EKP002", "Mehmet Demir", "Sağlık Bakanlığı", "Meşgul", "0533xxxxxxx", "Sağlık Ekibi", "6", "Tam Donanımlı"],
+    ["EKP003", "Ayşe Kaya", "Kızılay", "Müsait", "0535xxxxxxx", "Barınma-İaşe", "10", "Tam Donanımlı"],
+    ["EKP004", "Ali Öztürk", "İtfaiye", "Meşgul", "0536xxxxxxx", "Yangın Söndürme", "6", "Tam Donanımlı"],
+    ["EKP005", "Fatma Şahin", "UMKE", "Müsait", "0537xxxxxxx", "İlk Yardım", "4", "Tam Donanımlı"],
+    ["EKP006", "Mustafa Aydın", "Belediye", "Müsait", "0538xxxxxxx", "Enkaz Kaldırma", "12", "Tam Donanımlı"],
+    ["EKP007", "Zeynep Yıldız", "AFAD", "Meşgul", "0539xxxxxxx", "Koordinasyon", "5", "Tam Donanımlı"],
+    ["EKP008", "Hüseyin Çelik", "Jandarma", "Müsait", "0531xxxxxxx", "Güvenlik", "8", "Tam Donanımlı"],
+    ["EKP009", "Emine Arslan", "AFAD", "Müsait", "0532xxxxxxx", "Lojistik Destek", "6", "Tam Donanımlı"],
+    ["EKP010", "Osman Kılıç", "Telekom", "Meşgul", "0533xxxxxxx", "Haberleşme", "4", "Tam Donanımlı"]
 ]
 
 NOTIFICATIONS = [
@@ -127,4 +132,17 @@ RESOURCE_DATA = [
     ["Kuru Gıda", "Gıda", "500 Kg", "Batı Deposu", "Hazır"],
     ["Ateş Düşürücü", "İlaç", "1000 Kutu", "Sağlık Deposu", "Hazır"],
     ["Kışlık Çadır", "Çadır", "100 Adet", "Doğu Deposu", "Hazır"]
+]
+
+EQUIPMENT_DATA = [
+    ["EKP001", "Hidrolik Kesici", "Kurtarma Ekipmanı", "Aktif", "15.03.2024", "Ahmet Yılmaz"],
+    ["EKP002", "Termal Kamera", "Arama Ekipmanı", "Bakımda", "10.03.2024", "Mehmet Demir"],
+    ["EKP003", "Jeneratör", "Güç Ekipmanı", "Aktif", "12.03.2024", "Ali Öztürk"],
+    ["EKP004", "Sedye", "Sağlık Ekipmanı", "Aktif", "14.03.2024", "Fatma Şahin"],
+    ["EKP005", "Yangın Hortumu", "Yangın Ekipmanı", "Aktif", "11.03.2024", "Hüseyin Çelik"],
+    ["EKP006", "Merdiven", "Kurtarma Ekipmanı", "Onarımda", "13.03.2024", "Zeynep Yıldız"],
+    ["EKP007", "Telsiz Seti", "İletişim Ekipmanı", "Aktif", "16.03.2024", "Emine Arslan"],
+    ["EKP008", "Su Pompası", "Su Tahliye", "Aktif", "17.03.2024", "Osman Kılıç"],
+    ["EKP009", "İlk Yardım Çantası", "Sağlık Ekipmanı", "Aktif", "18.03.2024", "Ayşe Kaya"],
+    ["EKP010", "Halat Seti", "Kurtarma Ekipmanı", "Bakımda", "19.03.2024", "Mustafa Aydın"]
 ]

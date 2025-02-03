@@ -15,36 +15,10 @@ class MapWidget(QWidget):
 
     def initUI(self):
         main_layout = QVBoxLayout(self)
-
-        # Üst panel - Başlık ve Yenileme
-        header = QWidget()
-        header_layout = QHBoxLayout(header)
-        
-        title = QLabel("Afet Bölgesi Haritası")
-        title.setStyleSheet(MAP_STYLE)
-        
-        refresh_btn = QPushButton(" Haritayı Yenile")
-        refresh_btn.clicked.connect(self.refresh_map)
-        refresh_btn.setIcon(QIcon('icons/refresh.png'))
-        refresh_btn.setStyleSheet(REFRESH_BUTTON_STYLE)
-        
-        header_layout.addWidget(title)
-        header_layout.addWidget(refresh_btn)
-        header_layout.addStretch()
-
-
-
-        # Kontrol paneli düzeni
-        controls = QHBoxLayout()
-
-        # Ana düzene ekle
-        main_layout.addWidget(header)
-        main_layout.addLayout(controls)
         
         # Harita görünümü
-        self.map_view = self.harita.initialize_map(height=470)
+        self.map_view = self.harita.initialize_map(height=453)
         main_layout.addWidget(self.map_view)
-
         
         self.setLayout(main_layout)
 

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget,
                            QLabel, QSpacerItem,
-                           QSizePolicy)
+                           QSizePolicy, QProgressBar)
 from PyQt5.QtCore import Qt
 from styles_dark import *
 from styles_light import *
@@ -163,7 +163,7 @@ class KaynakYonetimUI:
         
         # Kaynak Detayları
         details_group = QGroupBox("Kaynak Detayları")
-        details_group.setMinimumHeight(600)
+        details_group.setMinimumHeight(300)  # Yüksekliği azalttık
         details_group.setStyleSheet(RESOURCE_GROUP_STYLE)
         
         details_layout = QVBoxLayout()
@@ -174,9 +174,44 @@ class KaynakYonetimUI:
         details_layout.addWidget(self.details_text)
         details_group.setLayout(details_layout)
         
-        # Boşluk ekle
-        self.right_layout.addWidget(details_group)
-        self.right_layout.addStretch(1)  # Esnek boşluk ekle
+        # Kaynak Takibi
+        resource_tracking_group = QGroupBox("Kaynak ve Malzeme Takibi")
+        resource_tracking_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        resource_tracking_layout = QVBoxLayout()
+        
+        # Kritik malzeme seviyeleri
+        resources = {
+            "Su Kaynakları": 75,
+            "Tıbbi Malzeme": 60,
+            "Yakıt": 45,
+            "Gıda": 80
+        }
+        
+        for resource, level in resources.items():
+            progress = QProgressBar()
+            progress.setValue(level)
+            progress.setStyleSheet("""
+                QProgressBar {
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    text-align: center;
+                    height: 20px;
+                    margin: 5px 0;
+                }
+                QProgressBar::chunk {
+                    background-color: #4CAF50;
+                }
+            """)
+            
+            resource_layout = QHBoxLayout()
+            label = QLabel(resource)
+            label.setMinimumWidth(100)
+            resource_layout.addWidget(label)
+            resource_layout.addWidget(progress)
+            
+            resource_tracking_layout.addLayout(resource_layout)
+        
+        resource_tracking_group.setLayout(resource_tracking_layout)
         
         # Dağıtım Paneli
         distribution_group = QGroupBox("Kaynak Dağıtımı")
@@ -213,4 +248,8 @@ class KaynakYonetimUI:
         dist_layout.addRow(self.distribute_button)
         
         distribution_group.setLayout(dist_layout)
+        
+        # Panelleri ana layout'a ekle
+        self.right_layout.addWidget(details_group)
+        self.right_layout.addWidget(resource_tracking_group)
         self.right_layout.addWidget(distribution_group) 
