@@ -11,7 +11,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
 from styles_dark import *
 from styles_light import *
-from sample_data import EQUIPMENT_DATA  # Ekipman verilerini import et
+from sample_data import EQUIPMENT_DATA, TASK_HISTORY_DATA, TASK_HISTORY_DETAILS  # örnek verileri import et
+from .constants_op_man import (TEAM_TABLE_HEADERS,
+                       EQUIPMENT_TABLE_HEADERS, HISTORY_TABLE_HEADERS,
+                       STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES)
+from .table_utils import create_status_item, sync_tables
+from .dialogs_op_man import TeamDialog
 
 class MessageItem(QListWidgetItem):
     """Özel Mesaj Item Sınıfı"""
@@ -82,25 +87,53 @@ def create_contact_dialog(parent, team_id, team_leader, contact):
     contact_dialog.setLayout(layout)
     return contact_dialog
 
-def create_task_edit_dialog(parent, current_item, save_callback):
-    """Görev düzenleme dialogu oluşturur"""
+def create_task_edit_dialog(parent, item=None, save_callback=None):
+    """Görev düzenleme/ekleme dialogu oluşturur"""
     dialog = QDialog(parent)
-    dialog.setWindowTitle("Görev Düzenle")
-    dialog.setFixedSize(400, 200)
+    dialog.setWindowTitle("Görev Düzenle" if item else "Yeni Görev")
+    dialog.setMinimumWidth(400)
     
     layout = QVBoxLayout()
     
     task_edit = QTextEdit()
-    task_edit.setText(current_item.text())
-    task_edit.setStyleSheet(TEXT_EDIT_STYLE)
+    if item:
+        task_edit.setPlainText(item.text())
     
-    save_btn = QPushButton(" Kaydet")
-    save_btn.setIcon(QIcon('icons/save.png'))
-    save_btn.setStyleSheet(GREEN_BUTTON_STYLE)
-    save_btn.clicked.connect(lambda: save_callback(current_item, task_edit.toPlainText(), dialog))
+    # Öncelik seçimi için combobox ekle
+    priority_layout = QHBoxLayout()
+    priority_label = QLabel("Öncelik Seviyesi:")
+    priority_combo = QComboBox()
+    priority_combo.addItems(TASK_PRIORITIES)
     
+    # Mevcut önceliği seç
+    if item and item.data(Qt.UserRole):
+        priority_combo.setCurrentText(item.data(Qt.UserRole))
+    else:
+        priority_combo.setCurrentText("Orta (2)")
+    
+    # Öncelik renklerini ayarla
+    for i in range(priority_combo.count()):
+        priority = priority_combo.itemText(i)
+        color = TASK_PRIORITY_COLORS.get(priority, "#000000")
+        priority_combo.setItemData(i, QBrush(QColor(color)), Qt.BackgroundRole)
+    
+    priority_layout.addWidget(priority_label)
+    priority_layout.addWidget(priority_combo)
+    
+    buttons = QDialogButtonBox(
+        QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+    )
+    
+    def on_save():
+        if save_callback:
+            save_callback(item, task_edit.toPlainText(), dialog, priority_combo.currentText())
+    
+    buttons.accepted.connect(on_save)
+    buttons.rejected.connect(dialog.reject)
+    
+    layout.addLayout(priority_layout)
     layout.addWidget(task_edit)
-    layout.addWidget(save_btn)
+    layout.addWidget(buttons)
     
     dialog.setLayout(layout)
     return dialog
@@ -115,6 +148,7 @@ class TeamManagementDialog(QDialog):
         self.initUI()
         self.load_team_data()  # Mevcut ekip verilerini yükle
         self.load_equipment_data()  # Ekipman verilerini yükle
+        self.load_history_data()  # geçmiş verisini yükle
 
     def initUI(self):
         layout = QVBoxLayout()
@@ -156,33 +190,9 @@ class TeamManagementDialog(QDialog):
         team_buttons.addWidget(edit_team_btn)
         
         team_list_layout.addWidget(self.team_table)
-        team_list_layout.addLayout(team_buttons)  # Butonları tablonun altına ekle
+        team_list_layout.addLayout(team_buttons)
         
         tabs.addTab(team_list_tab, "Ekip Listesi")
-        
-        # Personel Yönetimi Tab'ı
-        personnel_tab = QWidget()
-        personnel_layout = QVBoxLayout(personnel_tab)
-        
-        personnel_buttons = QHBoxLayout()
-        add_personnel_btn = QPushButton(" Personel Ekle")
-        edit_personnel_btn = QPushButton(" Personel Düzenle")
-        remove_personnel_btn = QPushButton(" Personel Çıkar")
-        
-        personnel_buttons.addWidget(add_personnel_btn)
-        personnel_buttons.addWidget(edit_personnel_btn)
-        personnel_buttons.addWidget(remove_personnel_btn)
-        
-        self.personnel_table = QTableWidget()
-        self.personnel_table.setColumnCount(6)
-        self.personnel_table.setHorizontalHeaderLabels([
-            "Ad Soyad", "Görevi", "Uzmanlık", "İletişim",
-            "Deneyim (Yıl)", "Durum"
-        ])
-        
-        personnel_layout.addLayout(personnel_buttons)
-        personnel_layout.addWidget(self.personnel_table)
-        tabs.addTab(personnel_tab, "Personel Yönetimi")
         
         # Ekipman Yönetimi Tab'ı
         equipment_tab = QWidget()
@@ -223,17 +233,17 @@ class TeamManagementDialog(QDialog):
         
         self.history_table = QTableWidget()
         self.history_table.setColumnCount(6)
-        self.history_table.setHorizontalHeaderLabels([
-            "Tarih", "Görev Tipi", "Konum", "Süre",
-            "Sonuç", "Detaylar"
-        ])
-        
+        self.history_table.setHorizontalHeaderLabels(HISTORY_TABLE_HEADERS)
+        self.history_table.setStyleSheet(TABLE_WIDGET_STYLE)
+        self.history_table.itemDoubleClicked.connect(self.show_history_details)
+
+        # Tablonun düzenlenebilirliğini kapat
+        self.history_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
         history_layout.addWidget(self.history_table)
         tabs.addTab(history_tab, "Görev Geçmişi")
-        
-        # Ana layout'a sadece tab widget'ı ekle
+
         layout.addWidget(tabs)
-        
         self.setLayout(layout)
 
     def load_team_data(self):
@@ -278,6 +288,50 @@ class TeamManagementDialog(QDialog):
         
         self.equipment_table.resizeColumnsToContents()
 
+    def load_history_data(self):
+        """Görev geçmişi verilerini yükler"""
+        self.history_table.setRowCount(0)
+        
+        for task in TASK_HISTORY_DATA:
+            row = self.history_table.rowCount()
+            self.history_table.insertRow(row)
+            
+            for col, data in enumerate(task):
+                item = QTableWidgetItem(str(data))
+                item.setTextAlignment(Qt.AlignCenter)
+                self.history_table.setItem(row, col, item)
+        
+        self.history_table.resizeColumnsToContents()
+
+    def show_history_details(self, item):
+        """Görev geçmişi detaylarını gösterir"""
+        row = item.row()
+        date = self.history_table.item(row, 0).text()
+        task_type = self.history_table.item(row, 1).text()
+        task_key = f"{date} {task_type}"
+        
+        if task_key in TASK_HISTORY_DETAILS:
+            details = TASK_HISTORY_DETAILS[task_key]
+            detail_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
+            
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Görev Detayları")
+            dialog.setMinimumWidth(400)
+            layout = QVBoxLayout()
+            
+            text_edit = QTextEdit()
+            text_edit.setPlainText(detail_text)
+            text_edit.setReadOnly(True)
+            
+            close_btn = QPushButton("Kapat")
+            close_btn.clicked.connect(dialog.accept)
+            
+            layout.addWidget(text_edit)
+            layout.addWidget(close_btn)
+            
+            dialog.setLayout(layout)
+            dialog.exec_()
+
     def add_new_team(self):
         """Yeni ekip eklemek için dialog açar"""
         dialog = create_team_dialog(self, self.save_new_team)
@@ -298,12 +352,7 @@ class TeamManagementDialog(QDialog):
         self.team_table.setItem(row, 1, QTableWidgetItem(leader))
         self.team_table.setItem(row, 2, QTableWidgetItem(institution))
         
-        status_item = QTableWidgetItem(status)
-        status_item.setTextAlignment(Qt.AlignCenter)
-        if status == "Müsait":
-            status_item.setBackground(QBrush(QColor("#4CAF50")))
-        else:
-            status_item.setBackground(QBrush(QColor("#f44336")))
+        status_item = create_status_item(status, STATUS_COLORS)
         self.team_table.setItem(row, 3, status_item)
         
         self.team_table.setItem(row, 4, QTableWidgetItem(contact))
@@ -315,12 +364,7 @@ class TeamManagementDialog(QDialog):
         self.parent.team_list.setItem(parent_row, 1, QTableWidgetItem(leader))
         self.parent.team_list.setItem(parent_row, 2, QTableWidgetItem(institution))
         
-        parent_status_item = QTableWidgetItem(status)
-        parent_status_item.setTextAlignment(Qt.AlignCenter)
-        if status == "Müsait":
-            parent_status_item.setBackground(QBrush(QColor("#4CAF50")))
-        else:
-            parent_status_item.setBackground(QBrush(QColor("#f44336")))
+        parent_status_item = create_status_item(status, STATUS_COLORS)
         self.parent.team_list.setItem(parent_row, 3, parent_status_item)
         
         self.parent.team_list.setItem(parent_row, 4, QTableWidgetItem(contact))
@@ -411,11 +455,7 @@ class TeamManagementDialog(QDialog):
         self.team_table.setItem(row, 1, QTableWidgetItem(leader.text()))
         self.team_table.setItem(row, 2, QTableWidgetItem(institution.text()))
         
-        status_item = QTableWidgetItem(status_combo.currentText())
-        if status_combo.currentText() == "Müsait":
-            status_item.setBackground(QBrush(QColor("#4CAF50")))
-        else:
-            status_item.setBackground(QBrush(QColor("#f44336")))
+        status_item = create_status_item(status_combo.currentText(), STATUS_COLORS)
         self.team_table.setItem(row, 3, status_item)
         
         self.team_table.setItem(row, 4, QTableWidgetItem(contact.text()))
@@ -428,11 +468,7 @@ class TeamManagementDialog(QDialog):
                 self.parent.team_list.setItem(parent_row, 1, QTableWidgetItem(leader.text()))
                 self.parent.team_list.setItem(parent_row, 2, QTableWidgetItem(institution.text()))
                 
-                parent_status_item = QTableWidgetItem(status_combo.currentText())
-                if status_combo.currentText() == "Müsait":
-                    parent_status_item.setBackground(QBrush(QColor("#4CAF50")))
-                else:
-                    parent_status_item.setBackground(QBrush(QColor("#f44336")))
+                parent_status_item = create_status_item(status_combo.currentText(), STATUS_COLORS)
                 self.parent.team_list.setItem(parent_row, 3, parent_status_item)
                 
                 self.parent.team_list.setItem(parent_row, 4, QTableWidgetItem(contact.text()))

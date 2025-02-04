@@ -10,7 +10,10 @@ from styles_light import *
 
 from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
 from harita import MapWidget
-from operation_management.op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog
+from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog
+from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
+from .table_utils import create_status_item, sync_tables
+from .dialogs_op_man import TeamDialog
 
 
 class OperationManagementTab(QWidget):
@@ -107,12 +110,12 @@ class OperationManagementTab(QWidget):
         tasks_group.setLayout(tasks_layout)
         
         # Bildirimler ve görevler için minimum yükseklik ayarla
-        notifications_group.setMinimumHeight(250)  # Bildirimlere daha fazla alan
-        tasks_group.setMinimumHeight(250)         # Görevlere daha fazla alan
+        notifications_group.setMinimumHeight(250)  
+        tasks_group.setMinimumHeight(250)
         
         # Bildirimler ve görevler için stretch değerleri
-        right_info_layout.addWidget(notifications_group, stretch=3)  # Daha fazla alan
-        right_info_layout.addWidget(tasks_group, stretch=3)  # Daha fazla alan
+        right_info_layout.addWidget(notifications_group, stretch=3)  
+        right_info_layout.addWidget(tasks_group, stretch=3)  
         
         # Üst panel düzenleme
         top_layout.addWidget(self.map_widget, stretch=2)
@@ -129,10 +132,7 @@ class OperationManagementTab(QWidget):
         # Tablo widget'ını oluştur
         self.team_list = QTableWidget()
         self.team_list.setColumnCount(8)
-        self.team_list.setHorizontalHeaderLabels([
-            "Ekip ID", "Ekip Lideri", "Kurum", "Durum", "İletişim",
-            "Uzmanlık", "Personel Sayısı", "Ekipman Durumu"
-        ])
+        self.team_list.setHorizontalHeaderLabels(TEAM_TABLE_HEADERS)
         self.team_list.setStyleSheet(TABLE_WIDGET_STYLE)
         self.team_list.itemClicked.connect(self.toggle_team_status)  # Tıklama olayını bağla
         
@@ -212,39 +212,63 @@ class OperationManagementTab(QWidget):
         
         # Görevlendirme Paneli
         assignment_group = QGroupBox("Ekip Görevlendirme")
-        assignment_layout = QFormLayout()
-
+        assignment_layout = QVBoxLayout()
+        
+        # Ekip seçimi
         self.team_combo = QComboBox()
         self.team_combo.setStyleSheet(COMBOBOX_STYLE)
-
+        
+        # Başlık ve Lokasyon için yatay layout
+        title_location_layout = QHBoxLayout()
+        
+        # Başlık için dikey layout
+        title_layout = QVBoxLayout()
+        title_layout.addWidget(QLabel("Görev Başlığı:"))
+        self.title_input = QLineEdit()
+        self.title_input.setPlaceholderText("Görev başlığı...")
+        self.title_input.setStyleSheet(LINE_EDIT_STYLE)
+        title_layout.addWidget(self.title_input)
+        
+        # Lokasyon için dikey layout
+        location_layout = QVBoxLayout()
+        location_layout.addWidget(QLabel("Lokasyon:"))
         self.location_input = QLineEdit()
-        self.location_input.setPlaceholderText("Görev lokasyonu")
+        self.location_input.setPlaceholderText("Görev lokasyonu...")
         self.location_input.setStyleSheet(LINE_EDIT_STYLE)
-
-        self.task_description = QTextEdit()
-        self.task_description.setPlaceholderText("Görev detayları...")
-        self.task_description.setStyleSheet(TEXT_EDIT_STYLE)
-
+        location_layout.addWidget(self.location_input)
+        
+        # Başlık ve lokasyonu yatay layout'a ekle
+        title_location_layout.addLayout(title_layout)
+        title_location_layout.addLayout(location_layout)
+        
+        # Öncelik seçimi için combobox
         self.priority_combo = QComboBox()
-        self.priority_combo.addItems([
-            "Seviye 1 - Düşük",
-            "Seviye 2 - Orta",
-            "Seviye 3 - Yüksek",
-            "Seviye 4 - Acil"
-        ])
-        self.priority_combo.setCurrentIndex(1)  # Varsayılan olarak "Seviye 2 - Orta" seçili
+        self.priority_combo.addItems(TASK_PRIORITIES)
+        self.priority_combo.setCurrentText("Orta (2)")
         self.priority_combo.setStyleSheet(COMBOBOX_STYLE)
-
-        assign_button = QPushButton("Görevi Ata")
-        assign_button.clicked.connect(self.assign_task)
-        assign_button.setStyleSheet(BUTTON_STYLE)
-
-        assignment_layout.addRow("Ekip Seçimi:", self.team_combo)
-        assignment_layout.addRow("Lokasyon:", self.location_input)
-        assignment_layout.addRow("Görev Detayları:", self.task_description)
-        assignment_layout.addRow("Öncelik Seviyesi:", self.priority_combo)
-        assignment_layout.addRow("", assign_button)
-
+        
+        # Görev detay girişi
+        self.task_input = QTextEdit()
+        self.task_input.setPlaceholderText("Görev detayları...")
+        self.task_input.setMaximumHeight(100)
+        self.task_input.setStyleSheet(TEXT_EDIT_STYLE)
+        
+        # Widget'ları layout'a ekle
+        assignment_layout.addWidget(QLabel("Ekip Seç:"))
+        assignment_layout.addWidget(self.team_combo)
+        assignment_layout.addLayout(title_location_layout)  # Başlık ve lokasyonu yan yana ekle
+        assignment_layout.addWidget(QLabel("Öncelik Seviyesi:"))
+        assignment_layout.addWidget(self.priority_combo)
+        assignment_layout.addWidget(QLabel("Görev Detayları:"))
+        assignment_layout.addWidget(self.task_input)
+        
+        # Görev atama butonu
+        assign_btn = QPushButton(" Görev Ata")
+        assign_btn.setIcon(QIcon('icons/assign-task.png'))
+        assign_btn.setStyleSheet(GREEN_BUTTON_STYLE)
+        assign_btn.clicked.connect(self.assign_task)
+        
+        assignment_layout.addWidget(assign_btn)
         assignment_group.setLayout(assignment_layout)
         
         # Ekip listesi ve görevlendirme için yükseklik ayarları
@@ -394,39 +418,90 @@ class OperationManagementTab(QWidget):
             self.team_list.setRowHidden(row, not show_row)
 
     def assign_task(self):
-        """Seçili ekibe görev atar ve aktif görevler listesine ekler"""
-        if not self.team_combo.currentText() or not self.location_input.text() or not self.task_description.toPlainText():
-            QMessageBox.warning(self, "Uyarı", "Lütfen tüm alanları doldurun!")
+        """Seçili ekibe görev atar"""
+        # Seçili ekibi kontrol et
+        selected_team = self.team_combo.currentText()
+        if not selected_team:
+            QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
             return
 
-        selected_priority = self.priority_combo.currentText()  # Seçili öncelik seviyesini al
+        # Görev başlığı kontrolü
+        title = self.title_input.text().strip()
+        if not title:
+            QMessageBox.warning(self, "Uyarı", "Lütfen görev başlığını girin!")
+            return
 
+        # Lokasyon kontrolü
+        location = self.location_input.text().strip()
+        if not location:
+            QMessageBox.warning(self, "Uyarı", "Lütfen görev lokasyonunu girin!")
+            return
+
+        # Görev detaylarını kontrol et
+        task_details = self.task_input.toPlainText().strip()
+        if not task_details:
+            QMessageBox.warning(self, "Uyarı", "Lütfen görev detaylarını girin!")
+            return
+
+        # Öncelik seviyesini al
+        priority = self.priority_combo.currentText()
+
+        # Onay mesajı oluştur
+        confirmation_text = (
+            f"Aşağıdaki görev atamasını onaylıyor musunuz?\n\n"
+            f"Ekip: {selected_team}\n"
+            f"Başlık: {title}\n"
+            f"Lokasyon: {location}\n"
+            f"Öncelik: {priority}\n"
+            f"Detaylar: {task_details}"
+        )
+
+        # Onay dialogu göster
         reply = QMessageBox.question(
-            self, 'Görev Atama Onayı',
-            f'Seçili ekibe görevi atamak istediğinize emin misiniz?\n\n'
-            f'Ekip: {self.team_combo.currentText()}\n'
-            f'Lokasyon: {self.location_input.text()}\n'
-            f'Öncelik: {selected_priority}\n'
-            f'Görev: {self.task_description.toPlainText()[:50]}...',
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+            self,
+            'Görev Atama Onayı',
+            confirmation_text,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
         )
 
         if reply == QMessageBox.Yes:
             # Görev metnini oluştur
-            task_text = (f"Ekip: {self.team_combo.currentText()}\n"
-                        f"Lokasyon: {self.location_input.text()}\n"
-                        f"Öncelik: {selected_priority}\n"
-                        f"Görev: {self.task_description.toPlainText()}")
+            task_text = f"{title} - {location} - {priority}"
 
-            # Aktif görevler listesine ekle
-            self.tasks_list.addItem(task_text)
-
-            QMessageBox.information(self, "Başarılı", "Görev başarıyla atandı ve aktif görevlere eklendi!")
-
-            # Formu temizle
+            # Yeni görev item'ı oluştur
+            new_task = QListWidgetItem(task_text)
+            new_task.setData(Qt.UserRole, priority)
+            
+            # Öncelik seviyesine göre arka plan rengini ayarla
+            color = TASK_PRIORITY_COLORS.get(priority, "#000000")
+            new_task.setBackground(QBrush(QColor(color)))
+            
+            # Görevi aktif görevler listesine ekle
+            self.tasks_list.addItem(new_task)
+            
+            # Görev detaylarını TASK_DETAILS sözlüğüne ekle
+            from sample_data import TASK_DETAILS
+            TASK_DETAILS[task_text] = (
+                f"Ekip: {selected_team}\n"
+                f"Başlık: {title}\n"
+                f"Lokasyon: {location}\n"
+                f"Öncelik: {priority}\n"
+                f"Detaylar: {task_details}"
+            )
+            
+            # Input alanlarını temizle
+            self.title_input.clear()
             self.location_input.clear()
-            self.task_description.clear()
-            self.priority_combo.setCurrentIndex(1)  # Öncelik seviyesini varsayılana sıfırla
+            self.task_input.clear()
+            self.priority_combo.setCurrentText("Orta (2)")
+            
+            # Başarılı mesajı göster
+            QMessageBox.information(
+                self,
+                "Başarılı",
+                f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
+            )
 
 
     def contact_team(self):
@@ -504,13 +579,38 @@ class OperationManagementTab(QWidget):
         dialog = create_task_edit_dialog(self, current_item, self.save_edited_task)
         dialog.exec_()
     
-    def save_edited_task(self, item, new_text, dialog):
+    def save_edited_task(self, item, new_text, dialog, priority):
         """Düzenlenen görevi kaydeder"""
-        item.setText(new_text)
-        dialog.accept()
+        if item:
+            # Görev metnini parçala ve yeni öncelik ile güncelle
+            task_parts = item.text().split(" - ")
+            if len(task_parts) >= 2:
+                title = task_parts[0]
+                location = task_parts[1]
+                # Yeni metni oluştur
+                updated_text = f"{title} - {location} - {priority}"
+                item.setText(updated_text)
+                item.setData(Qt.UserRole, priority)  # Öncelik seviyesini kaydet
+                
+                # Öncelik seviyesine göre arka plan rengini ayarla
+                color = TASK_PRIORITY_COLORS.get(priority, "#000000")
+                item.setBackground(QBrush(QColor(color)))
+                
+                # Görev detaylarını güncelle
+                if updated_text in TASK_DETAILS:
+                    details = TASK_DETAILS[updated_text].split("\n")
+                    updated_details = []
+                    for line in details:
+                        if line.startswith("Öncelik:"):
+                            updated_details.append(f"Öncelik: {priority}")
+                        else:
+                            updated_details.append(line)
+                    TASK_DETAILS[updated_text] = "\n".join(updated_details)
+            
+            dialog.accept()
     
     def delete_selected_task(self):
-        """Seçili görevi siler"""
+        """Seçili görevi siler ve görev geçmişine ekler"""
         current_item = self.tasks_list.currentItem()
         if not current_item:
             QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir görev seçin!")
@@ -520,13 +620,45 @@ class OperationManagementTab(QWidget):
         reply = QMessageBox.question(
             self,
             'Görev Silme Onayı',
-            'Bu görevi silmek istediğinizden emin misiniz?',
+            'Bu görevi tamamlandı olarak işaretleyip görev geçmişine eklemek istediğinizden emin misiniz?',
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
         
         if reply == QMessageBox.Yes:
-            self.tasks_list.takeItem(self.tasks_list.row(current_item))
+            task_text = current_item.text()
+            # Görev metnini parçala
+            task_parts = task_text.split(" - ")
+            if len(task_parts) >= 2:
+                task_type = task_parts[0]
+                location = task_parts[1]
+                priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
+                
+                # Şu anki tarihi al
+                from datetime import datetime
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                
+                # Yeni görev geçmişi verisi oluştur
+                new_task_history = [
+                    current_date,
+                    task_type,
+                    location,
+                    "N/A",  # Süre
+                    priority,  # Öncelik seviyesi
+                    "Tamamlandı",
+                    "Görev tamamlandı"
+                ]
+                
+                # Görev geçmişi verilerine ekle
+                from sample_data import TASK_HISTORY_DATA
+                TASK_HISTORY_DATA.insert(0, new_task_history)  # En başa ekle
+                
+                # Eğer ekip yönetimi penceresi açıksa, görev geçmişini güncelle
+                if hasattr(self, 'team_management_dialog') and self.team_management_dialog.isVisible():
+                    self.team_management_dialog.load_history_data()
+                
+                # Görevi aktif görevlerden kaldır
+                self.tasks_list.takeItem(self.tasks_list.row(current_item))
 
     def delete_selected_notifications(self):
         """Seçili bildirimleri siler"""
@@ -616,5 +748,5 @@ class OperationManagementTab(QWidget):
 
     def show_team_management(self):
         """Ekip yönetim penceresini gösterir"""
-        dialog = TeamManagementDialog(self)
-        dialog.exec_()
+        self.team_management_dialog = TeamManagementDialog(self)  # Referansı sakla
+        self.team_management_dialog.exec_()

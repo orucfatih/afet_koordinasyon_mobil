@@ -1,22 +1,32 @@
-# Virtual Environment
-venv/
-env/
-ENV/
-
-# Python cache dosyaları
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# VS Code geçici dosyaları
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# IDE settings
 .vscode/
-tempCodeRunnerFile.py
-
-# PyCharm dosyaları
 .idea/
+*.swp
+*.swo
 
-# Sistem dosyaları
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Log dosyaları
@@ -30,11 +40,6 @@ Thumbs.db
 *.so
 *.dylib
 *.dll
-
-# Dağıtım dosyaları
-dist/
-build/
-*.egg-info/
 
 # Jupyter Notebook
 .ipynb_checkpoints
