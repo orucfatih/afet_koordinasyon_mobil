@@ -1,4 +1,5 @@
 import sys
+import os
 import json
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, 
                              QPushButton, QVBoxLayout, QHBoxLayout, 
@@ -61,6 +62,7 @@ class StyledToggle(QCheckBox):
         self._animation.setEndValue(end_value)
         self._animation.start()
 
+login_file = os.path.join(os.path.dirname(__file__), 'login.txt')
 class LoginPage(LoginUI):
     def __init__(self, parent=None):
         super().__init__()
@@ -72,7 +74,7 @@ class LoginPage(LoginUI):
         password = self.password_input.text()
         
         try:
-            with open('auth/login.txt', 'r') as file:
+            with open(login_file, 'r') as file:
                 credentials = json.load(file)
                 stored_username = credentials.get("username")
                 stored_password = credentials.get("password")

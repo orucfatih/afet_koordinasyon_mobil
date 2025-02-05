@@ -6,6 +6,8 @@ from PyQt5.QtCore import Qt, QDateTime
 from .constants import PERSONNEL_TABLE_HEADERS
 from styles_dark import *
 from styles_light import *
+from database import db
+from firebase_admin import db as firebase_db
 
 
 DIALOG_TITLES = {
@@ -207,7 +209,35 @@ class BasePersonnelDialog(QDialog):
         self.personnel_data = PersonnelFormFields.collect_personnel_info(self.input_fields)
         self.personnel_data["status"] = self.status_combo.currentText()
         self.personnel_data["last_update"] = QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
-        self.accept()
+        
+        try:
+            # Firebase'e personel verisini kaydet
+            ref = firebase_db.reference('personnel')
+            
+            # Benzersiz bir ID ile yeni personel ekle
+            new_personnel_ref = ref.push()
+            new_personnel_ref.set({
+                'name': self.personnel_data['name'],
+                'phone': self.personnel_data['phone'],
+                'home_phone': self.personnel_data['home_phone'],
+                'email': self.personnel_data['email'],
+                'address': self.personnel_data['address'],
+                'title': self.personnel_data['title'],
+                'specialization': self.personnel_data['specialization'], 
+                'experience': self.personnel_data['experience'],
+                'status': self.personnel_data['status'],
+                'last_update': self.personnel_data['last_update']
+            })
+            
+            # Firebase ID'sini personnel_data'ya ekle
+            self.personnel_data['firebase_id'] = new_personnel_ref.key
+            
+            QMessageBox.information(self, "Başarılı", "Personel bilgileri Firebase'e kaydedildi!")
+            self.accept()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Firebase kayıt hatası: {str(e)}")
+            return
     
     def get_personnel_data(self):
         return self.personnel_data
