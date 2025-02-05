@@ -8,6 +8,7 @@ from styles_dark import *
 from styles_light import *
 from database import db
 from firebase_admin import db as firebase_db
+from .state_manager import PersonnelStateManager
 
 
 DIALOG_TITLES = {
@@ -205,39 +206,37 @@ class BasePersonnelDialog(QDialog):
         layout.addRow(btn_layout)
     
     def save_personnel_data(self):
-        """Personel verilerini kaydeder"""
-        self.personnel_data = PersonnelFormFields.collect_personnel_info(self.input_fields)
-        self.personnel_data["status"] = self.status_combo.currentText()
-        self.personnel_data["last_update"] = QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
-        
         try:
-            # Firebase'e personel verisini kaydet
-            ref = firebase_db.reference('personnel')
-            
-            # Benzersiz bir ID ile yeni personel ekle
-            new_personnel_ref = ref.push()
-            new_personnel_ref.set({
+            self.personnel_data = PersonnelFormFields.collect_personnel_info(self.input_fields)
+            self.personnel_data["status"] = self.status_combo.currentText()
+            self.personnel_data["last_update"] = QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
+
+            if not self.personnel_data.get('name') or not self.personnel_data.get('phone'):
+                QMessageBox.warning(self, "Uyarı", "İsim ve telefon alanları zorunludur!")
+                return False
+
+            current_team = PersonnelStateManager.get_current_team()
+            print(f"Saving personnel for team: {current_team}") 
+            if not current_team:
+                QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
+                return False
+
+            ref = firebase_db.reference(f'teams/{current_team}/members')
+
+            new_personnel = {
                 'name': self.personnel_data['name'],
                 'phone': self.personnel_data['phone'],
-                'home_phone': self.personnel_data['home_phone'],
-                'email': self.personnel_data['email'],
-                'address': self.personnel_data['address'],
-                'title': self.personnel_data['title'],
-                'specialization': self.personnel_data['specialization'], 
-                'experience': self.personnel_data['experience'],
                 'status': self.personnel_data['status'],
                 'last_update': self.personnel_data['last_update']
-            })
-            
-            # Firebase ID'sini personnel_data'ya ekle
-            self.personnel_data['firebase_id'] = new_personnel_ref.key
-            
-            QMessageBox.information(self, "Başarılı", "Personel bilgileri Firebase'e kaydedildi!")
-            self.accept()
-            
+            }
+
+            ref.push(new_personnel)
+            QMessageBox.information(self, "Başarılı", "Personel başarıyla kaydedildi!")
+            return True
+
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Firebase kayıt hatası: {str(e)}")
-            return
+            QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata oluştu: {str(e)}")
+            return False
     
     def get_personnel_data(self):
         return self.personnel_data

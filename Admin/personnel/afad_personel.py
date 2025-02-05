@@ -16,17 +16,29 @@ from .personnel_dialogs import (PersonelDetayDialog, MesajDialog,
                               PersonelEkleDialog, PersonelDuzenleDialog,
                               PersonelSecDialog, PersonnelFormFields)
 from .constants import PERSONNEL_TABLE_HEADERS, TEAM_STATUS, INSTITUTIONS
-
+from database import db
+from firebase_admin import db as firebase_db
+from .state_manager import PersonnelStateManager
 
 class PersonelYonetimTab(QWidget):
     """Personel Yönetim Sekmesi"""
-    def __init__(self):
-        super().__init__()
+    def __init__(self,parent=None):
+        super().__init__(parent)
         self.data_manager = PersonnelDataManager()
         self.ui = PersonnelUI(self)  # UI sınıfını oluştur
         self.current_team = None  # Seçili ekibi tutacak değişken
         self.setup_ui()
         self.setup_connections()
+        self.ui.team_tree.itemClicked.connect(self.on_team_selected)
+
+    def set_current_team(self, team_id):
+        PersonnelStateManager.set_current_team(team_id)
+    
+    def handle_team_selection(self, item):
+        # Ekip seçildiğinde çağrılır
+        if item and not item.parent():  # Eğer bir üst seviye öğeyse (ekip)
+            team_id = self.get_team_id(item.text(0))
+            self.set_current_team(team_id)
         
     def setup_ui(self):
         layout = QHBoxLayout()
@@ -97,8 +109,8 @@ class PersonelYonetimTab(QWidget):
         self.team_info_group = QGroupBox("Ekip Bilgileri")
         team_info_layout = QVBoxLayout()
         
-        self.team_info_text = QTextBrowser()
-        team_info_layout.addWidget(self.team_info_text)
+        self.team_info = QTextBrowser()
+        team_info_layout.addWidget(self.team_info)
         
         # Hızlı iletişim butonları
         quick_actions = QHBoxLayout()
@@ -172,7 +184,7 @@ class PersonelYonetimTab(QWidget):
             <p><b>Personel Sayısı:</b> {len(team_info.get('personnel', []))}</p>
             <p><b>Kurum:</b> {team_info.get('status', 'AFAD')}</p>
             """
-            self.team_info_text.setHtml(info_text)
+            self.team_info.setHtml(info_text)
             
             # Personel tablosunu güncelle
             self.ui.personnel_table.setRowCount(0)
@@ -282,36 +294,135 @@ class PersonelYonetimTab(QWidget):
             team_item.setHidden(not show_team)
 
     def load_teams(self):
-        """Kaydedilmiş ekipleri yükler"""
-        # Örnek veriyi data manager den al
-        self.data_manager.ekipler = AFAD_TEAMS
-        # Ekipleri ağaca ekle
-        self.update_team_tree()
+        """Firebase'den ekipleri yükler"""
+        try:
+            print("Loading teams...")
+            teams_ref = firebase_db.reference('/teams')
+            
+            teams_data = teams_ref.get()
+            
+            
+            if teams_data:
+                self.ui.team_tree.clear()
+                for team_id, team_data in teams_data.items():
+                    # Ekip başlığı
+                    team_name = team_data['name'] if isinstance(team_data, dict) else str(team_data)
+                    team_item = QTreeWidgetItem([team_name])
+                    team_item.setIcon(0, QIcon("icons/group-users.png"))
+                    
+                    # Üyeleri ekle
+                    if isinstance(team_data, dict) and 'members' in team_data:
+                        members = team_data['members']
+                        if isinstance(members, list):
+                            # Liste formatındaki üyeler
+                            for member in members:
+                                member_name = member.get('adSoyad', member.get('name', ''))
+                                member_item = QTreeWidgetItem([member_name])
+                                member_item.setIcon(0, QIcon("icons/user.png"))
+                                team_item.addChild(member_item)
+                        elif isinstance(members, dict):
+                            # Dictionary formatındaki üyeler
+                            for member_id, member in members.items():
+                                member_name = member.get('name', '')
+                                member_item = QTreeWidgetItem([member_name])
+                                member_item.setIcon(0, QIcon("icons/user.png"))
+                                team_item.addChild(member_item)
+                    
+                    self.ui.team_tree.addTopLevelItem(team_item)
+                return True
+                
+            else:
+                QMessageBox.warning(self, "Uyarı", "Hiç ekip bulunamadı!")
+                return False
+                
+        except Exception as e:
+            print(f"Error loading teams: {str(e)}")
+            QMessageBox.critical(self, "Hata", f"Ekipler yüklenirken hata oluştu: {str(e)}")
+            return False
+    def on_team_selected(self, item):
+        try:
+            team_item = item if not item.parent() else item.parent()
+            team_name = team_item.text(0)
+            
+            teams_ref = firebase_db.reference('/teams')
+            teams_data = teams_ref.get()
+            
+            for team_id, team_data in teams_data.items():
+                if team_data.get('name') == team_name:
+                    # Ekip detayları
+                    self.team_info.setText(f"""
+                        Ekip Adı: {team_data.get('name', '')}
+                        Ekip ID: {team_data.get('Ekip_ID', '')}
+                        Konum: {team_data.get('location', '')}
+                        Tip: {team_data.get('type', '')}
+                        Durum: {team_data.get('status', '')}
+                        Enlem: {team_data.get('latitude', '')}
+                        Boylam: {team_data.get('longtidute', '')}
+                    """)
+                    
+                    # Personel tablosunu temizle
+                    self.ui.personnel_table.setRowCount(0)
+                    
+                    members = team_data.get('members', {})
+                    if isinstance(members, list):
+                        for member in members:
+                            row = self.ui.personnel_table.rowCount()
+                            self.ui.personnel_table.insertRow(row)
+                            self.ui.personnel_table.setItem(row, 0, QTableWidgetItem(member.get('adSoyad', '')))
+                            self.ui.personnel_table.setItem(row, 1, QTableWidgetItem(member.get('telefon', '')))
+                            self.ui.personnel_table.setItem(row, 2, QTableWidgetItem(member.get('evTelefonu', '')))
+                            self.ui.personnel_table.setItem(row, 3, QTableWidgetItem(member.get('ePosta', '')))
+                            self.ui.personnel_table.setItem(row, 4, QTableWidgetItem(member.get('adres', '')))
+                            self.ui.personnel_table.setItem(row, 5, QTableWidgetItem(member.get('unvan', '')))
+                            self.ui.personnel_table.setItem(row, 6, QTableWidgetItem(member.get('uzmanlik', '')))
+                            self.ui.personnel_table.setItem(row, 7, QTableWidgetItem(member.get('sonGuncelleme', '')))
+                    
+                    elif isinstance(members, dict):
+                        for member_id, member in members.items():
+                            row = self.ui.personnel_table.rowCount()
+                            self.ui.personnel_table.insertRow(row)
+                            self.ui.personnel_table.setItem(row, 0, QTableWidgetItem(member.get('name', '')))
+                            self.ui.personnel_table.setItem(row, 1, QTableWidgetItem(member.get('phone', '')))
+                            self.ui.personnel_table.setItem(row, 2, QTableWidgetItem('-'))
+                            self.ui.personnel_table.setItem(row, 3, QTableWidgetItem('-'))
+                            self.ui.personnel_table.setItem(row, 4, QTableWidgetItem('-'))
+                            self.ui.personnel_table.setItem(row, 5, QTableWidgetItem('-'))
+                            self.ui.personnel_table.setItem(row, 6, QTableWidgetItem('-'))
+                            self.ui.personnel_table.setItem(row, 7, QTableWidgetItem(member.get('last_update', '')))
+                    
+                    PersonnelStateManager.set_current_team(team_id)
+                    return
+                    
+        except Exception as e:
+            print(f"Error displaying team/member details: {str(e)}")
+            QMessageBox.critical(self, "Hata", f"Detaylar gösterilirken hata oluştu: {str(e)}")
 
     def update_team_tree(self):
-        """Ekipler ağacını günceller"""
+       
+         
         self.ui.team_tree.clear()
-        
-        for team_name, team_data in self.data_manager.ekipler.items():
+
+        for team_id, team_data in self.data_manager.ekipler.items():
             # Ekip başlığı
+            team_name = team_data.get('name', 'İsimsiz Ekip')
             team_item = QTreeWidgetItem([team_name])
             team_item.setIcon(0, QIcon("icons/group-users.png"))
-            
-            # Ekip durumuna göre renklendirme
-            if team_data.get('status') == "STK/DİĞER":
-                team_item.setBackground(0, QColor("#4c9161"))  
-            elif team_data.get('status') == "AFAD":
-                team_item.setBackground(0, QColor("#4c9161")) 
-            
-            # Personel listesi
-            for person in team_data.get('personnel', []):
-                person_item = QTreeWidgetItem([f"Personel: {person['name']}"])
-                person_item.setIcon(0, QIcon("icons/person.png"))
-                team_item.addChild(person_item)
-            
-            self.ui.team_tree.addTopLevelItem(team_item)
-            team_item.setExpanded(True)
 
+            # Ekip durumuna göre renklendirme
+            team_status = team_data.get('status', 'AFAD')
+            if team_status == "STK/DİĞER":
+                team_item.setBackground(0, QColor("#4c9161"))
+            elif team_status == "AFAD":
+                team_item.setBackground(0, QColor("#4c9161"))
+
+            # Personel listesi
+            if 'members' in team_data:
+                for member in team_data['members']:
+                    person_item = QTreeWidgetItem([member.get('name', '')])
+                    person_item.setIcon(0, QIcon("icons/user.png"))
+                    team_item.addChild(person_item)
+
+            self.ui.team_tree.addTopLevelItem(team_item)
     def quick_create_team(self):
         """Hızlı ekip oluşturur"""
         team_name = self.quick_team_name.text().strip()
@@ -372,35 +483,57 @@ class PersonelYonetimTab(QWidget):
             self.refresh_view()
 
     def remove_personnel(self):
-        """Personel çıkarma işlemi"""
-        if not self.current_team:
-            QMessageBox.warning(self, "Uyarı", "Lütfen önce bir ekip seçin!")
-            return
-        
-        # Mevcut personel listesini al
-        team_personnel = self.data_manager.ekipler[self.current_team]['personnel']
-        
-        if not team_personnel:
-            QMessageBox.warning(self, "Uyarı", "Ekipte personel bulunmamaktadır!")
-            return
-        
-        # Personel seçim dialogu
-        dialog = PersonelSecDialog(team_personnel, self)
-        if dialog.exec_():
-            # Seçilen personeli sil
-            selected_personnel = dialog.get_selected_personnel()
-            
-            # Personeli listeden çıkar
-            self.data_manager.ekipler[self.current_team]['personnel'] = [
-                p for p in team_personnel if p != selected_personnel
-            ]
-            
-            # Ekranı güncelle
-            self.update_team_tree()
-            self.show_team_details(self.ui.team_tree.findItems(self.current_team, Qt.MatchExactly)[0])
-            
-            QMessageBox.information(self, "Başarılı", f"{selected_personnel['name']} ekipten çıkarıldı!")
+        try:
+            current_row = self.ui.personnel_table.currentRow()
+            if current_row < 0:
+                QMessageBox.warning(self, "Uyarı", "Lütfen çıkarılacak personeli seçin!")
+                return
+                
+            personnel_name = self.ui.personnel_table.item(current_row, 0).text()
+            current_team = PersonnelStateManager.get_current_team()
     
+            if not current_team:
+                QMessageBox.warning(self, "Hata", "Ekip bulunamadı!")
+                return
+    
+            reply = QMessageBox.question(self, 'Personel Sil', 
+                                       f'{personnel_name} personelini silmek istediğinize emin misiniz?',
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            
+            if reply == QMessageBox.Yes:
+                # Firebase referansı
+                db_ref = firebase_db.reference(f'/teams/{current_team}')
+                team_data = db_ref.get()
+                
+                if 'members' in team_data:
+                    members = team_data['members']
+                    
+                    if isinstance(members, list):
+                        # Liste tipindeki members için silme
+                        new_members = [m for m in members 
+                                     if m.get('adSoyad', '') != personnel_name]
+                        db_ref.update({'members': new_members})
+                        
+                    elif isinstance(members, dict):
+                        # Dictionary tipindeki members için silme
+                        member_to_delete = None
+                        for member_id, member in members.items():
+                            if member.get('name') == personnel_name:
+                                member_to_delete = member_id
+                                break
+                        
+                        if member_to_delete:
+                            db_ref.child('members').child(member_to_delete).delete()
+    
+                    QMessageBox.information(self, "Başarılı", f"{personnel_name} personeli silindi!")
+                    self.load_teams()
+                    current_item = self.ui.team_tree.currentItem()
+                    if current_item:
+                        self.on_team_selected(current_item)
+                    
+        except Exception as e:
+            print(f"Silme hatası: {str(e)}")
+            QMessageBox.critical(self, "Hata", f"Personel silinirken hata oluştu: {str(e)}")
     def edit_personnel(self):
         """Personel bilgilerini düzenleme"""
         if not self.current_team:

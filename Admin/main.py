@@ -7,7 +7,7 @@ from auth.login import LoginPage
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from operation_management.operation_management import OperationManagementTab
 
-# İşletim sistemine göre QT_QPA_PLATFORM ayarı
+# Set QT_QPA_PLATFORM based on OS
 if platform.system() == "Linux":
     os.environ["QT_QPA_PLATFORM"] = "xcb"
 elif platform.system() == "Windows":
