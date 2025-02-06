@@ -8,7 +8,7 @@ const App = () => {
     <Provider store={store}>
       <RootNavigation/>
     </Provider>
-  ) 
+  )
 }
 
 export default App

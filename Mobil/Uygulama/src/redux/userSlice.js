@@ -3,6 +3,7 @@ import { getAuth, createUserWithEmailAndPassword,
     updatePassword ,updateProfile, 
     EmailAuthProvider, reauthenticateWithCredential, 
     signInWithEmailAndPassword, signOut, sendEmailVerification} from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
@@ -42,8 +43,7 @@ export const login = createAsyncThunk('user/login', async({email,password}, {rej
   
 
 //Şifre Değiştirme
-export const updateCipher = createAsyncThunk(
-    'user/updatePassword',
+export const updateCipher = createAsyncThunk('user/updatePassword', 
     async ({ oldPassword, newPassword, confirmPassword }, { rejectWithValue }) => {
       const auth = getAuth();
       const user = auth.currentUser;
@@ -76,11 +76,28 @@ export const updateCipher = createAsyncThunk(
   );
 
 //Kullanıcı bilgilerini alma
-export const getUser = () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    return user;
-}
+export const getUser = createAsyncThunk('user/getUser', async (_, { rejectWithValue }) => {
+      try {
+        const auth = getAuth();
+        const db = getFirestore();
+        const user = auth.currentUser;
+  
+        if (!user) {
+          return rejectWithValue('Kullanıcı bulunamadı.');
+        }
+  
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+          return rejectWithValue('Kullanıcı bilgileri bulunamadı.');
+        }
+        
+        return userDoc.data();
+      } catch (error) {
+        console.log('Kullanıcı bilgileri getirilirken hata:', error);
+        return rejectWithValue('Kullanıcı bilgileri alınırken bir hata oluştu.');
+      }
+    }
+  );
 
 //Otomatik giriş
 
@@ -114,36 +131,51 @@ export const logout = createAsyncThunk('user/logout', async () => {
 })
 
 //Kaydol
-export const register = createAsyncThunk('user/register', async ({email, password, name}, {rejectWithValue}) => {
-    try {
-        const auth = getAuth()
-        const userCredantial = await createUserWithEmailAndPassword(auth, email, password)
+export const register = createAsyncThunk(
+    'user/register',
+    async ({ email, password, confirmPassword, name, surname, phone }, { rejectWithValue }) => {
+      try {
+        if(password !== confirmPassword){
+          return rejectWithValue("Şifreler birbiriyle eşleşmiyor.");
+        }
 
-        const user = userCredantial.user
-        const token = user.stsTokenManager.accessToken
-
-        await updateProfile(user, {displayName:name,});
-
-        await sendEmailVerification(user)
-
-        await AsyncStorage.setItem("userToken", token)
-
-        return token
-
-    } catch (error) {
-        console.log('Hata kodu:', error.code); // Hata kodunu konsola yazdır
-
+        const auth = getAuth();
+        const db = getFirestore();
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const token = user.stsTokenManager.accessToken;
+        
+        await updateProfile(user, { displayName: `${name} ${surname}` });
+        await sendEmailVerification(user);
+        
+        // Firestore'a kullanıcı bilgilerini kaydetme
+        await setDoc(doc(db, 'users', user.uid), {
+          name,
+          surname,
+          phone,
+          email,
+          uid: user.uid,
+          createdAt: new Date().toISOString(),
+        });
+        
+        await AsyncStorage.setItem('userToken', token);
+        return token;
+      } catch (error) {
+        console.log('Hata kodu:', error.code);
+        
         if (error.code === 'auth/email-already-in-use') {
-            return rejectWithValue('Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi deneyin.');
-          } else if (error.code === 'auth/weak-password') {
-            return rejectWithValue('Şifre çok zayıf. Lütfen daha güçlü bir şifre seçin.');
-          } else if (error.code === 'auth/invalid-email') {
-            return rejectWithValue('Geçersiz e-posta adresi. Lütfen geçerli bir e-posta adresi girin.');
-          } else {
-            return rejectWithValue('Kaydolma sırasında bir hata oluştu. Lütfen tekrar deneyin.');
-          }
+          return rejectWithValue('Bu e-posta adresi zaten kullanılıyor. Lütfen başka bir e-posta adresi deneyin.');
+        } else if (error.code === 'auth/weak-password') {
+          return rejectWithValue('Şifre çok zayıf. Lütfen daha güçlü bir şifre seçin.');
+        } else if (error.code === 'auth/invalid-email') {
+          return rejectWithValue('Geçersiz e-posta adresi. Lütfen geçerli bir e-posta adresi girin.');
+        } else {
+          return rejectWithValue('Kaydolma sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+        }
+      }
     }
-})
+  );
 
 //burada fonksiyon içinden kontrole edilen parametreler varken dışarıdan email ve password geliyor
 const initialState = {
