@@ -3,18 +3,18 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions
 import MapView, { Marker } from 'react-native-maps';
 import { Svg, Path } from 'react-native-svg';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { ProfileScreen, SettingsScreen, ChatScreen } from "../components/index";
+import { ProfileScreen, SettingsScreen, ChatScreen, Info} from "../components/index";
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialIcons';  
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { RNCamera } from 'react-native-camera'; // Kamera modülünü import ediyoruz
-import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window'); 
 
 const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [earthquakeData, setEarthquakeData] = useState([]);
+  const [info, setInfo] = useState(false); //info ekranı için
 
   const TURKEY_BOUNDS = {
     minLatitude: 32.0,
@@ -170,18 +170,24 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
       </View>
     );
   };
+
+  //Kullanım Kılavuzu
+  if(info){
+    return <Info setInfo = {setInfo} />
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.topBar}>
         <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
-        <TouchableOpacity style={styles.info}>
+        <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
           <Icon name="info-outline" size={25} color="white" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Son Depremler</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ViewAll')}>
           <Text style={styles.viewAll}>Tümünü Gör</Text>
         </TouchableOpacity>
       </View>
@@ -269,7 +275,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   );
 };
 
-const HomePage = () => {
+const HomePage = ({navigation}) => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false); // Kamera görünürlüğü için state
@@ -294,7 +300,7 @@ const HomePage = () => {
   const renderScreen = () => {
     switch (currentTab) {
       case 'Earthquake':
-        return <EarthquakeScreen setCameraVisible={setCameraVisible} />;
+        return <EarthquakeScreen navigation={navigation} setCameraVisible={setCameraVisible} />;
       case 'Profile':
         return <ProfileScreen />;
       case 'Settings':
@@ -309,6 +315,7 @@ const HomePage = () => {
   if (!isAuthenticated) {
     return <Text>Loading...</Text>;
   }
+
 
   return (
     <View style={styles.container}>

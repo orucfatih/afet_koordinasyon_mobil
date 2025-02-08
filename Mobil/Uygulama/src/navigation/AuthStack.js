@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AnaMenu, AraMenu, AraMenu2, ViewAll } from '../components/index.js';
+import { AnaMenu, AraMenu, AraMenu2,} from '../components/index.js';
 import { LoginPage, LoginPage2, SignUpPage, SignUpPage2} from '../screens/index.js';
 
 const Stack = createNativeStackNavigator();
