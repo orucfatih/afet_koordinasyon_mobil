@@ -521,7 +521,7 @@ export const styles = StyleSheet.create({
     height: 150,
     backgroundColor: '#D32F2F',  // Butonun arka plan rengini seçin
     position: 'relative',
-    marginHorizontal: (width - 160) / 2,
+    marginHorizontal: (width - 150) / 2,
     marginBottom: 10,
     marginTop: 30,
     justifyContent: 'center',
