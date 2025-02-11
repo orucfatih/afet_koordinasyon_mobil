@@ -7,7 +7,7 @@ HomePage
 
 3- Anasayfada İnfo.js oluşturulacak yukarıdaki i butonuna basıldığında info.js ye yönlendirilecek. İnfo.js içinde uygulamanın nasıl kullanılacağı hakkında bilgi verilecek. | Sayfa hazırlandı içerik hazırlanacak.
 4- Son Depremler kısmında Tümünü Gör kısmı için ViewAll.js yapıldı ancak bağlanamadı bunun bağlantısı yapılacak. | Yapıldı.
-5- AFET BİLDİR butonuna basıldığında kamera izni alma ve kamera açma kısmı yapıldı ancak bir hata alınıyor bu çözülecek.
+5- AFET BİLDİR butonuna basıldığında kamera izni alma ve kamera açma kısmı yapıldı ancak bir hata alınıyor bu çözülecek. || Kütüphane eklenmesi gerekiyor ancak kütüphane bir hata veriyor.
 6- ENKAZ ALTINDAYIM butonuna basıldığında cihaz bluetooth u açılacak. Yine kullanıcıdan izin alınacak.
 7- Harita kısmında depremler gösteriliyor ancak bir API bulunamadı Türkiyedeki depremler için bunun için API bulunacak ve Haritada sadece Türkiye ve öevre ülkelerin gösterilmesi sağlanacak.
 8- Topanma Alanları için de kod yazıldı BAK => ToplanmaAlanları.txt ancak bu kod çalıştırılamadı İzmirdeki Toplanma alanaları kullanıdı. Cihaz konumuna göre Toplanma Alanları sıralanacak.

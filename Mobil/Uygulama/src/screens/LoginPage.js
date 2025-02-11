@@ -8,12 +8,10 @@ import {
   Platform,
   Alert,
   TextInput,
-  Modal,
-  ScrollView,
 } from 'react-native';
 
 import React, { useState, useEffect } from 'react';
-import { Loading, CustomTextInput, CustomButton } from '../components/index.js';
+import { Loading, CustomTextInput, CustomButton, Agreement } from '../components/index.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading, login, autoLogin } from '../redux/userSlice.js';
 import { Ionicons } from '@expo/vector-icons';
@@ -149,88 +147,8 @@ const LoginPage = ({ navigation }) => {
   </TouchableOpacity>
 </View>
 
-{/* Kullanıcı Sözleşmesi Modalı */}
-{/* Kullanıcı Sözleşmesi Modalı */}
-<Modal visible={isTermsModalVisible} transparent animationType="slide">
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      {/* Kapatma Butonu */}
-      <TouchableOpacity style={styles.closeButton} onPress={() => setIsTermsModalVisible(false)}>
-        <Ionicons name="close" size={24} color="black" />
-      </TouchableOpacity>
-
-      {/* Başlık */}
-      <Text style={styles.modalTitle}>Kullanıcı Sözleşmesi</Text>
-
-      {/* Kaydırılabilir İçerik */}
-      <ScrollView style={styles.scrollContainer}>
-        <Text style={styles.sectionTitle}>1. Taraflar</Text>
-        <Text style={styles.modalText}>
-          İşbu Kullanıcı Sözleşmesi (“Sözleşme”), aşağıda bilgileri verilen taraflar arasında akdedilmiştir:
-        </Text>
-        <Text style={styles.modalText}>
-          - **Hizmet Sağlayıcı:** [İlgili Kurum/Kuruluş] (“İlgili Kurum/Kuruluş”) {"\n"}
-          - **Kullanıcı:** Uygulamaya kayıt olan ve hizmetlerden faydalanan kişi (“Kullanıcı”)
-        </Text>
-
-        <Text style={styles.sectionTitle}>2. Kişisel Verilerin İşlenmesi ve Korunması</Text>
-        <Text style={styles.modalText}>İlgili Kurum/Kuruluş, Kullanıcı’nın aşağıdaki kişisel verilerini toplayabilir:</Text>
-        <Text style={styles.bulletPoint}>• Ad ve soyad</Text>
-        <Text style={styles.bulletPoint}>• Lokasyon bilgisi (GPS veya manuel giriş)</Text>
-        <Text style={styles.bulletPoint}>• Telefon numarası</Text>
-
-        <Text style={styles.modalText}>
-          Bu veriler aşağıdaki amaçlarla işlenmektedir:
-        </Text>
-        <Text style={styles.bulletPoint}>• Kullanıcı kimliğinin doğrulanması</Text>
-        <Text style={styles.bulletPoint}>• Hizmetlerin kişiselleştirilmesi</Text>
-        <Text style={styles.bulletPoint}>• Güvenlik önlemlerinin artırılması</Text>
-
-        <Text style={styles.sectionTitle}>3. Kullanıcı Hak ve Yükümlülükleri</Text>
-        <Text style={styles.modalText}>
-          Kullanıcı, uygulamayı hukuka uygun şekilde kullanacağını ve kişisel verilerinin işlenmesini kabul ettiğini beyan eder.
-        </Text>
-        <Text style={styles.bulletPoint}>
-          • Kullanıcı, uygulamayı yalnızca meşru amaçlarla kullanacaktır.
-        </Text>
-        <Text style={styles.bulletPoint}>
-          • Kullanıcı, diğer kişilerin haklarını ihlal etmemeyi taahhüt eder.
-        </Text>
-
-        <Text style={styles.sectionTitle}>4. Sözleşmenin Yürürlüğe Girmesi ve Feshi</Text>
-        <Text style={styles.modalText}>
-          Kullanıcı, bu sözleşmeyi onayladığında hükümleri kabul etmiş sayılır.
-        </Text>
-        <Text style={styles.modalText}>
-          İlgili Kurum/Kuruluş, Kullanıcı’nın sözleşmeye aykırı hareket ettiğini tespit ederse, hizmetleri durdurma hakkına sahiptir.
-        </Text>
-
-        <Text style={styles.sectionTitle}>5. Uyuşmazlıkların Çözümü</Text>
-        <Text style={styles.modalText}>
-          İşbu sözleşmeden doğabilecek uyuşmazlıkların çözümünde [İlgili Kurum/Kuruluş]’un bulunduğu ülke/şehrin yetkili mahkemeleri ve icra daireleri yetkilidir.
-        </Text>
-
-        <Text style={styles.sectionTitle}>6. Son Hükümler</Text>
-        <Text style={styles.modalText}>
-          Bu sözleşme, Kullanıcı’nın onayı ile yürürlüğe girer ve taraflar arasında bağlayıcıdır.
-        </Text>
-      </ScrollView>
-
-      {/* Onay Butonu */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.acceptButton}
-          onPress={() => {
-            setIsTermsAccepted(true); // Checkbox işaretlensin
-            setIsTermsModalVisible(false); // Modal kapansın
-          }}
-        >
-          <Text style={styles.acceptButtonText}>Okudum ve Onaylıyorum</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+  {/* Kullanıcı Sözleşmesi Modalı */}
+  <Agreement setIsTermsModalVisible={setIsTermsModalVisible} isTermsModalVisible={isTermsModalVisible} setIsTermsAccepted={setIsTermsAccepted}/>
 
       <CustomButton
         onPress={handleLogin}
