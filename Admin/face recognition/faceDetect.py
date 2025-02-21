@@ -1,10 +1,14 @@
 import face_recognition
 import cv2
+import os
 
 def preprocess_image(image_path):
     """
     Görüntüyü yükler, boyutunu düzenler ve bulanıklığı azaltır.
     """
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Görüntü dosyası bulunamadı: {image_path}")
+    
     image = cv2.imread(image_path)
     if image is None:
         raise ValueError(f"Görüntü yüklenemedi: {image_path}")
@@ -17,6 +21,9 @@ def load_and_encode_image(image_path):
     """
     Görüntüyü yükler ve yüz kodlamasını çıkarır.
     """
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Görüntü dosyası bulunamadı: {image_path}")
+
     image = face_recognition.load_image_file(image_path)
     face_encodings = face_recognition.face_encodings(image, model="large")  # Daha hassas model
 
@@ -37,38 +44,58 @@ def compare_faces(known_encoding, unknown_encoding):
 
     return match, distance
 
-# Kayıp kişinin fotoğrafı
-missing_person_image_path = "polat.jpg"
-preprocess_image(missing_person_image_path)  # Görüntüyü işle
-missing_person_encoding = load_and_encode_image(missing_person_image_path)
+def find_image_path(filename):
+    """
+    Dosya yolunu, hangi dizinde olursa olsun bulur.
+    """
+    repo_path = os.path.expanduser("~")  # Kullanıcı dizinini al (Windows/Linux uyumlu)
+    for root, dirs, files in os.walk(repo_path):
+        if filename in files:
+            return os.path.join(root, filename)
+    return None
 
-# Bulunan kişinin fotoğrafı
-found_person_image_path = "trump1.jpg"
-preprocess_image(found_person_image_path)  # Görüntüyü işle
-found_person_encoding = load_and_encode_image(found_person_image_path)
+# **🔹 Görüntü dosyalarını arama**
+missing_person_image_path = find_image_path("polat.jpg")  # Kayıp kişi fotoğrafı
+found_person_image_path = find_image_path("trump1.jpg")  # Bulunan kişi fotoğrafı
 
-# Yüzleri karşılaştır ve skoru al
+if not missing_person_image_path or not found_person_image_path:
+    print("Görüntü dosyaları bulunamadı.")
+    exit()
+
+# **🔹 Görüntüleri işle ve yüz kodlamalarını çıkar**
+try:
+    preprocess_image(missing_person_image_path)  # Görüntüyü işle
+    missing_person_encoding = load_and_encode_image(missing_person_image_path)
+
+    preprocess_image(found_person_image_path)  # Görüntüyü işle
+    found_person_encoding = load_and_encode_image(found_person_image_path)
+except FileNotFoundError as e:
+    print(f"Hata: {e}")
+    exit()
+except ValueError as e:
+    print(f"Hata: {e}")
+    exit()
+
+# **🔹 Yüzleri karşılaştır ve skoru al**
 face_match, face_distance = compare_faces(missing_person_encoding, found_person_encoding)
 
-# Sonucu yazdır
+# **🔹 Sonucu yazdır**
 if face_distance is not None:
-    print(f"Karşılaştırma Skoru (Mesafe): {face_distance}")  # Skoru yazdır
+    print(f"🔍 Karşılaştırma Skoru (Mesafe): {face_distance:.4f}")  # Skoru yazdır
 else:
-    print("Yüzlerden biri tespit edilemedi!")
+    print("⚠️ Yüzlerden biri tespit edilemedi!")
 
-# Eşik değer belirleme
+# **🔹 Eşik değer belirleme**
 low_suspicion_threshold = 0.55  # Güçlü eşleşme
 high_suspicion_threshold = 0.63  # Şüpheli eşleşme
 
 if face_distance is not None:
     if face_distance < low_suspicion_threshold:
-        print(" Eşleşme bulundu! Bu kişi kayıp kişi olabilir. (Şüphe düşük)")
-        print("kayip kisinin fotografinin adresi",missing_person_image_path)
-        print(f"bulan kisinin yukledigi fotografin adresi {found_person_image_path}")
+        print("✅ Eşleşme bulundu! Bu kişi kayıp kişi olabilir. (Şüphe düşük)")
     elif face_distance < high_suspicion_threshold:
-        print(" Eşleşme bulundu ancak şüpheli! Kontrol edin, benzer kişiler olabilir.")
-        print("kayip kisinin fotografinin adresi",missing_person_image_path)
-        print(f"bulan kisinin yukledigi fotografin adresi {found_person_image_path}")
+        print("⚠️ Eşleşme bulundu ancak şüpheli! Kontrol edin, benzer kişiler olabilir.")
     else:
-        print(" Eşleşme bulunamadı.")
-        
+        print("❌ Eşleşme bulunamadı.")
+    
+    print("📌 Kayıp kişinin fotoğrafının adresi:", missing_person_image_path)
+    print("📌 Bulunan kişinin fotoğrafının adresi:", found_person_image_path)
