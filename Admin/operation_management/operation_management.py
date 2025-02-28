@@ -1,15 +1,13 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget,
-                             QGroupBox, QTableWidget, QTableWidgetItem, QLineEdit, QTextEdit, 
-                             QComboBox, QMessageBox, QDialog, QFormLayout, QListWidgetItem, QDialogButtonBox)
+ QGroupBox, QTableWidget, QTableWidgetItem, QLineEdit, QTextEdit,
+QComboBox, QMessageBox, QDialog, QFormLayout, QListWidgetItem, QDialogButtonBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
-from harita import HaritaYonetimi
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from dialogs import NotificationDetailDialog
+from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
 from styles_dark import *
 from styles_light import *
-
-from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
-from harita import MapWidget
 from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog
 from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
 from .table_utils import create_status_item, sync_tables
@@ -20,7 +18,7 @@ class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
     def __init__(self):
         super().__init__()
-        self.harita = HaritaYonetimi()  # Harita yönetimi örneği
+        self.api_key = "AIzaSyDCmRzP4rGm-oM8t1iD72xqCWWGpb-eTBM"
         self.initUI()
 
     def initUI(self):
@@ -33,8 +31,9 @@ class OperationManagementTab(QWidget):
         self.messages_list = QListWidget()  # Ekip mesajlaşma kısmı
         
         # Harita Bölümü
-        self.map_widget = MapWidget(self.harita)  # Harita widget'ını kullanıyoruz
-        
+        self.map_widget = QWebEngineView()
+        self.load_default_map()
+
         # Sağ Panel - Bildirimler ve Görevler
         right_info_panel = QWidget()
         right_info_layout = QVBoxLayout(right_info_panel)
@@ -289,6 +288,89 @@ class OperationManagementTab(QWidget):
         # Örnek verileri yükle
         self.load_sample_data()
         self.load_team_data()
+
+
+
+    def load_default_map(self):
+        """Türkiye merkezli bir harita yükler"""
+        # Türkiye için merkez koordinatları (yaklaşık olarak Ankara)
+        turkey_lat = 39.9334
+        turkey_lng = 32.8597
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+            <meta charset="utf-8">
+            <title>Operasyon Haritası - Türkiye</title>
+            <style>
+                html, body, #map {{
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                }}
+            </style>
+            <script src="https://maps.googleapis.com/maps/api/js?key={self.api_key}&callback=initMap&libraries=places" async defer></script>
+            <script>
+                var map;
+                var markers = [];
+                
+                function initMap() {{
+                    map = new google.maps.Map(document.getElementById('map'), {{
+                        center: {{lat: {turkey_lat}, lng: {turkey_lng}}},
+                        zoom: 6,
+                        mapTypeControl: true,
+                        mapTypeControlOptions: {{
+                            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                            position: google.maps.ControlPosition.TOP_RIGHT
+                        }}
+                    }});
+                    
+                    // Ekip üyeleri için işaretleyiciler ekle (gerçek uygulamada dinamik olacaktır)
+                    addTeamMarkers();
+                }}
+                
+                function addTeamMarkers() {{
+                    // Örnek ekip lokasyonları - gerçek uygulamada bu veriler veri kaynağınızdan gelecektir
+                    var teamLocations = [
+                        {{lat: 39.9334, lng: 32.8597, name: 'Takım 1', status: 'Aktif'}},
+                        {{lat: 41.0082, lng: 28.9784, name: 'Takım 2', status: 'Görevde'}},
+                        {{lat: 38.4237, lng: 27.1428, name: 'Takım 3', status: 'Hazır'}}
+                    ];
+                    
+                    for (var i = 0; i < teamLocations.length; i++) {{
+                        var marker = new google.maps.Marker({{
+                            position: {{lat: teamLocations[i].lat, lng: teamLocations[i].lng}},
+                            map: map,
+                            title: teamLocations[i].name + ' - ' + teamLocations[i].status
+                        }});
+                        
+                        markers.push(marker);
+                        
+                        // Her işaretleyici için bilgi penceresi ekle
+                        (function(marker, data) {{
+                            var infoWindow = new google.maps.InfoWindow({{
+                                content: '<div><strong>' + data.name + '</strong><br>' + 
+                                         'Durum: ' + data.status + '</div>'
+                            }});
+                            
+                            marker.addListener('click', function() {{
+                                infoWindow.open(map, marker);
+                            }});
+                        }})(marker, teamLocations[i]);
+                    }}
+                }}
+            </script>
+        </head>
+        <body>
+            <div id="map"></div>
+        </body>
+        </html>
+        """
+        self.map_widget.setHtml(html)
+
+
 
 
     def refresh_map(self):
