@@ -12,13 +12,18 @@ from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, c
 from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
 from .table_utils import create_status_item, sync_tables
 from .dialogs_op_man import TeamDialog
-
+from dotenv import load_dotenv
+import os
 
 class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
     def __init__(self):
         super().__init__()
-        self.api_key = "AIzaSyDCmRzP4rGm-oM8t1iD72xqCWWGpb-eTBM"
+        
+        load_dotenv()
+
+        API_KEY = os.getenv("API_KEY")
+        self.api_key = API_KEY
         self.initUI()
 
     def initUI(self):
