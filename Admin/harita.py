@@ -315,8 +315,9 @@ class GoogleMapsModule(QMainWindow):
 
 # Usage example
 if __name__ == "__main__":
-    # Replace with your actual Google Maps API key
-    API_KEY = "API_KEY"
+    import os
+
+    API_KEY = os.getenv("GITHUB_API_KEY")
 
     app = QApplication(sys.argv)
     map_module = GoogleMapsModule(API_KEY)
