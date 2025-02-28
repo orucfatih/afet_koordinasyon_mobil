@@ -19,6 +19,8 @@ import json
 from PyQt5.QtCore import QUrl, pyqtSlot, Qt, QTimer
 from PyQt5.QtGui import QIcon
 
+from dotenv import load_dotenv
+
 
 class PlaceAutocomplete(QLineEdit):
     def __init__(self, api_key, parent=None):
@@ -316,8 +318,9 @@ class GoogleMapsModule(QMainWindow):
 # Usage example
 if __name__ == "__main__":
     import os
+    load_dotenv()
 
-    API_KEY = os.getenv("GITHUB_API_KEY")
+    API_KEY = os.getenv("API_KEY")
 
     app = QApplication(sys.argv)
     map_module = GoogleMapsModule(API_KEY)

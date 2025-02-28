@@ -1,0 +1,9 @@
+# Sanal ortam dosyaları
+.venv/
+
+# Ortam değişkenleri (API Key gibi hassas bilgiler)
+.env
+
+# Pycache ve IDE dosyaları
+__pycache__/
+.vscode/
