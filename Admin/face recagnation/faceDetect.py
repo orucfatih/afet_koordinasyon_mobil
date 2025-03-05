@@ -86,8 +86,9 @@ class FaceSearchApp(QMainWindow):
 
         # Çalışma dizini ve klasörler
         self.work_dir = os.getcwd()
-        self.missing_folder = os.path.join(self.work_dir, 'missed_persons')
-        self.found_folder = os.path.join(self.work_dir, 'founded_persons')
+        self.missing_folder = os.path.join(self.work_dir,"Admin","face recagnation","missed_persons")
+        self.found_folder = os.path.join(self.work_dir, "Admin","face recagnation","founded_persons")
+        
 
         # Klasörleri kontrol et
         self.check_required_folders()
