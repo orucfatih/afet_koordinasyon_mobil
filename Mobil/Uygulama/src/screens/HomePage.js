@@ -7,7 +7,6 @@ import { ProfileScreen, SettingsScreen, ChatScreen, Info} from "../components/in
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialIcons';  
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
-import { RNCamera } from 'react-native-camera'; // Kamera modülünü import ediyoruz
 
 const { width } = Dimensions.get('window'); 
 
@@ -92,34 +91,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     };
     setRegion(limitedRegion);
   };
-  const checkAndRequestCameraPermission = async () => {
-    try {
-      let permission;
   
-      if (Platform.OS === 'android') {
-        permission = await request(PERMISSIONS.ANDROID.CAMERA);
-      } else if (Platform.OS === 'ios') {
-        permission = await request(PERMISSIONS.IOS.CAMERA);
-      }
-  
-      if (permission === RESULTS.GRANTED) {
-        setCameraVisible(true);
-      } else if (permission === RESULTS.BLOCKED) {
-        Alert.alert(
-          'Kamera İzni Engellendi',
-          'Lütfen cihaz ayarlarından kameraya erişim izni verin.'
-        );
-      } else {
-        Alert.alert(
-          'Kamera İzni Gerekli',
-          'Kamerayı kullanabilmek için izin vermeniz gerekiyor.'
-        );
-      }
-    } catch (error) {
-      console.error('Kamera izni kontrolü sırasında hata oluştu:', error);
-      Alert.alert('Hata', 'Kamera izni alınırken bir hata oluştu.');
-    }
-  };  
   const renderEarthquakeCard = ({ item }) => {
     // Deprem şiddetine göre renk belirleme
     const getMagnitudeColor = (magnitude) => {
@@ -212,11 +184,14 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
           />
         ))}
       </View>
-      <TouchableOpacity style={styles.bigButton} onPress={checkAndRequestCameraPermission}>
+      <TouchableOpacity 
+        style={styles.bigButton} 
+        onPress={() => navigation.navigate('Camera')}
+      >
         <Text style={styles.bigButtonText}>AFET BİLDİR</Text>
         <Ionicons style={styles.camera} name="camera" size={30} color="white" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.bigButton2} onPress={checkAndRequestCameraPermission}>
+      <TouchableOpacity style={styles.bigButton2} onPress={() => navigation.navigate('Camera')}>
         <Text style={styles.bigButtonText2}>ENKAZ ALTINDAYIM</Text>
       </TouchableOpacity>
       <MapView
