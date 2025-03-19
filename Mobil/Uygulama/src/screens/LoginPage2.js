@@ -13,7 +13,7 @@ import {
 import React, { useState, useEffect } from 'react';
 import { Loading, CustomTextInput, CustomButton, Agreement } from '../components/index.js';
 import { useSelector, useDispatch } from 'react-redux';
-import { setIsLoading, login, autoLogin } from '../redux/userSlice.js';
+import { setIsLoading, staffLogin, staffAutoLogin } from '../redux/userSlice.js';
 import { Ionicons } from '@expo/vector-icons';
 
 const generateCaptcha = () => {
@@ -33,7 +33,7 @@ const LoginPage2 = ({ navigation }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(autoLogin());
+    dispatch(staffAutoLogin());
   }, []);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ const LoginPage2 = ({ navigation }) => {
       return;
     }
 
-    dispatch(login({ email, password }))
+    dispatch(staffLogin({ email, password }))
       .unwrap()
       .catch((errorMessage) => {
         setAttempts(attempts + 1);

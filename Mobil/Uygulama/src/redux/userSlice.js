@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
 export const login = createAsyncThunk('user/login', async({email,password}, {rejectWithValue})=> {
     try {
-        //auth nasıl çalışıyor bilmiyorum
         const auth =getAuth();
         const userCredantial = await signInWithEmailAndPassword(auth, email, password)
 
@@ -40,7 +39,45 @@ export const login = createAsyncThunk('user/login', async({email,password}, {rej
         }
     }
 })
-  
+
+//!!Personel Giriş
+export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, password }, { rejectWithValue }) => {
+  try {
+      const auth = getAuth();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      const user = userCredential.user;
+      const token = user.stsTokenManager.accessToken;
+
+      // Kullanıcının personel olup olmadığını kontrol et
+      const idTokenResult = await user.getIdTokenResult();
+      const isStaff = idTokenResult.claims.role === "staff";
+
+      if (!isStaff) {
+          return rejectWithValue("Personel yetkiniz bulunmamaktadır.");
+      }
+
+      const staffData = {
+          token,
+          user: user,
+      };
+
+      await AsyncStorage.setItem("staffToken", token);
+
+      return staffData;
+
+  } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+          return rejectWithValue('Personel kaydı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          return rejectWithValue('Hatalı personel bilgileri. Lütfen tekrar deneyin.');
+      } else if (error.code === 'auth/too-many-requests') {
+          return rejectWithValue('Çok fazla giriş denemesi. Daha sonra tekrar deneyin.');
+      } else {
+          return rejectWithValue(`Bilinmeyen hata: ${error.message}`);
+      }
+  }
+});
 
 //Şifre Değiştirme
 export const updateCipher = createAsyncThunk('user/updatePassword', 
@@ -116,13 +153,30 @@ export const autoLogin = createAsyncThunk('user/autoLogin', async() => {
     }
 })
 
-//Çıkış
+//!!Personel Otomatik Giriş
+export const staffAutoLogin = createAsyncThunk('user/staffAutoLogin', async() => {
+  try {
+      const token = await AsyncStorage.getItem("staffToken")
+      
+      if(token){
+          return token
+      }
+      else{
+          throw new Error("User not found.")
+      }
+  } catch (error) {
+      throw error
+  }
+})
+
+//!!Çıkış
 export const logout = createAsyncThunk('user/logout', async () => {
     try {
         const auth = getAuth()
         await signOut(auth)
 
         await AsyncStorage.removeItem("userToken")
+        await AsyncStorage.removeItem("staffToken")
         return null
 
     } catch (error) {
@@ -181,6 +235,7 @@ export const register = createAsyncThunk(
 const initialState = {
     isLoading: false,
     isAuth: false,
+    isStaffAuth:false,
     token:null,
     user:null,
     error: null,
@@ -221,6 +276,22 @@ export const userSlice = createSlice({
                 state.error=action.error.message
             })
 
+            .addCase(staffLogin.pending,(state)=>{
+              state.isLoading=true
+              state.isStaffAuth=false
+          })
+          .addCase(staffLogin.fulfilled,(state,action)=>{
+              state.isLoading=false
+              state.isStaffAuth=true
+              state.user=action.payload.user
+              state.token=action.payload.token
+          })
+          .addCase(staffLogin.rejected,(state, action)=>{
+              state.isLoading=false
+              state.isStaffAuth=false
+              state.error=action.error.message
+          })
+
             .addCase(autoLogin.pending,(state)=>{
                 state.isLoading=true
                 state.isAuth=false
@@ -236,12 +307,28 @@ export const userSlice = createSlice({
                 state.token=null
             })
 
+            .addCase(staffAutoLogin.pending,(state)=>{
+              state.isLoading=true
+              state.isStaffAuth=false
+          })
+          .addCase(staffAutoLogin.fulfilled,(state,action)=>{
+              state.isLoading=false
+              state.isStaffAuth=true
+              state.token=action.payload
+          })
+          .addCase(staffAutoLogin.rejected,(state)=>{
+              state.isLoading=false
+              state.isStaffAuth=false
+              state.token=null
+          })
+
             .addCase(logout.pending, (state)=> {
                 state.isLoading=true
             })
             .addCase(logout.fulfilled, (state)=> {
                 state.isLoading=false
                 state.isAuth=false
+                state.isStaffAuth=false
                 state.token=null
                 state.error=null
             })
