@@ -10,7 +10,12 @@ from styles_dark import *
 from styles_light import *
 from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
+import os
 
+def get_icon_path(icon_name):
+    """İkon dosyasının tam yolunu döndürür"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(current_dir, 'icons', icon_name)
 
 class AfetYonetimAdmin(QMainWindow):
     """Ana Uygulama Penceresi"""
@@ -47,7 +52,7 @@ class AfetYonetimAdmin(QMainWindow):
         
         # Mesaj butonu
         message_btn = QToolButton()
-        message_btn.setIcon(QIcon('icons/message.png'))
+        message_btn.setIcon(QIcon(get_icon_path('message.png')))
         message_btn.setIconSize(QSize(24, 24))
         message_btn.setToolTip("Mesajlar")
         message_btn.setStyleSheet("""

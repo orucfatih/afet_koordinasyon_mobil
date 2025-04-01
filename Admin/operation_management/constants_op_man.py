@@ -6,7 +6,7 @@ TEAM_TABLE_HEADERS = [
 
 EQUIPMENT_TABLE_HEADERS = [
     "Ekipman ID", "Ekipman Adı", "Tür", "Durum",
-    "Son Kontrol", "Sorumlu Personel"
+    "Son Kontrol", "Sorumlu Personel", "Ekip ID"
 ]
 
 HISTORY_TABLE_HEADERS = [

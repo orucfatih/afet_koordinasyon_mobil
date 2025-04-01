@@ -18,6 +18,11 @@ from .constants_op_man import (TEAM_TABLE_HEADERS,
 from .table_utils import create_status_item, sync_tables
 from .dialogs_op_man import TeamDialog
 
+def get_icon_path(icon_name):
+    """İkon dosyasının tam yolunu döndürür"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(current_dir, 'icons', icon_name)
+
 class MessageItem(QListWidgetItem):
     """Özel Mesaj Item Sınıfı"""
     def __init__(self, sender, message, timestamp):
@@ -45,7 +50,7 @@ def create_team_dialog(parent, save_callback):
     contact_input = QLineEdit()
 
     save_button = QPushButton(" Kaydet")
-    save_button.setIcon(QIcon('icons/save.png'))
+    save_button.setIcon(QIcon(get_icon_path('save.png')))
     save_button.clicked.connect(
         lambda: save_callback(dialog, team_id_input, leader_input, 
                             institution_input, status_combo, contact_input))
@@ -78,7 +83,7 @@ def create_contact_dialog(parent, team_id, team_leader, contact):
     
     send_button = QPushButton(" Mesaj Gönder")
     send_button.setStyleSheet(GREEN_BUTTON_STYLE)
-    send_button.setIcon(QIcon('icons/paper-plane.png'))
+    send_button.setIcon(QIcon(get_icon_path('paper-plane.png')))
     
     layout.addWidget(info_label)
     layout.addWidget(message_input)
@@ -171,17 +176,17 @@ class TeamManagementDialog(QDialog):
         team_buttons = QHBoxLayout()
         
         add_team_btn = QPushButton(" Yeni Ekip Ekle")
-        add_team_btn.setIcon(QIcon('icons/add-group.png'))
+        add_team_btn.setIcon(QIcon(get_icon_path('add-group.png')))
         add_team_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         add_team_btn.clicked.connect(self.add_new_team)
         
         remove_team_btn = QPushButton(" Ekip Sil")
-        remove_team_btn.setIcon(QIcon('icons/delete-group.png'))
+        remove_team_btn.setIcon(QIcon(get_icon_path('delete-group.png')))
         remove_team_btn.setStyleSheet(RED_BUTTON_STYLE)
         remove_team_btn.clicked.connect(self.remove_team)
         
         edit_team_btn = QPushButton(" Ekip Bilgilerini Düzenle")
-        edit_team_btn.setIcon(QIcon('icons/edit-group.png'))
+        edit_team_btn.setIcon(QIcon(get_icon_path('edit-group.png')))
         edit_team_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
         edit_team_btn.clicked.connect(self.edit_team)
         
@@ -200,15 +205,15 @@ class TeamManagementDialog(QDialog):
         
         equipment_buttons = QHBoxLayout()
         add_equipment_btn = QPushButton(" Ekipman Ekle")
-        add_equipment_btn.setIcon(QIcon('icons/add-tool.png'))
+        add_equipment_btn.setIcon(QIcon(get_icon_path('add-tool.png')))
         add_equipment_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         
         edit_equipment_btn = QPushButton(" Ekipman Düzenle")
-        edit_equipment_btn.setIcon(QIcon('icons/edit-tool.png'))
+        edit_equipment_btn.setIcon(QIcon(get_icon_path('edit-tool.png')))
         edit_equipment_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
         
         remove_equipment_btn = QPushButton(" Ekipman Çıkar")
-        remove_equipment_btn.setIcon(QIcon('icons/delete-tool.png'))
+        remove_equipment_btn.setIcon(QIcon(get_icon_path('delete-tool.png')))
         remove_equipment_btn.setStyleSheet(RED_BUTTON_STYLE)
         
         equipment_buttons.addWidget(add_equipment_btn)

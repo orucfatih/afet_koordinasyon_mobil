@@ -8,7 +8,7 @@ from dialogs import NotificationDetailDialog
 from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
 from styles_dark import *
 from styles_light import *
-from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog
+from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog, get_icon_path
 from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
 from .table_utils import create_status_item, sync_tables
 from .dialogs_op_man import TeamDialog
@@ -59,13 +59,13 @@ class OperationManagementTab(QWidget):
         # Cevapla butonu
         reply_notification_btn = QPushButton(" Cevapla")
         reply_notification_btn.setStyleSheet(GREEN_BUTTON_STYLE)
-        reply_notification_btn.setIcon(QIcon('icons/reply.png'))
+        reply_notification_btn.setIcon(QIcon(get_icon_path('customer-service.png')))
         reply_notification_btn.clicked.connect(self.reply_to_notification)
         
         # Silme butonu
         delete_notification_btn = QPushButton(" Sil")
         delete_notification_btn.setStyleSheet(RED_BUTTON_STYLE)
-        delete_notification_btn.setIcon(QIcon('icons/bin.png'))
+        delete_notification_btn.setIcon(QIcon(get_icon_path('bin.png')))
         delete_notification_btn.clicked.connect(self.delete_selected_notifications)
         
         # Butonları layout'a ekle
@@ -94,13 +94,13 @@ class OperationManagementTab(QWidget):
         # Düzenleme butonu
         edit_task_btn = QPushButton(" Düzenle")
         edit_task_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
-        edit_task_btn.setIcon(QIcon('icons/equalizer.png'))
+        edit_task_btn.setIcon(QIcon(get_icon_path('equalizer.png')))
         edit_task_btn.clicked.connect(self.edit_selected_task)
         
         # Silme butonu
         delete_task_btn = QPushButton(" Sil")
         delete_task_btn.setStyleSheet(RED_BUTTON_STYLE)
-        delete_task_btn.setIcon(QIcon('icons/bin.png'))
+        delete_task_btn.setIcon(QIcon(get_icon_path('bin.png')))
         delete_task_btn.clicked.connect(self.delete_selected_task)
         
         # Butonları layout'a ekle
@@ -195,14 +195,14 @@ class OperationManagementTab(QWidget):
         # Ekip Yönetim Butonu
         team_management_btn = QPushButton(" Ekip Yönetimi")
         team_management_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
-        team_management_btn.setIcon(QIcon('icons/team-management.png'))
+        team_management_btn.setIcon(QIcon(get_icon_path('add-group.png')))
         team_management_btn.clicked.connect(self.show_team_management)
         
         # İletişim Butonu
         contact_button = QPushButton(" Ekip ile İletişime Geç")
         contact_button.clicked.connect(self.contact_team)
         contact_button.setStyleSheet(GREEN_BUTTON_STYLE)
-        contact_button.setIcon(QIcon('icons/customer-service.png'))
+        contact_button.setIcon(QIcon(get_icon_path('customer-service.png')))
         
         # Butonları yatay düzende ekle
         bottom_buttons.addWidget(team_management_btn)
@@ -268,7 +268,7 @@ class OperationManagementTab(QWidget):
         
         # Görev atama butonu
         assign_btn = QPushButton(" Görev Ata")
-        assign_btn.setIcon(QIcon('icons/assign-task.png'))
+        assign_btn.setIcon(QIcon(get_icon_path('add1.png')))
         assign_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         assign_btn.clicked.connect(self.assign_task)
         
