@@ -216,12 +216,17 @@ class TeamManagementDialog(QDialog):
         equipment_buttons.addWidget(remove_equipment_btn)
         
         self.equipment_table = QTableWidget()
-        self.equipment_table.setColumnCount(6)
+        self.equipment_table.setColumnCount(7)  # Updated to include team ID
         self.equipment_table.setHorizontalHeaderLabels([
             "Ekipman ID", "Ekipman Adı", "Tür", "Durum",
-            "Son Kontrol", "Sorumlu Personel"
+            "Son Kontrol", "Sorumlu Personel", "Ekip ID"
         ])
         self.equipment_table.setStyleSheet(TABLE_WIDGET_STYLE)
+        
+        # Connect equipment management buttons
+        add_equipment_btn.clicked.connect(self.add_equipment)
+        edit_equipment_btn.clicked.connect(self.edit_equipment)
+        remove_equipment_btn.clicked.connect(self.remove_equipment)
         
         equipment_layout.addLayout(equipment_buttons)
         equipment_layout.addWidget(self.equipment_table)
@@ -271,6 +276,7 @@ class TeamManagementDialog(QDialog):
             row = self.equipment_table.rowCount()
             self.equipment_table.insertRow(row)
             
+            # Ekipman verilerini ekle
             for col, data in enumerate(equipment):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
@@ -285,6 +291,13 @@ class TeamManagementDialog(QDialog):
                         item.setBackground(QBrush(QColor("#f44336")))
                 
                 self.equipment_table.setItem(row, col, item)
+            
+            # Varsayılan ekip ID'si ekle (ilk ekibin ID'si)
+            if self.team_table.rowCount() > 0:
+                default_team_id = self.team_table.item(0, 0).text()
+                team_id_item = QTableWidgetItem(default_team_id)
+                team_id_item.setTextAlignment(Qt.AlignCenter)
+                self.equipment_table.setItem(row, 6, team_id_item)
         
         self.equipment_table.resizeColumnsToContents()
 
@@ -480,4 +493,180 @@ class TeamManagementDialog(QDialog):
                 )
                 break
         
-        dialog.accept() 
+        dialog.accept()
+
+    def add_equipment(self):
+        """Yeni ekipman eklemek için dialog açar"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Ekipman Ekle")
+        dialog.setFixedSize(400, 400)
+        
+        layout = QFormLayout()
+        
+        equipment_id = QLineEdit()
+        equipment_name = QLineEdit()
+        equipment_type = QComboBox()
+        equipment_type.addItems(["Kurtarma Ekipmanı", "Arama Ekipmanı", "Güç Ekipmanı", 
+                               "Sağlık Ekipmanı", "Yangın Ekipmanı", "İletişim Ekipmanı", 
+                               "Su Tahliye", "Diğer"])
+        
+        status_combo = QComboBox()
+        status_combo.addItems(["Aktif", "Bakımda", "Onarımda"])
+        
+        last_check = QLineEdit()
+        responsible = QLineEdit()
+        
+        # Ekip ID seçimi için combobox
+        team_id_combo = QComboBox()
+        # Mevcut ekip ID'lerini ekle
+        for row in range(self.team_table.rowCount()):
+            team_id = self.team_table.item(row, 0).text()
+            team_id_combo.addItem(team_id)
+        
+        layout.addRow("Ekipman ID:", equipment_id)
+        layout.addRow("Ekipman Adı:", equipment_name)
+        layout.addRow("Tür:", equipment_type)
+        layout.addRow("Durum:", status_combo)
+        layout.addRow("Son Kontrol:", last_check)
+        layout.addRow("Sorumlu Personel:", responsible)
+        layout.addRow("Ekip ID:", team_id_combo)
+        
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        
+        def save_equipment():
+            if not all([equipment_id.text(), equipment_name.text(), last_check.text(), responsible.text()]):
+                QMessageBox.warning(dialog, "Uyarı", "Lütfen tüm alanları doldurun!")
+                return
+            
+            row = self.equipment_table.rowCount()
+            self.equipment_table.insertRow(row)
+            
+            # Ekipman bilgilerini tabloya ekle
+            self.equipment_table.setItem(row, 0, QTableWidgetItem(equipment_id.text()))
+            self.equipment_table.setItem(row, 1, QTableWidgetItem(equipment_name.text()))
+            self.equipment_table.setItem(row, 2, QTableWidgetItem(equipment_type.currentText()))
+            
+            status_item = QTableWidgetItem(status_combo.currentText())
+            if status_combo.currentText() == "Aktif":
+                status_item.setBackground(QBrush(QColor("#4CAF50")))
+            elif status_combo.currentText() == "Bakımda":
+                status_item.setBackground(QBrush(QColor("#FFA500")))
+            else:  # Onarımda
+                status_item.setBackground(QBrush(QColor("#f44336")))
+            self.equipment_table.setItem(row, 3, status_item)
+            
+            self.equipment_table.setItem(row, 4, QTableWidgetItem(last_check.text()))
+            self.equipment_table.setItem(row, 5, QTableWidgetItem(responsible.text()))
+            self.equipment_table.setItem(row, 6, QTableWidgetItem(team_id_combo.currentText()))
+            
+            dialog.accept()
+        
+        buttons.accepted.connect(save_equipment)
+        buttons.rejected.connect(dialog.reject)
+        
+        layout.addWidget(buttons)
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def edit_equipment(self):
+        """Seçili ekipmanı düzenler"""
+        selected_items = self.equipment_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir ekipman seçin!")
+            return
+        
+        row = selected_items[0].row()
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Ekipman Düzenle")
+        dialog.setFixedSize(400, 400)
+        
+        layout = QFormLayout()
+        
+        equipment_id = QLineEdit(self.equipment_table.item(row, 0).text())
+        equipment_name = QLineEdit(self.equipment_table.item(row, 1).text())
+        
+        equipment_type = QComboBox()
+        equipment_type.addItems(["Kurtarma Ekipmanı", "Arama Ekipmanı", "Güç Ekipmanı", 
+                               "Sağlık Ekipmanı", "Yangın Ekipmanı", "İletişim Ekipmanı", 
+                               "Su Tahliye", "Diğer"])
+        equipment_type.setCurrentText(self.equipment_table.item(row, 2).text())
+        
+        status_combo = QComboBox()
+        status_combo.addItems(["Aktif", "Bakımda", "Onarımda"])
+        status_combo.setCurrentText(self.equipment_table.item(row, 3).text())
+        
+        last_check = QLineEdit(self.equipment_table.item(row, 4).text())
+        responsible = QLineEdit(self.equipment_table.item(row, 5).text())
+        
+        team_id_combo = QComboBox()
+        # Mevcut ekip ID'lerini ekle
+        for i in range(self.team_table.rowCount()):
+            team_id = self.team_table.item(i, 0).text()
+            team_id_combo.addItem(team_id)
+        current_team_id = self.equipment_table.item(row, 6).text()
+        team_id_combo.setCurrentText(current_team_id)
+        
+        layout.addRow("Ekipman ID:", equipment_id)
+        layout.addRow("Ekipman Adı:", equipment_name)
+        layout.addRow("Tür:", equipment_type)
+        layout.addRow("Durum:", status_combo)
+        layout.addRow("Son Kontrol:", last_check)
+        layout.addRow("Sorumlu Personel:", responsible)
+        layout.addRow("Ekip ID:", team_id_combo)
+        
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        
+        def update_equipment():
+            if not all([equipment_id.text(), equipment_name.text(), last_check.text(), responsible.text()]):
+                QMessageBox.warning(dialog, "Uyarı", "Lütfen tüm alanları doldurun!")
+                return
+            
+            # Ekipman bilgilerini güncelle
+            self.equipment_table.setItem(row, 0, QTableWidgetItem(equipment_id.text()))
+            self.equipment_table.setItem(row, 1, QTableWidgetItem(equipment_name.text()))
+            self.equipment_table.setItem(row, 2, QTableWidgetItem(equipment_type.currentText()))
+            
+            status_item = QTableWidgetItem(status_combo.currentText())
+            if status_combo.currentText() == "Aktif":
+                status_item.setBackground(QBrush(QColor("#4CAF50")))
+            elif status_combo.currentText() == "Bakımda":
+                status_item.setBackground(QBrush(QColor("#FFA500")))
+            else:  # Onarımda
+                status_item.setBackground(QBrush(QColor("#f44336")))
+            self.equipment_table.setItem(row, 3, status_item)
+            
+            self.equipment_table.setItem(row, 4, QTableWidgetItem(last_check.text()))
+            self.equipment_table.setItem(row, 5, QTableWidgetItem(responsible.text()))
+            self.equipment_table.setItem(row, 6, QTableWidgetItem(team_id_combo.currentText()))
+            
+            dialog.accept()
+        
+        buttons.accepted.connect(update_equipment)
+        buttons.rejected.connect(dialog.reject)
+        
+        layout.addWidget(buttons)
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def remove_equipment(self):
+        """Seçili ekipmanı siler"""
+        selected_items = self.equipment_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir ekipman seçin!")
+            return
+        
+        reply = QMessageBox.question(
+            self,
+            'Ekipman Silme Onayı',
+            'Seçili ekipmanı silmek istediğinizden emin misiniz?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            row = selected_items[0].row()
+            self.equipment_table.removeRow(row) 
