@@ -11,6 +11,7 @@ from styles_dark import *
 from styles_light import *
 from datetime import datetime   
 import subprocess
+from utils import get_icon_path
 
 
 
@@ -163,14 +164,14 @@ class RaporYonetimTab(QWidget):
         
         # Butonlar
         buttons_layout = QHBoxLayout()
-        self.save_button = QPushButton("💾 Raporu Kaydet")
+        self.save_button = QPushButton("Raporu Kaydet")
         self.save_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
-        self.save_button.setIcon(QIcon('icons/save.png'))
+        self.save_button.setIcon(QIcon(get_icon_path('save.png')))
         self.save_button.clicked.connect(self.save_report)
         
-        self.clear_button = QPushButton("🧹 Formu Temizle")
+        self.clear_button = QPushButton("Formu Temizle")
         self.clear_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
-        self.clear_button.setIcon(QIcon('icons/broom.png'))
+        self.clear_button.setIcon(QIcon(get_icon_path('broom.png')))
         self.clear_button.clicked.connect(self.clear_form)
         
         buttons_layout.addWidget(self.save_button)
@@ -222,9 +223,9 @@ class RaporYonetimTab(QWidget):
         right_layout.addWidget(list_group)
         
         # Silme Butonu
-        self.delete_button = QPushButton("🗑️ Seçili Raporu Sil")
+        self.delete_button = QPushButton("Seçili Raporu Sil")
         self.delete_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
-        self.delete_button.setIcon(QIcon('icons/bin.png'))
+        self.delete_button.setIcon(QIcon(get_icon_path('bin.png')))
         self.delete_button.clicked.connect(self.delete_selected_report)
         right_layout.addWidget(self.delete_button)
         

@@ -6,8 +6,11 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QLabel, QSpacerItem,
                            QSizePolicy, QProgressBar)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from styles_dark import *
 from styles_light import *
+from utils import get_icon_path
+
 
 class KaynakYonetimUI:
     def setup_ui(self, widget):
@@ -76,11 +79,15 @@ class KaynakYonetimUI:
         """İşlem butonlarını oluşturur"""
         buttons_layout = QHBoxLayout()
         
-        self.check_levels_btn = QPushButton("Kritik Seviyeleri Kontrol Et")
-        self.export_excel_btn = QPushButton("Excel'e Aktar")
+        self.simulate_btn = QPushButton("Simüle Et")
+        self.simulate_btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
+        self.simulate_btn.setIcon(QIcon(get_icon_path('simulate.png')))
         
-        for btn in [self.check_levels_btn, self.export_excel_btn]:
-            btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
+        self.export_excel_btn = QPushButton("Excel'e Aktar")
+        self.export_excel_btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
+        self.export_excel_btn.setIcon(QIcon(get_icon_path('excel.png')))
+        
+        for btn in [self.simulate_btn, self.export_excel_btn]:
             buttons_layout.addWidget(btn)
         
         self.left_layout.addLayout(buttons_layout)
@@ -147,7 +154,7 @@ class KaynakYonetimUI:
         form_layout.addRow("Konum:", self.resource_location)
         
         # Ekle butonu
-        self.add_button = QPushButton("✚ Kaynak Ekle")
+        self.add_button = QPushButton("Kaynak Ekle")
         self.add_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
         form_layout.addRow(self.add_button)
         
@@ -243,7 +250,7 @@ class KaynakYonetimUI:
         dist_layout.addRow("Hedef Konum:", self.dist_location)
         dist_layout.addRow("Öncelik:", self.dist_priority)
         
-        self.distribute_button = QPushButton("🚚 Dağıtımı Başlat")
+        self.distribute_button = QPushButton("Dağıtımı Başlat")
         self.distribute_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
         dist_layout.addRow(self.distribute_button)
         

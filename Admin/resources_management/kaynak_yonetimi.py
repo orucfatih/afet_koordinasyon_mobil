@@ -3,6 +3,7 @@ from PyQt5.QtGui import QColor
 from datetime import datetime
 import xlsxwriter
 from .kaynak_yonetimi_ui import KaynakYonetimUI
+from .simulate import SimulationDialog
 from sample_data import RESOURCE_DATA
 
 class KaynakYonetimTab(QWidget):
@@ -20,10 +21,15 @@ class KaynakYonetimTab(QWidget):
         self.ui.add_button.clicked.connect(self.add_resource)
         self.ui.search_input.textChanged.connect(self.filter_resources)
         self.ui.filter_combo.currentTextChanged.connect(self.filter_resources)
-        self.ui.check_levels_btn.clicked.connect(self.check_resource_levels)
+        self.ui.simulate_btn.clicked.connect(self.show_simulation_dialog)
         self.ui.export_excel_btn.clicked.connect(lambda: self.export_resources("excel"))
         self.ui.resource_table.itemClicked.connect(self.show_resource_details)
         self.ui.distribute_button.clicked.connect(self.distribute_resources)
+
+    def show_simulation_dialog(self):
+        """Simülasyon penceresini gösterir"""
+        dialog = SimulationDialog(self)
+        dialog.exec_()
 
     def add_resource(self):
         """Yeni kaynak ekler"""
@@ -120,7 +126,10 @@ Son Güncelleme: 15:30
                     self.ui.resource_table.setItem(selected_row, 2, QTableWidgetItem(f"{new_amount} {unit}"))
                     
                     # Kritik seviye kontrolü
-                    self.check_resource_levels()
+                    if new_amount < 100:
+                        self.ui.resource_table.item(selected_row, 4).setText("KRİTİK")
+                        self.ui.resource_table.item(selected_row, 4).setBackground(QColor(255, 0, 0, 100))
+                    
                 except ValueError:
                     pass  # Sayısal dönüşüm hatası durumunda işlem yapma
                 
@@ -158,23 +167,6 @@ Son Güncelleme: 15:30
                 show_row = False
             
             self.ui.resource_table.setRowHidden(row, not show_row)
-
-    def check_resource_levels(self):
-        """Kaynak seviyelerini kontrol eder ve kritik seviyeleri işaretler"""
-        for row in range(self.ui.resource_table.rowCount()):
-            amount = self.ui.resource_table.item(row, 2).text()
-            resource_type = self.ui.resource_table.item(row, 1).text()
-            
-            # Miktar değerini sayısal formata çevir
-            numeric_amount = float(''.join(filter(str.isdigit, amount)))
-            
-            # Kaynak tipine göre kritik seviyeleri kontrol et
-            if resource_type == "Su" and numeric_amount < 100:
-                self.ui.resource_table.item(row, 4).setText("KRİTİK")
-                self.ui.resource_table.item(row, 4).setBackground(QColor(255, 0, 0, 100))
-            elif resource_type == "Gıda" and numeric_amount < 50:
-                self.ui.resource_table.item(row, 4).setText("KRİTİK")
-                self.ui.resource_table.item(row, 4).setBackground(QColor(255, 0, 0, 100))
 
     def export_resources(self, format="excel"):
         """Kaynak listesini Excel veya PDF olarak dışa aktarır"""

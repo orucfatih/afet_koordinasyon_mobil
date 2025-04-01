@@ -103,9 +103,9 @@ class STKYonetimTab(QWidget):
         self.message_text.setPlaceholderText("Mesajınızı yazın...")
         self.message_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
         
-        send_button = QPushButton("📤 Mesaj Gönder")
+        send_button = QPushButton("Mesaj Gönder")
         send_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
-        send_button.setIcon(QIcon(get_icon_path('paper/plane.png')))
+        send_button.setIcon(QIcon(get_icon_path('paper-plane.png')))
         send_button.clicked.connect(self.send_message)
         
         comm_layout.addWidget(self.message_text)
