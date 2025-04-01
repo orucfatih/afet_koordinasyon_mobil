@@ -192,3 +192,36 @@ TASK_HISTORY_DETAILS = {
         "Detaylı Rapor": "Deprem bölgesinde sağlık taraması yapıldı. 15 kişi hastaneye sevk edildi, 45 kişiye yerinde müdahale edildi."
     }
 }
+
+# Mesajlaşma için örnek veriler
+MESSAGE_CONTACTS = {
+    "Ekip Liderleri": [
+        {"id": "EKP001", "name": "Ahmet Yılmaz", "title": "AFAD Ekip Lideri", "status": "Çevrimiçi"},
+        {"id": "EKP002", "name": "Mehmet Demir", "title": "Sağlık Ekibi Lideri", "status": "Meşgul"},
+        {"id": "EKP003", "name": "Ayşe Kaya", "title": "Kızılay Ekip Lideri", "status": "Çevrimiçi"}
+    ],
+    "Kurumlar": [
+        {"id": "KRM001", "name": "AFAD Merkez", "type": "Kurum", "status": "Aktif"},
+        {"id": "KRM002", "name": "İl Sağlık Müdürlüğü", "type": "Kurum", "status": "Aktif"},
+        {"id": "KRM003", "name": "İl Emniyet Müdürlüğü", "type": "Kurum", "status": "Aktif"},
+        {"id": "KRM004", "name": "Belediye Kriz Merkezi", "type": "Kurum", "status": "Aktif"}
+    ],
+    "Kriz Masaları": [
+        {"id": "KRZ001", "name": "İl Kriz Masası", "location": "Valilik", "status": "Aktif"},
+        {"id": "KRZ002", "name": "Bölge Kriz Masası", "location": "AFAD Merkez", "status": "Aktif"},
+        {"id": "KRZ003", "name": "Sağlık Kriz Masası", "location": "Hastane", "status": "Aktif"}
+    ]
+}
+
+MESSAGE_HISTORY = {
+    "EKP001": [
+        {"sender": "Sistem", "message": "Ahmet Yılmaz ile sohbet başlatıldı", "timestamp": "10:00", "type": "system"},
+        {"sender": "Siz", "message": "Merhaba Ahmet Bey, bölgedeki son durum nedir?", "timestamp": "10:01", "type": "sent"},
+        {"sender": "Ahmet Yılmaz", "message": "Merhaba, şu an 3 kişilik ekiple arama çalışması yapıyoruz.", "timestamp": "10:02", "type": "received"}
+    ],
+    "KRM001": [
+        {"sender": "Sistem", "message": "AFAD Merkez ile sohbet başlatıldı", "timestamp": "09:30", "type": "system"},
+        {"sender": "AFAD Merkez", "message": "Yeni deprem riski haritası paylaşıldı.", "timestamp": "09:31", "type": "received"},
+        {"sender": "Siz", "message": "Haritayı aldım, ekipleri buna göre yönlendireceğim.", "timestamp": "09:32", "type": "sent"}
+    ]
+}

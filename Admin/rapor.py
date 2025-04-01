@@ -22,10 +22,25 @@ class FormatSecimDialog(QDialog):
         self.format = None
         
         layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
         
         # Radio butonları oluştur
         self.json_radio = QRadioButton("JSON")
         self.txt_radio = QRadioButton("TXT")
+        
+        # Radio butonları için stil
+        for radio in [self.json_radio, self.txt_radio]:
+            radio.setStyleSheet("""
+                QRadioButton {
+                    color: white;
+                    padding: 5px;
+                }
+                QRadioButton::indicator {
+                    width: 15px;
+                    height: 15px;
+                }
+            """)
         
         # Button group oluştur
         self.button_group = QButtonGroup()
@@ -40,8 +55,11 @@ class FormatSecimDialog(QDialog):
         
         # Tamam ve İptal butonları
         btn_layout = QHBoxLayout()
-        tamam_btn = QPushButton("Tamam")
-        iptal_btn = QPushButton("İptal")
+        tamam_btn = QPushButton("✓ Tamam")
+        iptal_btn = QPushButton("✕ İptal")
+        
+        for btn in [tamam_btn, iptal_btn]:
+            btn.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
         
         tamam_btn.clicked.connect(self.accept)
         iptal_btn.clicked.connect(self.reject)
@@ -71,27 +89,36 @@ class RaporYonetimTab(QWidget):
         
     def initUI(self):
         main_layout = QHBoxLayout()
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(20, 20, 20, 20)
         
         # Sol Panel - Rapor Oluşturma
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
+        left_layout.setSpacing(15)
         
         # Rapor Bilgileri Grubu
         report_info_group = QGroupBox("Rapor Bilgileri")
+        report_info_group.setStyleSheet(RESOURCE_GROUP_STYLE)
         form_layout = QFormLayout()
+        form_layout.setSpacing(10)
+        form_layout.setContentsMargins(20, 20, 20, 20)
         
         # Tarih ve Saat Seçici
         self.date_time_edit = QDateTimeEdit()
         self.date_time_edit.setDateTime(QDateTime.currentDateTime())
         self.date_time_edit.setCalendarPopup(True)
+        self.date_time_edit.setStyleSheet(RESOURCE_INPUT_STYLE)
         form_layout.addRow("Tarih ve Saat:", self.date_time_edit)
         
         # Afet Bölgesi Seçimi
         self.location_input = QLineEdit()
+        self.location_input.setStyleSheet(RESOURCE_INPUT_STYLE)
         form_layout.addRow("Afet Bölgesi:", self.location_input)
         
         # Rapor Türü Seçimi
         self.report_type = QComboBox()
+        self.report_type.setStyleSheet(COMBO_BOX_STYLE)
         self.report_type.addItems([
             "Durum Değerlendirme Raporu",
             "Hasar Tespit Raporu",
@@ -106,23 +133,28 @@ class RaporYonetimTab(QWidget):
         
         # Rapor İçeriği Grubu
         content_group = QGroupBox("Rapor İçeriği")
+        content_group.setStyleSheet(RESOURCE_GROUP_STYLE)
         content_layout = QVBoxLayout()
+        content_layout.setSpacing(10)
         
         # Durum Özeti
         self.summary_text = QTextEdit()
         self.summary_text.setPlaceholderText("Genel durum özeti...")
+        self.summary_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("Durum Özeti:"))
         content_layout.addWidget(self.summary_text)
         
         # Detaylı Bilgiler
         self.details_text = QTextEdit()
         self.details_text.setPlaceholderText("Detaylı bilgiler ve gözlemler...")
+        self.details_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("Detaylı Bilgiler:"))
         content_layout.addWidget(self.details_text)
         
         # İhtiyaçlar ve Öneriler
         self.needs_text = QTextEdit()
         self.needs_text.setPlaceholderText("Tespit edilen ihtiyaçlar ve öneriler...")
+        self.needs_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("İhtiyaçlar ve Öneriler:"))
         content_layout.addWidget(self.needs_text)
         
@@ -131,14 +163,16 @@ class RaporYonetimTab(QWidget):
         
         # Butonlar
         buttons_layout = QHBoxLayout()
-        self.save_button = QPushButton(" Raporu Kaydet")
-        self.save_button.setStyleSheet(BUTTON_STYLE)
+        self.save_button = QPushButton("💾 Raporu Kaydet")
+        self.save_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
         self.save_button.setIcon(QIcon('icons/save.png'))
         self.save_button.clicked.connect(self.save_report)
-        self.clear_button = QPushButton(" Formu Temizle")
-        self.clear_button.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        
+        self.clear_button = QPushButton("🧹 Formu Temizle")
+        self.clear_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
         self.clear_button.setIcon(QIcon('icons/broom.png'))
         self.clear_button.clicked.connect(self.clear_form)
+        
         buttons_layout.addWidget(self.save_button)
         buttons_layout.addWidget(self.clear_button)
         left_layout.addLayout(buttons_layout)
@@ -146,30 +180,37 @@ class RaporYonetimTab(QWidget):
         # Sağ Panel - Rapor Listesi ve Görüntüleme
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
+        right_layout.setSpacing(15)
         
         # Rapor Listesi
         list_group = QGroupBox("Kaydedilen Raporlar")
+        list_group.setStyleSheet(RESOURCE_GROUP_STYLE)
         list_layout = QVBoxLayout()
+        list_layout.setSpacing(10)
         
         # Arama ve Filtreleme
         filter_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Rapor ara...")
+        self.search_input.setStyleSheet(RESOURCE_INPUT_STYLE)
         self.search_input.textChanged.connect(self.filter_reports)
+        
         self.filter_type = QComboBox()
+        self.filter_type.setStyleSheet(COMBO_BOX_STYLE)
         self.filter_type.addItems(["Tüm Raporlar"] + [
             self.report_type.itemText(i) 
             for i in range(self.report_type.count())
         ])
         self.filter_type.currentTextChanged.connect(self.filter_reports)
+        
         filter_layout.addWidget(self.search_input)
         filter_layout.addWidget(self.filter_type)
         list_layout.addLayout(filter_layout)
         
         # Rapor Tablosu
         self.reports_table = QTableWidget()
+        self.reports_table.setStyleSheet(RESOURCE_TABLE_STYLE)
         self.reports_table.setColumnCount(5)
-        self.reports_table.setStyleSheet(TABLE_WIDGET_STYLE)
         self.reports_table.setHorizontalHeaderLabels([
             "Tarih", "Bölge", "Tür", "Özet", "Format"  
         ])
@@ -180,22 +221,25 @@ class RaporYonetimTab(QWidget):
         list_group.setLayout(list_layout)
         right_layout.addWidget(list_group)
         
+        # Silme Butonu
+        self.delete_button = QPushButton("🗑️ Seçili Raporu Sil")
+        self.delete_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.delete_button.setIcon(QIcon('icons/bin.png'))
+        self.delete_button.clicked.connect(self.delete_selected_report)
+        right_layout.addWidget(self.delete_button)
+        
+        # Panel genişliklerini ayarla
+        left_panel.setMinimumWidth(600)  # Sol panel minimum genişlik
+        right_panel.setMinimumWidth(400)  # Sağ panel minimum genişlik
+        
         # Ana layout'a panelleri ekleme
-        main_layout.addWidget(left_panel, stretch=2)
-        main_layout.addWidget(right_panel, stretch=1)
+        main_layout.addWidget(left_panel, 60)
+        main_layout.addWidget(right_panel, 40)
         
         self.setLayout(main_layout)
         
         # Raporları yükle
         self.load_reports()
-
-
-        # Sağ Panel - Silme Butonu Eklenmesi
-        self.delete_button = QPushButton(" Seçili Raporu Sil")
-        self.delete_button.setStyleSheet(RED_BUTTON_STYLE)
-        self.delete_button.setIcon(QIcon('icons/bin.png'))
-        self.delete_button.clicked.connect(self.delete_selected_report)
-        right_layout.addWidget(self.delete_button)
 
 
 

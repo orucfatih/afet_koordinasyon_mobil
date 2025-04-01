@@ -10,12 +10,8 @@ from styles_dark import *
 from styles_light import *
 from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
+from utils import get_icon_path
 import os
-
-def get_icon_path(icon_name):
-    """İkon dosyasının tam yolunu döndürür"""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(current_dir, 'icons', icon_name)
 
 class AfetYonetimAdmin(QMainWindow):
     """Ana Uygulama Penceresi"""

@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon
 from .constants import PERSONNEL_TABLE_HEADERS
 from styles_dark import *
 from styles_light import *
+from utils import get_icon_path
 
 
 class PersonnelUI:
@@ -78,19 +79,19 @@ class PersonnelUI:
         """Butonları hazırlar ve özelleştirir"""
         # Personel Ekle butonu
         self.add_button = QPushButton("Personel Ekle")
-        self.add_button.setIcon(QIcon('icons/add.png'))
+        self.add_button.setIcon(QIcon(get_icon_path('add.png')))
         self.add_button.setToolTip("Yeni personel eklemek için tıklayın")
         self.add_button.setStyleSheet(GREEN_BUTTON_STYLE)
         
         # Düzenle butonu
         self.edit_button = QPushButton("Düzenle")
-        self.edit_button.setIcon(QIcon('icons/edit.png'))
+        self.edit_button.setIcon(QIcon(get_icon_path('edit.png')))
         self.edit_button.setToolTip("Seçili personeli düzenlemek için tıklayın")
         self.edit_button.setStyleSheet(EDIT_BUTTON_STYLE)
         
         # Sil butonu
         self.remove_button = QPushButton("Sil")
-        self.remove_button.setIcon(QIcon('icons/delete.png'))
+        self.remove_button.setIcon(QIcon(get_icon_path('delete.png')))
         self.remove_button.setToolTip("Seçili personeli silmek için tıklayın")
         self.remove_button.setStyleSheet(RED_BUTTON_STYLE)
     
@@ -103,12 +104,12 @@ class PersonnelUI:
     def create_context_menu(self, position):
         """Context menu'yü oluşturur ve döndürür"""
         menu = QMenu()
-        detay_action = menu.addAction(QIcon("icons/info.png"), "Detayları Göster")
-        duzenle_action = menu.addAction(QIcon("icons/edit.png"), "Düzenle")
-        sil_action = menu.addAction(QIcon("icons/delete.png"), "Sil")
+        detay_action = menu.addAction(QIcon(get_icon_path("info.png")), "Detayları Göster")
+        duzenle_action = menu.addAction(QIcon(get_icon_path("edit.png")), "Düzenle")
+        sil_action = menu.addAction(QIcon(get_icon_path("delete.png")), "Sil")
         menu.addSeparator()
-        mesaj_action = menu.addAction(QIcon("icons/message.png"), "Mesaj Gönder")
-        konum_action = menu.addAction(QIcon("icons/location.png"), "Konum İste")
+        mesaj_action = menu.addAction(QIcon(get_icon_path("message.png")), "Mesaj Gönder")
+        konum_action = menu.addAction(QIcon(get_icon_path("location.png")), "Konum İste")
         
         return menu, {
             'detay': detay_action,
