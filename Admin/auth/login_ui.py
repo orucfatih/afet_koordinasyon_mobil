@@ -69,7 +69,7 @@ class LoginUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Afet Yönetim Sistemi - Giriş")
-        self.setFixedSize(400, 600)
+        self.setFixedSize(420, 600)
         
         self.setStyleSheet(LOGIN_DARK_STYLES)
         
@@ -86,7 +86,7 @@ class LoginUI(QWidget):
         logo_layout.setAlignment(Qt.AlignCenter)
         
         # Logo Label
-        logo_label = QLabel("AFET-LİNK")
+        logo_label = QLabel("AFET-LINK")
         logo_label.setFont(QFont('Segoe UI', 36, QFont.Bold))
         logo_label.setAlignment(Qt.AlignCenter)
         logo_label.setObjectName("logoLabel")

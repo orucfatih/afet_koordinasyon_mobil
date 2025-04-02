@@ -1,20 +1,50 @@
+"""
+daha gerçekçi bir simülasyon için lojistik kaynak depolarının her birinin 81 ile olan uzaklıkları girilmeli
+yine her bir ilçenin maksimum kapasitesi girilmeli
+ulaşım-trafik veya zaman kısıtları girilmeli
+havaalanlarının kapasitesi ve havaalanlarının durumu girilmeli
+"""
+
+
+
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton, 
                            QLabel, QLineEdit, QComboBox, QListWidget, 
-                           QGroupBox, QSpinBox, QMessageBox, QListWidgetItem)
+                           QGroupBox, QSpinBox, QMessageBox, QListWidgetItem,
+                           QGridLayout)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon
 from styles_dark import *
 from utils import get_icon_path # sonraki versiyonlarda istenirse
 from .sehirler_ve_ilceler import sehirler
 
+# Afad lojistik depolarının bulunduğu şehirler
+DISTRIBUTION_CENTERS = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Balıkesir", "Bursa",
+    "Denizli", "Diyarbakır", "Elazığ", "Erzincan", "Erzurum",
+    "Kastamonu", "Manisa", "Kahramanmaraş", "Muğla", "Muş",
+    "Samsun", "Sivas", "Tekirdağ", "Aksaray", "Kırıkkale",
+    "Yalova", "Düzce"
+]
+
+# Kaynak türleri ve birimleri
+RESOURCES = {
+    "Su": "Litre",
+    "Gıda": "Kg",
+    "İlaç": "Kutu",
+    "Çadır": "Adet",
+    "Battaniye": "Adet",
+    "Diğer": "Adet"
+}
+
 class SimulationDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Afet Simülasyonu")
-        self.setMinimumWidth(800)
-        self.setMinimumHeight(600)
         self.selected_districts = {}  # {ilçe_adı: nüfus} şeklinde seçili ilçeleri tutacak
+        self.resource_inputs = {}  # Kaynak input'larını tutacak dictionary
         self.setup_ui()
+        self.showFullScreen()  # Açılışta tam ekran başlat
+
 
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -83,6 +113,50 @@ class SimulationDialog(QDialog):
         confidence_layout.addWidget(self.confidence_combo)
         params_layout.addLayout(confidence_layout)
 
+        # Dağıtım Merkezi Seçimi
+        distribution_layout = QHBoxLayout()
+        self.distribution_center_combo = QComboBox()
+        self.distribution_center_combo.addItems(sorted(DISTRIBUTION_CENTERS))
+        self.distribution_center_combo.setStyleSheet(COMBO_BOX_STYLE)
+        distribution_layout.addWidget(QLabel("Dağıtım Merkezi:"))
+        distribution_layout.addWidget(self.distribution_center_combo)
+        params_layout.addLayout(distribution_layout)
+
+        # Dağıtım merkezi açıklaması
+        distribution_info = QLabel("Not: Seçilen dağıtım merkezinden afet bölgesine kaynak dağıtımı simüle edilecektir.")
+        distribution_info.setStyleSheet("color: #888; font-style: italic;")
+        distribution_info.setWordWrap(True)
+        params_layout.addWidget(distribution_info)
+
+        # Kaynak Miktarları Girişi
+        resources_group = QGroupBox("Kaynak Miktarları")
+        resources_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        resources_layout = QGridLayout()
+
+        # Başlık satırı
+        resources_layout.addWidget(QLabel("Kaynak Türü"), 0, 0)
+        resources_layout.addWidget(QLabel("Miktar"), 0, 1)
+        resources_layout.addWidget(QLabel("Birim"), 0, 2)
+
+        # Her bir kaynak için input alanları
+        for row, (resource, unit) in enumerate(RESOURCES.items(), 1):
+            # Kaynak adı
+            resources_layout.addWidget(QLabel(resource), row, 0)
+            
+            # Miktar girişi
+            amount_input = QSpinBox()
+            amount_input.setRange(0, 1000000)
+            amount_input.setSingleStep(100)
+            amount_input.setStyleSheet(RESOURCE_INPUT_STYLE)
+            resources_layout.addWidget(amount_input, row, 1)
+            self.resource_inputs[resource] = amount_input  # Input'u kaydet
+            
+            # Birim
+            resources_layout.addWidget(QLabel(unit), row, 2)
+
+        resources_group.setLayout(resources_layout)
+        params_layout.addWidget(resources_group)
+
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
 
@@ -146,6 +220,17 @@ class SimulationDialog(QDialog):
             QMessageBox.warning(self, "Uyarı", "Lütfen en az bir ilçe seçin!")
             return
 
+        # Kaynak miktarlarını kontrol et
+        resources_str = "\n".join(
+            f"- {resource}: {self.resource_inputs[resource].value():,} {unit}"
+            for resource, unit in RESOURCES.items()
+            if self.resource_inputs[resource].value() > 0
+        )
+
+        if not resources_str:
+            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir kaynak miktarı girin!")
+            return
+
         total_population = sum(self.selected_districts.values())
         selected_districts_str = "\n".join(
             f"- {district}: {population:,} kişi" 
@@ -157,6 +242,8 @@ class SimulationDialog(QDialog):
             "Simülasyon Başlatıldı",
             f"Seçilen İlçeler:\n{selected_districts_str}\n\n"
             f"Toplam Nüfus: {total_population:,} kişi\n"
+            f"Dağıtım Merkezi: {self.distribution_center_combo.currentText()}\n\n"
+            f"Kaynak Miktarları:\n{resources_str}\n\n"
             f"İterasyon sayısı: {self.iteration_spin.value()}\n"
             f"Güven aralığı: {self.confidence_combo.currentText()}"
         ) 
