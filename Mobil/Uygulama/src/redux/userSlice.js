@@ -113,28 +113,35 @@ export const updateCipher = createAsyncThunk('user/updatePassword',
   );
 
 //Kullanıcı bilgilerini alma
-export const getUser = createAsyncThunk('user/getUser', async (_, { rejectWithValue }) => {
-      try {
-        const auth = getAuth();
-        const db = getFirestore();
-        const user = auth.currentUser;
+export const getUser = createAsyncThunk("user/getUser", async (_, { rejectWithValue }) => {
+    try {
+      const auth = getAuth();
+      const db = getFirestore();
+      const user = auth.currentUser;
   
-        if (!user) {
-          return rejectWithValue('Kullanıcı bulunamadı.');
-        }
-  
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (!userDoc.exists()) {
-          return rejectWithValue('Kullanıcı bilgileri bulunamadı.');
-        }
-        
-        return userDoc.data();
-      } catch (error) {
-        console.log('Kullanıcı bilgileri getirilirken hata:', error);
-        return rejectWithValue('Kullanıcı bilgileri alınırken bir hata oluştu.');
+      if (!user) {
+        return rejectWithValue("Kullanıcı oturum açmamış.");
       }
+  
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+  
+      if (!userDoc.exists()) {
+        return rejectWithValue("Kullanıcı bilgileri bulunamadı.");
+      }
+  
+      return userDoc.data();
+    } catch (error) {
+      console.error("Kullanıcı bilgileri getirilirken hata:", error);
+  
+      // Firebase yetkilendirme hatasını kontrol et
+      if (error.code === "permission-denied") {
+        return rejectWithValue("Yetkisiz erişim: Bu bilgilere erişim izniniz yok.");
+      }
+  
+      return rejectWithValue("Kullanıcı bilgileri alınırken bir hata oluştu.");
     }
-  );
+  });
 
 //Otomatik giriş
 
