@@ -51,24 +51,13 @@ class AfetYonetimAdmin(QMainWindow):
         message_btn.setIcon(QIcon(get_icon_path('message.png')))
         message_btn.setIconSize(QSize(24, 24))
         message_btn.setToolTip("Mesajlar")
-        message_btn.setStyleSheet("""
-            QToolButton {
-                border: none;
-                padding: 5px;
-                margin-top: 2px;
-                border-radius: 3px;
-                background-color: transparent;
-            }
-            QToolButton:hover {
-                background-color: #2980b9;
-            }
-        """)
+        message_btn.setStyleSheet(MESSAGE_BUTTON_STYLE)  # Stil dosyasından çek
         message_btn.clicked.connect(self.message_manager.show_message_dialog)
         
         corner_layout.addWidget(message_btn)
         corner_layout.addStretch()  # Butonu sağa yasla
         
-        # Mesaj butonunu sekmelerin sağ üst köşesine yerleştir
+        # Mesaj butonu(sekmelerin sağ üst köşesine)
         self.tabs.setCornerWidget(tab_corner_widget, Qt.TopRightCorner)
         
         main_layout.addWidget(self.tabs)

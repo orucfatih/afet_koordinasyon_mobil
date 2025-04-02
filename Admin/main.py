@@ -13,6 +13,8 @@ if platform.system() == "Linux":
     os.environ["QT_XCB_GL_INTEGRATION"] = "none"
 elif platform.system() == "Windows":
     os.environ["QT_QPA_PLATFORM"] = "windows"
+elif platform.system() == "Darwin":  # macOS için fakat test edilmedi
+    os.environ["QT_QPA_PLATFORM"] = "cocoa"
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -264,7 +264,7 @@ QLabel {
 # Dialog bilgi label stilleri
 DIALOG_INFO_LABEL_STYLE = "color: white; background-color: #262a3c; padding: 10px;"
 
-# Tab menü (Daha açık arka plan tonları)
+# Tab menü (Daha açık arka plan tonları ve turkuaz seçim rengi)
 TAB_WIDGET_STYLE = """
     QTabWidget::pane {
         border: none;
@@ -280,7 +280,7 @@ TAB_WIDGET_STYLE = """
         border-top-right-radius: 5px;
     }
     QTabBar::tab:selected {
-        background-color: #2a2a2a;
+        background-color: #009999;
         color: white;
     }
     QTabBar::tab:hover:!selected {
@@ -288,6 +288,23 @@ TAB_WIDGET_STYLE = """
         color: #aaaaaa;
     }
 """
+
+
+# Mesaj Butonu Stili
+MESSAGE_BUTTON_STYLE = """
+    QToolButton {
+        border: none;
+        padding: 5px;
+        margin-top: 2px;
+        border-radius: 3px;
+        background-color: transparent;
+    }
+    QToolButton:hover {
+        background-color: #009999; /* Turkuaz hover rengi */
+    }
+"""
+
+
 # Tablo widget stilleri (Başlık ve hücre renkleri düzenlendi)
 TABLE_WIDGET_STYLE = """
     QTableWidget {
