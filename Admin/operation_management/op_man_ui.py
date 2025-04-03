@@ -271,7 +271,12 @@ class TeamManagementDialog(QDialog):
                             item.setBackground(QBrush(QColor("#4CAF50")))
                         else:
                             item.setBackground(QBrush(QColor("#f44336")))
+                        # Durum sütununu salt okunur yap ama tıklanabilir olsun
+                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                     self.team_table.setItem(row, col, item)
+        
+        # Durum sütunu için tıklama olayını bağla
+        self.team_table.itemClicked.connect(self.toggle_team_status)
 
     def load_equipment_data(self):
         """Örnek ekipman verilerini yükler"""
@@ -286,7 +291,7 @@ class TeamManagementDialog(QDialog):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
                 
-                # Durum sütunu için renklendirme
+                # Durum sütunu için renklendirme (şuan çalışmıyor düzeltilmelidir)
                 if col == 3:  # Durum sütunu
                     if data == "Aktif":
                         item.setBackground(QBrush(QColor("#4CAF50")))
@@ -674,4 +679,43 @@ class TeamManagementDialog(QDialog):
         
         if reply == QMessageBox.Yes:
             row = selected_items[0].row()
-            self.equipment_table.removeRow(row) 
+            self.equipment_table.removeRow(row)
+
+    def toggle_team_status(self, item):
+        """Durum sütununa tıklandığında durumu değiştirir"""
+        column = self.team_table.currentColumn()
+        row = self.team_table.currentRow()
+        
+        if column == 3 and row >= 0:  # Durum sütunu ve geçerli satır
+            current_status = self.team_table.item(row, column).text()
+            new_status = "Meşgul" if current_status == "Müsait" else "Müsait"
+            
+            # Yeni durum item'ı oluştur
+            new_item = QTableWidgetItem(new_status)
+            new_item.setTextAlignment(Qt.AlignCenter)
+            
+            # Duruma göre renk ayarla
+            if new_status == "Müsait":
+                new_item.setBackground(QBrush(QColor("#4CAF50")))
+            else:
+                new_item.setBackground(QBrush(QColor("#f44336")))
+            
+            # Hücreyi salt okunur yap
+            new_item.setFlags(new_item.flags() & ~Qt.ItemIsEditable)
+            
+            # Değişikliği hem ekip yönetimi tablosunda hem de ana tabloda uygula
+            self.team_table.setItem(row, column, new_item)
+            
+            # Ana tabloda ilgili satırı bul ve güncelle
+            team_id = self.team_table.item(row, 0).text()
+            for parent_row in range(self.parent.team_list.rowCount()):
+                if self.parent.team_list.item(parent_row, 0).text() == team_id:
+                    parent_item = QTableWidgetItem(new_status)
+                    parent_item.setTextAlignment(Qt.AlignCenter)
+                    if new_status == "Müsait":
+                        parent_item.setBackground(QBrush(QColor("#4CAF50")))
+                    else:
+                        parent_item.setBackground(QBrush(QColor("#f44336")))
+                    parent_item.setFlags(parent_item.flags() & ~Qt.ItemIsEditable)
+                    self.parent.team_list.setItem(parent_row, 3, parent_item)
+                    break 
