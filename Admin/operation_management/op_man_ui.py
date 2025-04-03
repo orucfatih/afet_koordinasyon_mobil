@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushBut
                              QComboBox, QMessageBox, QDialog, QFormLayout, QListWidgetItem, QTabWidget, QDialogButtonBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from sample_data import EQUIPMENT_DATA, TASK_HISTORY_DATA, TASK_HISTORY_DETAILS  # örnek verileri import et
 from .constants_op_man import (TEAM_TABLE_HEADERS,
                        EQUIPMENT_TABLE_HEADERS, HISTORY_TABLE_HEADERS,

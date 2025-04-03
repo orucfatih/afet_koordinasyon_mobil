@@ -2,7 +2,9 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                             QPushButton, QLineEdit, QComboBox, QFormLayout,
                             QDialogButtonBox)
 from PyQt5.QtGui import QIcon
-from styles_dark import *
+from styles.styles_dark import *
+from styles.styles_light import *
+
 
 class BaseDialog(QDialog):
     """Temel dialog sınıfı"""

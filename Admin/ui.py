@@ -6,8 +6,8 @@ from stk_yonetim import STKYonetimTab
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from rapor import RaporYonetimTab
 from personnel import PersonelYonetimTab
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
 from utils import get_icon_path

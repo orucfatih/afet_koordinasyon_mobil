@@ -3,7 +3,8 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QWidget, QListWi
                             QListWidgetItem, QLineEdit, QScrollArea, QFrame)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QColor
-from styles_dark import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from sample_data import MESSAGE_CONTACTS, MESSAGE_HISTORY
 import os
 

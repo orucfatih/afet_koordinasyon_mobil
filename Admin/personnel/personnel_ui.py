@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import (QTreeWidget, QTableWidget, QPushButton, QLineEdit,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from .constants import PERSONNEL_TABLE_HEADERS
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from utils import get_icon_path
 
 

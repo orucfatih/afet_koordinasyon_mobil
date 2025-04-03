@@ -2,8 +2,8 @@ from PyQt5.QtWidgets import (QWidget, QLabel, QLineEdit, QPushButton,
                            QVBoxLayout, QHBoxLayout, QCheckBox, QFrame)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, pyqtProperty
 from PyQt5.QtGui import QFont, QPainter, QColor, QPen, QBrush, QIcon
-from styles_dark import LOGIN_DARK_STYLES
-from styles_light import LOGIN_LIGHT_STYLES
+from styles.styles_dark import LOGIN_DARK_STYLES
+from styles.styles_light import LOGIN_LIGHT_STYLES
 
 class StyledLineEdit(QLineEdit):
     def __init__(self, placeholder="", parent=None):

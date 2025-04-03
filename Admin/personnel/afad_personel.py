@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon, QColor
 from sample_data import AFAD_TEAMS
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 
 from .data_manager import PersonnelDataManager
 from .personnel_ui import PersonnelUI

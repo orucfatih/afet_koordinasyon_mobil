@@ -13,7 +13,8 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                            QGridLayout)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon
-from styles_dark import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from utils import get_icon_path # sonraki versiyonlarda istenirse
 from .sehirler_ve_ilceler import sehirler
 

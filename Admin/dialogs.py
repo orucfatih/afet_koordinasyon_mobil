@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton
 from PyQt5.QtGui import QIcon
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 
 class NotificationDetailDialog(QDialog):
     """Bildirim Detayları Dialog Penceresi"""

@@ -6,9 +6,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit,
                              QMessageBox, QCheckBox)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, pyqtProperty
 from PyQt5.QtGui import QFont, QPainter, QColor, QPen, QBrush
-from styles_dark import LOGIN_DARK_STYLES
-from styles_light import LOGIN_LIGHT_STYLES
 from .login_ui import LoginUI
+
 
 class StyledToggle(QCheckBox):
     def __init__(self, parent=None):

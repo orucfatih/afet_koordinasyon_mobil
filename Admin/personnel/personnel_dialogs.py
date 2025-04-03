@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QTextEdit, QPushButton, QDial
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QDateTime
 from .constants import PERSONNEL_TABLE_HEADERS
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from database import db
 from firebase_admin import db as firebase_db
 from .state_manager import PersonnelStateManager

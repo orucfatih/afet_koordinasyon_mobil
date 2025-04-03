@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QComboBox, QMessageBox, QCompleter, QListWidget,
                              QGroupBox, QFormLayout)
 from PyQt5.QtGui import QIcon
-from styles_dark import MAP_STYLE, REFRESH_BUTTON_STYLE
-from styles_light import *
+from styles.styles_dark import MAP_STYLE, REFRESH_BUTTON_STYLE
+from styles.styles_light import *
 
 
 import sys

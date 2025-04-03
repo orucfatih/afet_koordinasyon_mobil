@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QSizePolicy, QProgressBar)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from utils import get_icon_path
 
 

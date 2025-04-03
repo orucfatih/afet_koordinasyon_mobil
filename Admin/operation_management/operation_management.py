@@ -6,8 +6,8 @@ from PyQt5.QtGui import QBrush, QColor, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from dialogs import NotificationDetailDialog
 from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
-from styles_dark import *
-from styles_light import *
+from styles.styles_dark import *
+from styles.styles_light import *
 from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog, get_icon_path
 from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
 from .table_utils import create_status_item, sync_tables
