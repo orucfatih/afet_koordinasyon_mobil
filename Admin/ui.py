@@ -6,6 +6,7 @@ from stk_yonetim import STKYonetimTab
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from rapor import RaporYonetimTab
 from personnel import PersonelYonetimTab
+from face_recognition.face_detect_ui import MissingPersonDetectionTab
 from styles.styles_dark import *
 from styles.styles_light import *
 from operation_management.operation_management import OperationManagementTab
@@ -40,7 +41,8 @@ class AfetYonetimAdmin(QMainWindow):
         self.tabs.addTab(KaynakYonetimTab(), "Kaynak Yönetimi")
         self.tabs.addTab(RaporYonetimTab(), "Rapor")
         self.tabs.addTab(PersonelYonetimTab(), "Personel Yönetim")
-        
+        self.tabs.addTab(MissingPersonDetectionTab(), "Kayıp Vatandaş Tespiti")
+
         # Mesaj butonu için özel bir widget oluştur
         tab_corner_widget = QWidget()
         corner_layout = QHBoxLayout(tab_corner_widget)
