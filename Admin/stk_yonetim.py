@@ -8,6 +8,7 @@ from styles.styles_dark import *
 from styles.styles_light import *
 from PyQt5.QtGui import QIcon, QColor
 from utils import get_icon_path
+from sample_data import STK_DATA
 
 
 class STKYonetimTab(QWidget):
@@ -174,17 +175,8 @@ class STKYonetimTab(QWidget):
 Tür: {ngo_type}
 İletişim: {contact}
 Kapasite: {capacity}
-Faaliyet Bölgesi: {region}
-
-Aktif Görevler:
-- Arama kurtarma operasyonu (Merkez)
-- Gıda dağıtımı (Doğu bölgesi)
-
-Son Aktiviteler:
-- 15:30 - Saha raporu gönderildi
-- 14:45 - Yeni ekip göreve başladı
-- 13:20 - Malzeme temini tamamlandı
-"""
+Faaliyet Bölgesi: {region}"""
+        
         self.details_text.setText(details)
 
     def send_message(self):
@@ -198,13 +190,7 @@ Son Aktiviteler:
 
     def load_sample_ngos(self):
         """Örnek STK verilerini yükler"""
-        sample_data = [
-            ["AKUT", "Arama Kurtarma", "0532xxx xxxx", "50 personel", "Tüm Türkiye", "Aktif"],
-            ["Kızılay", "Gıda", "0533xxx xxxx", "200 personel", "Tüm Türkiye", "Aktif"],
-            ["Sağlık Gönüllüleri", "Sağlık", "0535xxx xxxx", "30 personel", "Marmara", "Aktif"]
-        ]
-        
-        for data in sample_data:
+        for data in STK_DATA:
             row_position = self.ngo_table.rowCount()
             self.ngo_table.insertRow(row_position)
             for column, value in enumerate(data):

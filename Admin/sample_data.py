@@ -1,3 +1,12 @@
+"""
+bu dosya sadece sunum ve test amaçlı kullanılır.
+bu veriler veritabanından alınır.
+
+"""
+
+
+
+
 TEAM_DATA = [
     ["EKP001", "Ahmet Yılmaz", "AFAD", "Müsait", "0532xxxxxxx", "USAR (Arama-Kurtarma)", "8", "Tam Donanımlı"],
     ["EKP002", "Mehmet Demir", "Sağlık Bakanlığı", "Meşgul", "0533xxxxxxx", "Sağlık Ekibi", "6", "Tam Donanımlı"],
@@ -224,4 +233,44 @@ MESSAGE_HISTORY = {
         {"sender": "AFAD Merkez", "message": "Yeni deprem riski haritası paylaşıldı.", "timestamp": "09:31", "type": "received"},
         {"sender": "Siz", "message": "Haritayı aldım, ekipleri buna göre yönlendireceğim.", "timestamp": "09:32", "type": "sent"}
     ]
+}
+
+# STK yönetimi için örnek veriler
+STK_DATA = [
+    ["AKUT", "Arama Kurtarma", "0532xxx xxxx", "50 personel", "Tüm Türkiye", "Aktif"],
+    ["Kızılay", "Gıda", "0533xxx xxxx", "200 personel", "Tüm Türkiye", "Aktif"],
+    ["Sağlık Gönüllüleri", "Sağlık", "0535xxx xxxx", "30 personel", "Marmara", "Aktif"]
+]
+
+STK_DETAILS = {
+    "AKUT": {
+        "Görev Tipi": "Arama Kurtarma",
+        "Konum": "Tüm Türkiye",
+        "Başlangıç": "2024-03-15 08:00",
+        "Bitiş": "2024-03-15 16:00",
+        "Görevli Ekipler": ["EKP001", "EKP007"],
+        "Kullanılan Ekipmanlar": ["EKPMN002", "EKPMN007"],
+        "Sonuç": "2 kişi enkazdan sağ çıkarıldı",
+        "Detaylı Rapor": "Deprem sonrası yıkılan 3 katlı binada arama kurtarma çalışması yapıldı. Termal kamera ile tespit edilen 2 kişi sağ olarak kurtarıldı."
+    },
+    "Kızılay": {
+        "Görev Tipi": "Gıda Dağıtımı",
+        "Konum": "Tüm Türkiye",
+        "Başlangıç": "2024-03-15 09:00",
+        "Bitiş": "2024-03-15 17:00",
+        "Görevli Ekipler": ["EKP003"],
+        "Kullanılan Ekipmanlar": ["EKPMN001"],
+        "Sonuç": "1000 aileye gıda yardımı yapıldı",
+        "Detaylı Rapor": "Deprem bölgesinde gıda dağıtımı yapıldı. 1000 aileye temel gıda malzemeleri ulaştırıldı."
+    },
+    "Sağlık Gönüllüleri": {
+        "Görev Tipi": "Sağlık Taraması",
+        "Konum": "Marmara",
+        "Başlangıç": "2024-03-15 10:00",
+        "Bitiş": "2024-03-15 18:00",
+        "Görevli Ekipler": ["EKP002", "EKP005"],
+        "Kullanılan Ekipmanlar": ["EKPMN004", "EKPMN009"],
+        "Sonuç": "150 kişi tarandı",
+        "Detaylı Rapor": "Deprem bölgesinde sağlık taraması yapıldı. 15 kişi hastaneye sevk edildi, 45 kişiye yerinde müdahale edildi."
+    }
 }
