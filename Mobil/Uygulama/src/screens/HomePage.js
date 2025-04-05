@@ -33,28 +33,50 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     { id: 2, name: 'Toplanma Alanı 2', distance: '2.5 km', capacity: '300 kişi', latitude: 38.9737, longitude: 35.2533 },
     { id: 3, name: 'Toplanma Alanı 3', distance: '4.0 km', capacity: '1000 kişi', latitude: 37.9537, longitude: 35.2333 },
   ]);
+
   useEffect(() => {
     const fetchEarthquakeData = async () => {
       try {
-        const response = await axios.get('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson');
-        const data = response.data.features.map(item => ({
-          id: item.id,
-          magnitude: item.properties.mag,
-          location: item.properties.place,
-          time: new Date(item.properties.time).toLocaleTimeString(),
-          date: new Date(item.properties.time).toLocaleDateString(),
-          lat: item.geometry.coordinates[1],
-          lon: item.geometry.coordinates[0],
-        }));
-  
-        setEarthquakeData(data.slice(0, 10)); // İlk 10 depremi al
+        const response = await axios.get('https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes');
+        console.log('Response:', response.data);
+        if (!response.data.data) {
+          console.error('Data anahtarı bulunamadı:', response.data);
+          setEarthquakeData([]);
+          return;
+        }
+
+        const data = response.data.data
+          .map(item => {
+            if (!item.Date || !item.Magnitude || !item.Place) {
+              console.warn('Eksik veri:', item);
+              return null;
+            }
+            const dateParts = item.Date.split(' ');
+            return {
+              id: `${item.Date}-${item.Magnitude}`,
+              magnitude: parseFloat(item.Magnitude) || 0,
+              location: item.Place || 'Bilinmeyen Yer',
+              time: dateParts[1] || 'Bilinmeyen Saat',
+              date: dateParts[0] || 'Bilinmeyen Tarih',
+              lat: null,
+              lon: null,
+            };
+          })
+          .filter(item => item !== null)
+          .slice(0, 10); // İlk 10 öğeyi al
+
+        setEarthquakeData(data);
       } catch (error) {
-        console.error('Error fetching earthquake data', error);
+        console.error('Error fetching earthquake data from Firebase Functions:', error.message);
+        console.error('Response data:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        console.error('Full error:', error);
+        setEarthquakeData([]);
       }
     };
-  
     fetchEarthquakeData();
-  }, []);  
+  }, []);
+  
   const handleNavigateToAssemblyArea = (latitude, longitude) => {
     setRegion({
       latitude,
