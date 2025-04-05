@@ -1242,14 +1242,3 @@ mesafeler = [
 ]
 
 
-
-# test için
-sehir1 = input("1. şehri girin: ").capitalize()
-sehir2 = input("2. şehri girin: ").capitalize()
-
-
-i1 = iller.index(sehir1)
-i2 = iller.index(sehir2)
-
-# Mesafeyi yazdır
-print(sehir1, "ile", sehir2, "arası mesafe:", mesafeler[i1][i2], "km")

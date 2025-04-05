@@ -71,6 +71,7 @@ class GoogleMapsModule(QMainWindow):
     def __init__(self, api_key):
         super().__init__()
         self.api_key = api_key
+        self.team_markers = []  # Ekip işaretleyicilerini saklamak için
         self.init_ui()
 
     def init_ui(self):
@@ -313,6 +314,39 @@ class GoogleMapsModule(QMainWindow):
         </html>
         """
         self.map_view.setHtml(html)
+
+    def add_team_marker(self, lat, lng, name, status):
+        """Haritaya ekip işaretleyicisi ekler"""
+        html = f"""
+        var marker = new google.maps.Marker({{
+            position: {{lat: {lat}, lng: {lng}}},
+            map: map,
+            title: '{name} - {status}'
+        }});
+        
+        var infoWindow = new google.maps.InfoWindow({{
+            content: '<div><strong>{name}</strong><br>Durum: {status}</div>'
+        }});
+        
+        marker.addListener('click', function() {{
+            infoWindow.open(map, marker);
+        }});
+        
+        markers.push(marker);
+        """
+        self.map_view.page().runJavaScript(html)
+        self.team_markers.append({'lat': lat, 'lng': lng, 'name': name, 'status': status})
+
+    def clear_team_markers(self):
+        """Tüm ekip işaretleyicilerini temizler"""
+        self.map_view.page().runJavaScript("markers.forEach(m => m.setMap(null)); markers = [];")
+        self.team_markers = []
+
+    def refresh_team_markers(self):
+        """Tüm ekip işaretleyicilerini yeniler"""
+        self.clear_team_markers()
+        for marker in self.team_markers:
+            self.add_team_marker(marker['lat'], marker['lng'], marker['name'], marker['status'])
 
 
 # Usage example

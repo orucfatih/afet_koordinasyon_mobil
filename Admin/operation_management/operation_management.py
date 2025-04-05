@@ -12,8 +12,11 @@ from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, c
 from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
 from .table_utils import create_status_item, sync_tables
 from .dialogs_op_man import TeamDialog
+from harita import GoogleMapsModule
+from equipment_management.equipment_management import EquipmentManagementTab
 from dotenv import load_dotenv
 import os
+from .mission_history import MissionHistoryDialog
 
 class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
@@ -35,9 +38,9 @@ class OperationManagementTab(QWidget):
 
         self.messages_list = QListWidget()  # Ekip mesajlaşma kısmı
         
-        # Harita Bölümü
-        self.map_widget = QWebEngineView()
-        self.load_default_map()
+        # Harita Bölümü - GoogleMapsModule kullanarak
+        self.map_module = GoogleMapsModule(self.api_key)
+        self.map_widget = self.map_module.map_view
 
         # Sağ Panel - Bildirimler ve Görevler
         right_info_panel = QWidget()
@@ -258,7 +261,7 @@ class OperationManagementTab(QWidget):
         self.task_input.setStyleSheet(TEXT_EDIT_STYLE)
         
         # Widget'ları layout'a ekle
-        assignment_layout.addWidget(QLabel("Ekip Seç:"))
+#        assignment_layout.addWidget(QLabel("Ekip Seç:"))
         assignment_layout.addWidget(self.team_combo)
         assignment_layout.addLayout(title_location_layout)  # Başlık ve lokasyonu yan yana ekle
         assignment_layout.addWidget(QLabel("Öncelik Seviyesi:"))
@@ -272,7 +275,14 @@ class OperationManagementTab(QWidget):
         assign_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         assign_btn.clicked.connect(self.assign_task)
         
+        # Görev geçmişi butonu
+        history_btn = QPushButton(" Görev Geçmişi")
+        history_btn.setIcon(QIcon(get_icon_path('history.png')))
+        history_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        history_btn.clicked.connect(self.show_mission_history)
+        
         assignment_layout.addWidget(assign_btn)
+        assignment_layout.addWidget(history_btn)
         assignment_group.setLayout(assignment_layout)
         
         # Ekip listesi ve görevlendirme için yükseklik ayarları
@@ -293,162 +303,6 @@ class OperationManagementTab(QWidget):
         # Örnek verileri yükle
         self.load_sample_data()
         self.load_team_data()
-
-
-
-    def load_default_map(self):
-        """Türkiye merkezli bir harita yükler"""
-        # Türkiye için merkez koordinatları (yaklaşık olarak Ankara)
-        turkey_lat = 39.9334
-        turkey_lng = 32.8597
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-            <meta charset="utf-8">
-            <title>Operasyon Haritası - Türkiye</title>
-            <style>
-                html, body, #map {{
-                    height: 100%;
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-            <script src="https://maps.googleapis.com/maps/api/js?key={self.api_key}&callback=initMap&libraries=places" async defer></script>
-            <script>
-                var map;
-                var markers = [];
-                
-                function initMap() {{
-                    map = new google.maps.Map(document.getElementById('map'), {{
-                        center: {{lat: {turkey_lat}, lng: {turkey_lng}}},
-                        zoom: 6,
-                        mapTypeControl: true,
-                        mapTypeControlOptions: {{
-                            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                            position: google.maps.ControlPosition.TOP_RIGHT
-                        }}
-                    }});
-                    
-                    // Ekip üyeleri için işaretleyiciler ekle (gerçek uygulamada dinamik olacaktır)
-                    addTeamMarkers();
-                }}
-                
-                function addTeamMarkers() {{
-                    // Örnek ekip lokasyonları - gerçek uygulamada bu veriler veri kaynağınızdan gelecektir
-                    var teamLocations = [
-                        {{lat: 39.9334, lng: 32.8597, name: 'Takım 1', status: 'Aktif'}},
-                        {{lat: 41.0082, lng: 28.9784, name: 'Takım 2', status: 'Görevde'}},
-                        {{lat: 38.4237, lng: 27.1428, name: 'Takım 3', status: 'Hazır'}}
-                    ];
-                    
-                    for (var i = 0; i < teamLocations.length; i++) {{
-                        var marker = new google.maps.Marker({{
-                            position: {{lat: teamLocations[i].lat, lng: teamLocations[i].lng}},
-                            map: map,
-                            title: teamLocations[i].name + ' - ' + teamLocations[i].status
-                        }});
-                        
-                        markers.push(marker);
-                        
-                        // Her işaretleyici için bilgi penceresi ekle
-                        (function(marker, data) {{
-                            var infoWindow = new google.maps.InfoWindow({{
-                                content: '<div><strong>' + data.name + '</strong><br>' + 
-                                         'Durum: ' + data.status + '</div>'
-                            }});
-                            
-                            marker.addListener('click', function() {{
-                                infoWindow.open(map, marker);
-                            }});
-                        }})(marker, teamLocations[i]);
-                    }}
-                }}
-            </script>
-        </head>
-        <body>
-            <div id="map"></div>
-        </body>
-        </html>
-        """
-        self.map_widget.setHtml(html)
-
-
-
-
-    def refresh_map(self):
-        self.harita.clear_map()  # Haritayı temizle
-        self.map_view = self.harita.initialize_map(height=470)  # Yeniden başlat
-
-
-    def add_team(self):
-        """Yeni ekip eklemek için bir dialog açar."""
-        dialog = create_team_dialog(self, self.save_new_team)
-        dialog.exec_()
-
-
-    def toggle_team_status(self, item):
-        """Durum sütununa tıklandığında durumu değiştirir"""
-        if self.team_list.column(item) == 3:  # Durum sütunu
-            current_status = item.text()
-            new_status = "Meşgul" if current_status == "Müsait" else "Müsait"
-            
-            # Yeni durum item'ı oluştur
-            new_item = QTableWidgetItem(new_status)
-            new_item.setTextAlignment(Qt.AlignCenter)
-            
-            # Duruma göre renk ayarla
-            if new_status == "Müsait":
-                new_item.setBackground(QBrush(QColor("#4CAF50")))
-            else:
-                new_item.setBackground(QBrush(QColor("#f44336")))
-            
-            # Hücreyi salt okunur yap
-            new_item.setFlags(new_item.flags() & ~Qt.ItemIsEditable)
-            
-            # Değişikliği uygula
-            self.team_list.setItem(item.row(), 3, new_item)
-
-
-    def save_new_team(self, dialog, team_id_input, leader_input, institution_input, status_combo, contact_input):
-        """Yeni ekibi kaydeder."""
-        team_id = team_id_input.text()
-        leader = leader_input.text()
-        institution = institution_input.text()
-        status = status_combo.currentText()
-        contact = contact_input.text()
-        
-        row = self.team_list.rowCount()
-        self.team_list.insertRow(row)
-        self.team_list.setItem(row, 0, QTableWidgetItem(team_id))
-        self.team_list.setItem(row, 1, QTableWidgetItem(leader))
-        self.team_list.setItem(row, 2, QTableWidgetItem(institution))
-        
-        status_item = QTableWidgetItem(status)
-        status_item.setTextAlignment(Qt.AlignCenter)
-        if status == "Müsait":
-            status_item.setBackground(QBrush(QColor("#4CAF50")))
-        else:
-            status_item.setBackground(QBrush(QColor("#f44336")))
-        self.team_list.setItem(row, 3, status_item)
-        
-        self.team_list.setItem(row, 4, QTableWidgetItem(contact))
-        self.team_combo.addItem(f"{team_id} - {leader} ({institution})")
-        self.team_list.resizeColumnsToContents()
-        dialog.accept()
-
-    def remove_selected_team(self):
-        """Seçili ekibi kaldırır."""
-        selected_items = self.team_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
-            return
-        
-        selected_row = selected_items[0].row()
-        self.team_list.removeRow(selected_row)
-
 
     def load_team_data(self):
         """Örnek ekip verilerini yükler"""
@@ -483,6 +337,28 @@ class OperationManagementTab(QWidget):
         
         self.team_list.resizeColumnsToContents()
 
+    def toggle_team_status(self, item):
+        """Durum sütununa tıklandığında durumu değiştirir"""
+        if self.team_list.column(item) == 3:  # Durum sütunu
+            current_status = item.text()
+            new_status = "Meşgul" if current_status == "Müsait" else "Müsait"
+            
+            # Yeni durum item'ı oluştur
+            new_item = QTableWidgetItem(new_status)
+            new_item.setTextAlignment(Qt.AlignCenter)
+            
+            # Duruma göre renk ayarla
+            if new_status == "Müsait":
+                new_item.setBackground(QBrush(QColor("#4CAF50")))
+            else:
+                new_item.setBackground(QBrush(QColor("#f44336")))
+            
+            # Hücreyi salt okunur yap
+            new_item.setFlags(new_item.flags() & ~Qt.ItemIsEditable)
+            
+            # Değişikliği uygula
+            self.team_list.setItem(item.row(), 3, new_item)
+
     def apply_filters(self):
         """Seçili filtrelere göre ekip listesini filtreler"""
         selected_institution = self.institution_filter.currentText()
@@ -503,6 +379,10 @@ class OperationManagementTab(QWidget):
                 show_row = False
                 
             self.team_list.setRowHidden(row, not show_row)
+
+
+
+################# bu metod(assign_task) silinecek #############################
 
     def assign_task(self):
         """Seçili ekibe görev atar"""
@@ -590,7 +470,6 @@ class OperationManagementTab(QWidget):
                 f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
             )
 
-
     def contact_team(self):
         """Seçili ekip ile iletişim penceresini açar"""
         selected_items = self.team_list.selectedItems()
@@ -606,7 +485,6 @@ class OperationManagementTab(QWidget):
         dialog = create_contact_dialog(self, team_id, team_leader, contact)
         dialog.exec_()
 
-
     def show_notification_details(self, item):
         """Bildirim detaylarını dialog penceresinde gösterir"""
         dialog = NotificationDetailDialog(
@@ -616,7 +494,6 @@ class OperationManagementTab(QWidget):
         )
         dialog.exec_()
 
-
     def show_task_details(self, item):
         """Görev detaylarını dialog penceresinde gösterir"""
         dialog = NotificationDetailDialog(
@@ -625,7 +502,6 @@ class OperationManagementTab(QWidget):
             self
         )
         dialog.exec_()
-
 
     def delete_selected_messages(self):
         """Seçili mesajları siler"""
@@ -654,7 +530,6 @@ class OperationManagementTab(QWidget):
                 message_data["timestamp"]
             )
             self.messages_list.addItem(message)
-
 
     def edit_selected_task(self):
         """Seçili görevi düzenlemek için dialog açar"""
@@ -837,3 +712,8 @@ class OperationManagementTab(QWidget):
         """Ekip yönetim penceresini gösterir"""
         self.team_management_dialog = TeamManagementDialog(self)  # Referansı sakla
         self.team_management_dialog.exec_()
+
+    def show_mission_history(self):
+        """Görev geçmişi penceresini gösterir"""
+        dialog = MissionHistoryDialog(self)
+        dialog.exec_()
