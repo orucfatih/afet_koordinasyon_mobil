@@ -1,12 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const AraMenu = () => {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
+                  {/* Geri Butonu */}
+                  <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AnaMenu")}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
       <TouchableOpacity
         style={styles.button}
         onPress={() => alert('E-devlet ile giriş henüz uygulanmadı.')}
@@ -29,6 +34,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
+  },
+  backButton: {
+    position: "absolute",
+    top: 40, // Üstten boşluk
+    left: 20, // Soldan boşluk
+    padding: 10,
   },
   button: {
     backgroundColor: 'red', // Arka plan rengi

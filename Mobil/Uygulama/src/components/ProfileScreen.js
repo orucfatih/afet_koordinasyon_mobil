@@ -1,102 +1,126 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity,} from 'react-native';
-import { useDispatch, useSelector,} from 'react-redux';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
-import {getUser, logout} from '../redux/userSlice';
-import {Loading, CustomButton, UpdatePassword} from './index.js';
+import { getUser, logout } from '../redux/userSlice';
+import { Loading, CustomButton, UpdatePassword } from './index.js';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ProfileScreen = () => {
-
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
+  const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   useEffect(() => {
-    const user = getUser();
+    dispatch(getUser())
+      .unwrap()
+      .then((userData) => {
+        setName(userData.name || '');
+        setSurname(userData.surname || '');
+        setEmail(userData.email || '');
+        setPhone(userData.phone || '');
+      })
+      .catch((error) => console.log('Kullanıcı bilgileri alınırken hata:', error));
+  }, [dispatch]);
 
-    if (user) {
-      setName(user.displayName || ""); // Kullanıcının adı yoksa boş string
-      setEmail(user.email || "");     // Kullanıcının e-posta adresi
-    }
-  }, []); // Sadece bileşen ilk kez yüklendiğinde çalışır
+  const [updatingScreen, setUpdatingScreen] = useState(false);
+  const { isLoading } = useSelector(state => state.user);
 
-  //Şifre değiştirme
-  const [updatingScreen, setUpdatingScreen] = useState(false)
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
-  const {isLoading} = useSelector(state=>state.user)
-
-   //LOGOUT
-   const handleLogout = () => {
-    dispatch(logout())
+  if (isLoading) {
+    return <Loading />;
   }
 
-  if(isLoading){
-    return <Loading/>
-  }
-
-  if(updatingScreen){
-    return <UpdatePassword setUpdatingScreen={setUpdatingScreen}/>
+  if (updatingScreen) {
+    return <UpdatePassword setUpdatingScreen={setUpdatingScreen} />;
   }
 
   return (
     <View style={styles.container}>
-      {/* Profil Fotoğrafı */}
-      <Image
-        source={{ uri: 'https://via.placeholder.com/100' }} // Varsayılan bir profil resmi
-        style={styles.profileImage}
-      />
+      <Image source={require('../../assets/images/user.png')} style={styles.profileImage} />
+      <Text style={styles.userName}>{name} {surname}</Text>
+      
+      <View style={styles.infoContainer}>
+        <View style={styles.infoRow}>
+          <MaterialIcons name="email" size={20} color="#555" />
+          <Text style={styles.userData}>{email}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <MaterialIcons name="phone" size={20} color="#555" />
+          <Text style={styles.userData}>{phone}</Text>
+        </View>
+      </View>
 
-      {/* Kullanıcı Bilgileri */}
-      <Text style={styles.userName}>{name}</Text>
-      <Text style={styles.userEmail}>{email}</Text>
-
-      {/* şifre Yenileme */}
       <TouchableOpacity style={styles.editButton} onPress={() => setUpdatingScreen(true)}>
         <Text style={styles.editButtonText}>Şifre Yenile</Text>
       </TouchableOpacity>
-
-      {/* Çıkış Yap Butonu */}
-      <CustomButton title={"Çıkış Yap"} onPress={handleLogout}/>
+      
+      <CustomButton title={"Çıkış Yap"} onPress={handleLogout} style={styles.logoutButton} />
     </View>
   );
 };
 
 export default ProfileScreen;
 
-// Stiller
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f4f4f4',
     paddingHorizontal: 20,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#D32F2F',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: '#2E86C1',
   },
   userName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 10,
   },
-  userEmail: {
+  infoContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    marginBottom: 15,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  userData: {
     fontSize: 16,
-    color: '#757575',
-    marginBottom: 20,
+    color: '#555',
+    marginLeft: 10,
   },
   editButton: {
     backgroundColor: '#1976D2',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
     marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   editButtonText: {
     color: '#fff',
@@ -105,13 +129,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: '#D32F2F',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
   },
 });

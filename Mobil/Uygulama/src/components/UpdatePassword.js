@@ -4,11 +4,13 @@ import { useDispatch } from 'react-redux';
 import { updateCipher } from '../redux/userSlice';
 import CustomTextInput from './CustomTextInput';
 import CustomButton from './CustomButton';
+import { Ionicons } from '@expo/vector-icons';
 
 const UpdatePassword = ({setUpdatingScreen}) => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [secureText, setSecureText] = useState(true);
   
   const dispatch = useDispatch();
 
@@ -40,26 +42,31 @@ const UpdatePassword = ({setUpdatingScreen}) => {
       <Text style={styles.title}>Şifrenizi Güncelleyin</Text>
 
       <View style={styles.inputContainer}>
-        <CustomTextInput
-          placeholder="Eski Şifrenizi Girin"
-          secureTextEntry
-          value={oldPassword}
-          onChangeText={setOldPassword}
-        />
 
-        <CustomTextInput
-          placeholder="Yeni Şifrenizi Girin"
-          secureTextEntry
-          value={newPassword}
-          onChangeText={setNewPassword}
-        />
+        <Text style={styles.label}>Eski Şifre</Text>
+        <View style={styles.passwordInputContainer}>
+          <CustomTextInput secureTextEntry={secureText} placeholder='Eski Şifrenizi Girin' onChangeText={setOldPassword} value={oldPassword} />
+          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
 
-        <CustomTextInput
-          placeholder="Yeni Şifreyi Tekrar Girin"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
+        <Text style={styles.label}>Yeni Şifre</Text>
+        <View style={styles.passwordInputContainer}>
+          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Girin' onChangeText={setNewPassword} value={newPassword} />
+          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Yeni Şifre Tekrar</Text>
+        <View style={styles.passwordInputContainer}>
+          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Tekrar Girin' onChangeText={setConfirmPassword} value={confirmPassword} />
+          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
+
       </View>
 
       <CustomButton title="Şifreyi Güncelle" onPress={handleUpdatePassword} />
@@ -84,23 +91,40 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   inputContainer: {
-    width: '70%',
+    width: '100%',
     marginBottom: 20,
+  },
+  label: {
+    fontSize: 12,
+    color: '#495057',
+    marginBottom: 0,
+    marginTop:2,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
   },
   closeButton:{
     color:"black",
     fontWeight:"bold",
     textAlign:"center",
-},
-closeButtonContainer:{
-    backgroundColor:"lightgray",
-    width:"30",
-    height:"30",
-    borderRadius:30,
-    alignItems:"center",
-    justifyContent:"center",
-    position:"absolute",
-    top:"50",
-    right:"15",
+  },
+  closeButtonContainer:{
+      backgroundColor:"lightgray",
+      width:"30",
+      height:"30",
+      borderRadius:30,
+      alignItems:"center",
+      justifyContent:"center",
+      position:"absolute",
+      top:"50",
+      right:"15",
 }
 });

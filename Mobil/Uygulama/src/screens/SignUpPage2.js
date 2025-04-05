@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { register } from '../redux/userSlice';
 import { Ionicons } from '@expo/vector-icons';
 
-const SignUpPage = ({ navigation }) => {
+const SignUpPage2 = ({ navigation }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [surname, setSurname] = useState("");
@@ -93,7 +93,7 @@ const SignUpPage = ({ navigation }) => {
   );
 };
 
-export default SignUpPage;
+export default SignUpPage2;
 
 const styles = StyleSheet.create({
   container: {

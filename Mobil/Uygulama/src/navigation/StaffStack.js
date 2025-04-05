@@ -1,19 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import { HomePage } from '../screens/index.js'
+import { HomePage2 } from '../screens/index.js'
 import { ViewAll } from '../components/index.js'
 import CameraScreen from '../screens/CameraScreen'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
 
-const UserStack = () => {
+const StaffStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName='HomePage'
+      initialRouteName='HomePage2'
       screenOptions={{ headerShown: false }}>
 
-      <Stack.Screen name='HomePage' component={HomePage} />
+      <Stack.Screen name='HomePage2' component={HomePage2} />
       <Stack.Screen name='ViewAll' component={ViewAll} />
       <Stack.Screen name='Camera' component={CameraScreen} />
 
@@ -21,6 +21,6 @@ const UserStack = () => {
   )
 }
 
-export default UserStack
+export default StaffStack
 
 const styles = StyleSheet.create({})

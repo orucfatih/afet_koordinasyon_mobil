@@ -58,7 +58,7 @@ const EarthquakeScreen = () => {
     <ScrollView style={styles.container}>
       {/* Üst Bar */}
       <View style={styles.topBar}>
-        <Image source={require('../../assets/images/afad-logo2.png')} style={styles.logoImage} />
+        <Image source={require('../../assets/images/assembly-icon.png')} style={styles.logoImage} />
         <TouchableOpacity>
           <Icon name="info-outline" size={25} color="white" />
         </TouchableOpacity>
