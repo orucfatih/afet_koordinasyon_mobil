@@ -38,7 +38,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     const fetchEarthquakeData = async () => {
       try {
         const response = await axios.get('https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes');
-        console.log('Response:', response.data);
+        console.log('Response:', response.data.data.slice(0,10));
         if (!response.data.data) {
           console.error('Data anahtarı bulunamadı:', response.data);
           setEarthquakeData([]);
@@ -224,7 +224,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
         {earthquakeData.map((item) => (
           <Marker
             key={item.id}
-            coordinate={{ latitude: item.lat, longitude: item.lon }}
+            coordinate={{ latitude: parseFloat(item.lat), longitude: parseFloat(item.lon)}}
             title={item.location}
             description={`Şiddet: ${item.magnitude}`}
             pinColor="red"

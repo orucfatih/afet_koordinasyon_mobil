@@ -17,22 +17,43 @@ const ViewAll = ({ navigation }) => {
   useEffect(() => {
     const fetchEarthquakeData = async () => {
       try {
-        const response = await axios.get(
-          'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson'
-        );
-        const data = response.data.features.map(item => ({
-          id: item.id,
-          magnitude: item.properties.mag,
-          location: item.properties.place,
-          time: new Date(item.properties.time).toLocaleTimeString(),
-          date: new Date(item.properties.time).toLocaleDateString(),
-        }));
-        setEarthquakeData(data.slice(0, 20));
+        const response = await axios.get('https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes');
+        console.log('Response:', response.data.data.slice(0,10));
+        if (!response.data.data) {
+          console.error('Data anahtarı bulunamadı:', response.data);
+          setEarthquakeData([]);
+          return;
+        }
+
+        const data = response.data.data
+          .map(item => {
+            if (!item.Date || !item.Magnitude || !item.Place) {
+              console.warn('Eksik veri:', item);
+              return null;
+            }
+            const dateParts = item.Date.split(' ');
+            return {
+              id: `${item.Date}-${item.Magnitude}`,
+              magnitude: parseFloat(item.Magnitude) || 0,
+              location: item.Place || 'Bilinmeyen Yer',
+              time: dateParts[1] || 'Bilinmeyen Saat',
+              date: dateParts[0] || 'Bilinmeyen Tarih',
+              lat: null,
+              lon: null,
+            };
+          })
+          .filter(item => item !== null)
+          .slice(0, 100); // İlk 100 öğeyi al
+
+        setEarthquakeData(data);
       } catch (error) {
-        console.error('Error fetching earthquake data', error);
+        console.error('Error fetching earthquake data from Firebase Functions:', error.message);
+        console.error('Response data:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        console.error('Full error:', error);
+        setEarthquakeData([]);
       }
     };
-
     fetchEarthquakeData();
   }, []);
 
