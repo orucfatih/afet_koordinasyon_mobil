@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image, Modal } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faBell, faMapMarkerAlt, faSyncAlt, faBullhorn, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { Dimensions } from 'react-native';
 
-const SettingsScreen = () => {
+const { width } = Dimensions.get('window');
+
+const SettingsScreen = ({ navigation }) => {
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const [isLocationEnabled, setIsLocationEnabled] = useState(false);
   const [isAutoUpdatesEnabled, setIsAutoUpdatesEnabled] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
+  const [isHornModalVisible, setHornModalVisible] = useState(false);
+  const [isInfoModalVisible, setInfoModalVisible] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
       const locationSetting = await AsyncStorage.getItem('isLocationEnabled');
       const notificationsSetting = await AsyncStorage.getItem('isNotificationsEnabled');
       const autoUpdatesSetting = await AsyncStorage.getItem('isAutoUpdatesEnabled');
-      const languageSetting = await AsyncStorage.getItem('selectedLanguage');
 
       if (locationSetting !== null) setIsLocationEnabled(JSON.parse(locationSetting));
       if (notificationsSetting !== null) setIsNotificationsEnabled(JSON.parse(notificationsSetting));
       if (autoUpdatesSetting !== null) setIsAutoUpdatesEnabled(JSON.parse(autoUpdatesSetting));
-      if (languageSetting !== null) setSelectedLanguage(languageSetting);
     };
     loadSettings();
   }, []);
@@ -47,54 +48,37 @@ const SettingsScreen = () => {
     Alert.alert('Auto Updates', newAutoUpdatesState ? 'Auto updates have been enabled.' : 'Auto updates have been disabled.');
   };
 
-  const handleLanguageChange = async (value) => {
-    setSelectedLanguage(value);
-    await AsyncStorage.setItem('selectedLanguage', value);
-    Alert.alert('Language Changed', `The app language has been changed to ${value === 'en' ? 'English' : 'Türkçe'}.`);
-  };
-
   const handleSaveSettings = () => {
     Alert.alert('Settings Saved', 'Your changes have been saved successfully.');
   };
 
   return (
     <View style={styles.container}>
-            <View style={styles.topBar}>
-              <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
-              <TouchableOpacity style={styles.info}>
-                <Icon name="info-outline" size={25} color="white" />
-              </TouchableOpacity>
-            </View>
-
-      <View style={styles.settingItem}>
-        <Text style={styles.settingText}>Language</Text>
-        <TouchableOpacity onPress={() => setIsLanguageModalVisible(true)}>
-          <Text style={styles.languageText}>{selectedLanguage === 'en' ? 'English' : 'Türkçe'}</Text>
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.whistleButton} onPress={() => setHornModalVisible(true)}>
+          <FontAwesomeIcon icon={faBullhorn} size={25} color="white" style={styles.icon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
+          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.info} onPress={() => setInfoModalVisible(true)}>
+          <FontAwesomeIcon icon={faInfoCircle} size={25} color="white" style={styles.icon} />
         </TouchableOpacity>
       </View>
 
+      {/* Horn Modal */}
       <Modal
-        visible={isLanguageModalVisible}
-        animationType="slide"
+        visible={isHornModalVisible}
         transparent={true}
-        onRequestClose={() => setIsLanguageModalVisible(false)}
+        animationType="slide"
+        onRequestClose={() => setHornModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Language</Text>
-            <Picker
-              selectedValue={selectedLanguage}
-              onValueChange={(itemValue) => {
-                handleLanguageChange(itemValue);
-                setIsLanguageModalVisible(false);
-              }}
-            >
-              <Picker.Item label="Türkçe" value="tr" />
-              <Picker.Item label="English" value="en" />
-            </Picker>
+            <Text style={styles.modalText}>Whistle Button Pressed!</Text>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setIsLanguageModalVisible(false)}
+              onPress={() => setHornModalVisible(false)}
             >
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
@@ -102,39 +86,70 @@ const SettingsScreen = () => {
         </View>
       </Modal>
 
-      <View style={styles.settingItem}>
-        <Text style={styles.settingText}>Notifications</Text>
-        <Switch
-          trackColor={{ false: 'gray', true: '#D32F2F' }}
-          thumbColor={isNotificationsEnabled ? 'white' : 'white'}
-          onValueChange={toggleNotifications}
-          value={isNotificationsEnabled}
-        />
-      </View>
+      {/* Info Modal */}
+      <Modal
+        visible={isInfoModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setInfoModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Settings Info</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setInfoModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-      <View style={styles.settingItem}>
-        <Text style={styles.settingText}>Location Services</Text>
-        <Switch
-          trackColor={{ false: 'gray', true: '#D32F2F' }}
-          thumbColor={isLocationEnabled ? 'white' : 'white'}
-          onValueChange={toggleLocation}
-          value={isLocationEnabled}
-        />
-      </View>
+      <View style={styles.settingsContainer}>
+        <View style={styles.settingItem}>
+          <View style={styles.settingLabel}>
+            <FontAwesomeIcon icon={faBell} size={20} color="#555" style={styles.icon} />
+            <Text style={styles.settingText}>Notifications</Text>
+          </View>
+          <Switch
+            trackColor={{ false: 'gray', true: '#D32F2F' }}
+            thumbColor={isNotificationsEnabled ? 'white' : 'white'}
+            onValueChange={toggleNotifications}
+            value={isNotificationsEnabled}
+          />
+        </View>
 
-      <View style={styles.settingItem}>
-        <Text style={styles.settingText}>Auto Updates</Text>
-        <Switch
-          trackColor={{ false: 'gray', true: '#D32F2F' }}
-          thumbColor={isAutoUpdatesEnabled ? 'white' : 'white'}
-          onValueChange={toggleAutoUpdates}
-          value={isAutoUpdatesEnabled}
-        />
-      </View>
+        <View style={styles.settingItem}>
+          <View style={styles.settingLabel}>
+            <FontAwesomeIcon icon={faMapMarkerAlt} size={20} color="#555" style={styles.icon} />
+            <Text style={styles.settingText}>Location Services</Text>
+          </View>
+          <Switch
+            trackColor={{ false: 'gray', true: '#D32F2F' }}
+            thumbColor={isLocationEnabled ? 'white' : 'white'}
+            onValueChange={toggleLocation}
+            value={isLocationEnabled}
+          />
+        </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
-        <Text style={styles.saveButtonText}>Save Settings</Text>
-      </TouchableOpacity>
+        <View style={styles.settingItem}>
+          <View style={styles.settingLabel}>
+            <FontAwesomeIcon icon={faSyncAlt} size={20} color="#555" style={styles.icon} />
+            <Text style={styles.settingText}>Auto Updates</Text>
+          </View>
+          <Switch
+            trackColor={{ false: 'gray', true: '#D32F2F' }}
+            thumbColor={isAutoUpdatesEnabled ? 'white' : 'white'}
+            onValueChange={toggleAutoUpdates}
+            value={isAutoUpdatesEnabled}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
+          <Text style={styles.saveButtonText}>Save Settings</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -149,36 +164,70 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#2D2D2D', // Koyu arka plan
+    alignItems: 'center',
+    backgroundColor: '#2D2D2D',
     paddingVertical: 15,
+    paddingHorizontal: 20,
     borderTopWidth: 2,
     borderTopColor: '#444',
-    marginHorizontal: 0,
-    elevation: 5,  // Gölgeleme efekti
-    borderBottomLeftRadius: 20, // Üst sol köşe radius
-    borderBottomRightRadius: 20, // Üst sağ köşe radius
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   logoImage: {
     width: 50,
-    top: 5,
-    left: 30,
     height: 50,
   },
+  whistleButton: {
+    padding: 10,
+  },
   info: {
-    top: 20,
-    right: 40,
+    padding: 10,
+  },
+  settingsContainer: {
+    flex: 1,
+    marginTop: 10, // topBar yüksekliği kadar boşluk bırakır
+    paddingHorizontal: 15,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },
-  languageText: {
-    color: '#1976D2',
+  settingLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
+  },
+  icon: {
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  saveButton: {
+    backgroundColor: '#1976D2',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 5,
+    marginHorizontal: 20,
+    marginTop: 30,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   modalContainer: {
@@ -188,39 +237,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
     width: '80%',
+    alignItems: 'center',
   },
-  modalTitle: {
+  modalText: {
     fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 20,
-    textAlign: 'center',
   },
   closeButton: {
     backgroundColor: '#D32F2F',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
-    marginTop: 10,
-    alignItems: 'center',
   },
   closeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    backgroundColor: '#1976D2',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 5,
-    marginHorizontal: 20,
-    marginTop: 30,
-  },
-  saveButtonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: 'bold',
   },
 });

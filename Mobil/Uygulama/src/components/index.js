@@ -11,11 +11,13 @@ import AraMenu2 from "./AraMenu2";
 import Info from "./Info";
 import ViewAll from "./ViewAll";
 import Agreement from "./Agreement";
+import Horn from "./Horn";
 
 export{
     Loading,
     CustomTextInput,
     CustomButton,
+    Horn,
     ProfileScreen,
     SettingsScreen,
     ChatScreen,

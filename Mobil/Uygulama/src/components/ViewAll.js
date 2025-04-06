@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  Image
+  Image,
 } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/Ionicons'; // Ionicons kütüphanesi
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const ViewAll = ({ navigation }) => {
   const [earthquakeData, setEarthquakeData] = useState([]);
@@ -17,43 +17,25 @@ const ViewAll = ({ navigation }) => {
   useEffect(() => {
     const fetchEarthquakeData = async () => {
       try {
-        const response = await axios.get('https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes');
-        console.log('Response:', response.data.data.slice(0,10));
-        if (!response.data.data) {
-          console.error('Data anahtarı bulunamadı:', response.data);
-          setEarthquakeData([]);
-          return;
-        }
-
-        const data = response.data.data
-          .map(item => {
-            if (!item.Date || !item.Magnitude || !item.Place) {
-              console.warn('Eksik veri:', item);
-              return null;
-            }
-            const dateParts = item.Date.split(' ');
-            return {
-              id: `${item.Date}-${item.Magnitude}`,
-              magnitude: parseFloat(item.Magnitude) || 0,
-              location: item.Place || 'Bilinmeyen Yer',
-              time: dateParts[1] || 'Bilinmeyen Saat',
-              date: dateParts[0] || 'Bilinmeyen Tarih',
-              lat: null,
-              lon: null,
-            };
-          })
-          .filter(item => item !== null)
-          .slice(0, 100); // İlk 100 öğeyi al
-
-        setEarthquakeData(data);
+        const response = await axios.get(
+          'https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes'
+        );
+        const data = response.data.data.map(item => ({
+          id: `${item.Date}-${item.Magnitude}`,
+          magnitude: parseFloat(item.Magnitude) || 0,
+          location: item.Place || 'Bilinmeyen Yer',
+          time: item.Date.split(' ')[1] || 'Bilinmeyen Saat',
+          date: item.Date.split(' ')[0] || 'Bilinmeyen Tarih',
+          lat: parseFloat(item.Lat) || null, // Enlem eklendi
+          lon: parseFloat(item.Lon) || null, // Boylam eklendi
+          depth: parseFloat(item.Depth) || null, // Derinlik eklendi
+        }));
+        setEarthquakeData(data.slice(0, 20));
       } catch (error) {
-        console.error('Error fetching earthquake data from Firebase Functions:', error.message);
-        console.error('Response data:', error.response?.data);
-        console.error('Status:', error.response?.status);
-        console.error('Full error:', error);
-        setEarthquakeData([]);
+        console.error('Error fetching earthquake data', error);
       }
     };
+
     fetchEarthquakeData();
   }, []);
 
@@ -64,13 +46,28 @@ const ViewAll = ({ navigation }) => {
       return '#D32F2F';
     };
 
+    const formatLocation = (location) => {
+      const maxLength = 30;
+      let fontSize = 18;
+      if (location.length > 30) {
+        fontSize = 14;
+      } else if (location.length > 20) {
+        fontSize = 16;
+      }
+      const shortenedLocation =
+        location.length > maxLength ? `${location.substring(0, maxLength - 3)}...` : location;
+      return { shortenedLocation, fontSize };
+    };
+
+    const { shortenedLocation, fontSize } = formatLocation(item.location || 'Bilinmeyen Yer');
+
     return (
       <View style={styles.earthquakeCard}>
         <View style={styles.magnitudeWrapper}>
           <View
             style={[
               styles.circle,
-              { backgroundColor: getMagnitudeColor(item.magnitude), width: 120, height: 120 }
+              { backgroundColor: getMagnitudeColor(item.magnitude), width: 120, height: 120 },
             ]}
           >
             <View style={[styles.circle, { backgroundColor: 'rgba(255,255,255,0.3)', width: 100, height: 100 }]}>
@@ -92,9 +89,18 @@ const ViewAll = ({ navigation }) => {
         </View>
 
         <View style={styles.earthquakeInfo}>
-          <Text style={styles.earthquakeLocation}>{item.location}</Text>
+          <Text style={[styles.earthquakeLocation, { fontSize }]}>{shortenedLocation}</Text>
           <Text style={styles.earthquakeTime}>{item.time}</Text>
           <Text style={styles.earthquakeDate}>{item.date}</Text>
+          {/* Koordinatlar ve Derinlik Eklendi */}
+          {item.lat && item.lon && (
+            <Text style={styles.earthquakeDetails}>
+              Koordinatlar: {item.lat.toFixed(4)}, {item.lon.toFixed(4)}
+            </Text>
+          )}
+          {item.depth && (
+            <Text style={styles.earthquakeDetails}>Derinlik: {item.depth} km</Text>
+          )}
         </View>
       </View>
     );
@@ -108,7 +114,7 @@ const ViewAll = ({ navigation }) => {
         </TouchableOpacity>
         <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
       </View>
-      
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Son Depremler</Text>
       </View>
@@ -131,14 +137,14 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#2D2D2D', // Koyu arka plan
+    backgroundColor: '#2D2D2D',
     paddingVertical: 15,
     borderTopWidth: 2,
     borderTopColor: '#444',
     marginHorizontal: 0,
-    elevation: 5,  // Gölgeleme efekti
-    borderBottomLeftRadius: 20, // Üst sol köşe radius
-    borderBottomRightRadius: 20, // Üst sağ köşe radius
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   backButton: {
     padding: 10,
@@ -178,8 +184,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   earthquakeLocation: {
-    fontSize: 16,
     fontWeight: 'bold',
+    numberOfLines: 1,
+    ellipsizeMode: 'tail',
   },
   earthquakeTime: {
     fontSize: 14,
@@ -188,6 +195,10 @@ const styles = StyleSheet.create({
   earthquakeDate: {
     fontSize: 14,
     color: '#757575',
+  },
+  earthquakeDetails: { // Yeni stil eklendi
+    fontSize: 12,
+    color: '#555',
   },
   magnitudeWrapper: {
     alignItems: 'center',

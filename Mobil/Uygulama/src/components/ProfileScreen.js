@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useState, useEffect } from 'react';
 import { getUser, logout } from '../redux/userSlice';
 import { Loading, CustomButton, UpdatePassword } from './index.js';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faEnvelope, faPhone, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 const ProfileScreen = () => {
   const dispatch = useDispatch();
-  
+
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ const ProfileScreen = () => {
   }, [dispatch]);
 
   const [updatingScreen, setUpdatingScreen] = useState(false);
-  const { isLoading } = useSelector(state => state.user);
+  const { isLoading } = useSelector((state) => state.user);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -45,14 +45,14 @@ const ProfileScreen = () => {
     <View style={styles.container}>
       <Image source={require('../../assets/images/user.png')} style={styles.profileImage} />
       <Text style={styles.userName}>{name} {surname}</Text>
-      
+
       <View style={styles.infoContainer}>
         <View style={styles.infoRow}>
-          <MaterialIcons name="email" size={20} color="#555" />
+          <FontAwesomeIcon icon={faEnvelope} size={20} color="#555" style={styles.icon} />
           <Text style={styles.userData}>{email}</Text>
         </View>
         <View style={styles.infoRow}>
-          <MaterialIcons name="phone" size={20} color="#555" />
+          <FontAwesomeIcon icon={faPhone} size={20} color="#555" style={styles.icon} />
           <Text style={styles.userData}>{phone}</Text>
         </View>
       </View>
@@ -60,8 +60,17 @@ const ProfileScreen = () => {
       <TouchableOpacity style={styles.editButton} onPress={() => setUpdatingScreen(true)}>
         <Text style={styles.editButtonText}>Şifre Yenile</Text>
       </TouchableOpacity>
-      
-      <CustomButton title={"Çıkış Yap"} onPress={handleLogout} style={styles.logoutButton} />
+
+      <CustomButton
+        title={
+          <View style={styles.logoutButtonContent}>
+            <FontAwesomeIcon icon={faSignOutAlt} size={20} color="#fff" style={styles.logoutIcon} />
+            <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+          </View>
+        }
+        onPress={handleLogout}
+        style={styles.logoutButton}
+      />
     </View>
   );
 };
@@ -106,17 +115,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  icon: {
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
+  },
   userData: {
     fontSize: 16,
     color: '#555',
-    marginLeft: 10,
   },
   editButton: {
     backgroundColor: '#1976D2',
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 3 },
@@ -132,5 +148,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutIcon: {
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
