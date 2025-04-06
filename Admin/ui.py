@@ -12,6 +12,7 @@ from styles.styles_light import *
 from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
 from utils import get_icon_path
+from equipment_management.equipment_management import EquipmentManagementTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):
@@ -42,6 +43,8 @@ class AfetYonetimAdmin(QMainWindow):
         self.tabs.addTab(RaporYonetimTab(), "Rapor")
         self.tabs.addTab(PersonelYonetimTab(), "Personel Yönetim")
         self.tabs.addTab(MissingPersonDetectionTab(), "Kayıp Vatandaş Tespiti")
+        self.tabs.addTab(EquipmentManagementTab(), "Ekipman Yönetimi")
+
 
         # Mesaj butonu için özel bir widget oluştur
         tab_corner_widget = QWidget()

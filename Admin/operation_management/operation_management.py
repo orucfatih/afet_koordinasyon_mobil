@@ -1,19 +1,41 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget,
- QGroupBox, QTableWidget, QTableWidgetItem, QLineEdit, QTextEdit,
-QComboBox, QMessageBox, QDialog, QFormLayout, QListWidgetItem, QDialogButtonBox)
+"""
+Operasyon yönetimi modülü
+"""
+from PyQt5.QtWidgets import (
+    # Layout widgets
+    QWidget, QVBoxLayout, QHBoxLayout,
+    # Basic widgets
+    QLabel, QPushButton, QLineEdit, QTextEdit, QComboBox,
+    # Container widgets
+    QGroupBox, QListWidget, QTableWidget, QTableWidgetItem,
+    # Dialog related
+    QDialog, QMessageBox, QDialogButtonBox,
+    # Form widgets
+    QFormLayout, QListWidgetItem
+)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from dialogs import NotificationDetailDialog
-from sample_data import TEAM_DATA, NOTIFICATIONS, TASKS, MESSAGES, NOTIFICATION_DETAILS, TASK_DETAILS
+from sample_data import TEAM_DATA, TASKS, TASK_DETAILS
 from styles.styles_dark import *
 from styles.styles_light import *
-from .op_man_ui import MessageItem, create_team_dialog, create_contact_dialog, create_task_edit_dialog, TeamManagementDialog, get_icon_path
-from .constants_op_man import TEAM_TABLE_HEADERS, STATUS_COLORS, TASK_PRIORITY_COLORS, TASK_PRIORITIES
-from .table_utils import create_status_item, sync_tables
-from .dialogs_op_man import TeamDialog
+from .op_constant import TASK_PRIORITIES
+from .op_utils import get_icon_path
+from .op_dialogs import create_task_edit_dialog
+from .op_config import get_config
+from harita import GoogleMapsModule
 from dotenv import load_dotenv
 import os
+from .task_history import MissionHistoryDialog
+from .team_management_panel import TeamManagementPanel
+
+# Görev öncelik renkleri
+TASK_PRIORITY_COLORS = {
+    "Düşük (1)": "#808080",  # Gri
+    "Orta (2)": "#FFA500",   # Turuncu
+    "Yüksek (3)": "#FF4500", # Kırmızı-Turuncu
+    "Kritik (4)": "#FF0000"  # Kırmızı
+}
 
 class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
@@ -22,73 +44,79 @@ class OperationManagementTab(QWidget):
         
         load_dotenv()
 
-        API_KEY = os.getenv("API_KEY")
-        self.api_key = API_KEY
+        self.config = get_config()
+        self.api_key = self.config["api_key"]
         self.initUI()
 
     def initUI(self):
         main_layout = QVBoxLayout()
         
-        # Üst Panel - Harita ve Durum Bilgisi
-        top_panel = QWidget()
-        top_layout = QHBoxLayout(top_panel)
-
-        self.messages_list = QListWidget()  # Ekip mesajlaşma kısmı
+        # Ana panel - Sol ve Sağ bölümler
+        main_panel = QHBoxLayout()
+        
+        # Sol Panel - Harita ve Ekip Listesi
+        left_panel = QWidget()
+        left_layout = QVBoxLayout(left_panel)
         
         # Harita Bölümü
-        self.map_widget = QWebEngineView()
-        self.load_default_map()
-
-        # Sağ Panel - Bildirimler ve Görevler
-        right_info_panel = QWidget()
-        right_info_layout = QVBoxLayout(right_info_panel)
+        self.map_module = GoogleMapsModule(self.api_key)
+        self.map_widget = self.map_module.map_view
+        self.map_widget.setMinimumHeight(300)  # Harita için minimum yükseklik
         
-        # Bildirimler Listesi
-        notifications_group = QGroupBox("Gelen Bildirimler")
-        notifications_layout = QVBoxLayout()
+        # Ekip Listesi
+        team_list_group = QGroupBox("Mevcut Ekipler")
+        team_list_layout = QVBoxLayout()
         
-        # Bildirimler listesi
-        self.notification_list = QListWidget()
-        self.notification_list.itemDoubleClicked.connect(self.show_notification_details)
-        self.notification_list.setStyleSheet(LIST_WIDGET_STYLE)
-        self.notification_list.setSelectionMode(QListWidget.MultiSelection)  # Çoklu seçim özelliği
+        # TeamManagementPanel'i ekle
+        self.team_management_panel = TeamManagementPanel(self)
+        team_list_layout.addWidget(self.team_management_panel)
         
-        # Butonlar için container
-        notification_buttons = QHBoxLayout()
+        team_list_group.setLayout(team_list_layout)
+        team_list_group.setMaximumHeight(500)  # Ekip listesi maksimum yükseklik
         
-        # Cevapla butonu
-        reply_notification_btn = QPushButton(" Cevapla")
-        reply_notification_btn.setStyleSheet(GREEN_BUTTON_STYLE)
-        reply_notification_btn.setIcon(QIcon(get_icon_path('customer-service.png')))
-        reply_notification_btn.clicked.connect(self.reply_to_notification)
+        # Sol panel bileşenlerini ekle
+        left_layout.addWidget(self.map_widget, stretch=4)
+        left_layout.addWidget(team_list_group, stretch=3)
         
-        # Silme butonu
-        delete_notification_btn = QPushButton(" Sil")
-        delete_notification_btn.setStyleSheet(RED_BUTTON_STYLE)
-        delete_notification_btn.setIcon(QIcon(get_icon_path('bin.png')))
-        delete_notification_btn.clicked.connect(self.delete_selected_notifications)
+        # Sağ Panel - Aktif Görevler ve Görevlendirme
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
         
-        # Butonları layout'a ekle
-        notification_buttons.addWidget(reply_notification_btn)
-        notification_buttons.addWidget(delete_notification_btn)
-        
-        # Widget'ları layout'a ekle
-        notifications_layout.addWidget(self.notification_list)
-        notifications_layout.addLayout(notification_buttons)
-        
-        notifications_group.setLayout(notifications_layout)
-        
-        # Görevler Listesi
+        # Aktif Görevler Bölümü
         tasks_group = QGroupBox("Aktif Görevler")
         tasks_layout = QVBoxLayout()
+        
+        # Görev filtreleme
+        filter_layout = QHBoxLayout()
+        
+        # Öncelik filtresi
+        priority_filter_label = QLabel("Öncelik Filtresi:")
+        self.priority_filter = QComboBox()
+        self.priority_filter.addItems(["Tümü"] + TASK_PRIORITIES)
+        self.priority_filter.setStyleSheet(COMBOBOX_STYLE)
+        self.priority_filter.currentTextChanged.connect(self.filter_tasks)
+        
+        # Arama kutusu
+        search_layout = QHBoxLayout()
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Görev ara...")
+        self.search_input.setStyleSheet(LINE_EDIT_STYLE)
+        self.search_input.textChanged.connect(self.filter_tasks)
+        
+        search_layout.addWidget(QLabel("Ara:"))
+        search_layout.addWidget(self.search_input)
+        
+        filter_layout.addWidget(priority_filter_label)
+        filter_layout.addWidget(self.priority_filter)
+        filter_layout.addLayout(search_layout)
         
         # Görevler listesi
         self.tasks_list = QListWidget()
         self.tasks_list.itemDoubleClicked.connect(self.show_task_details)
         self.tasks_list.setStyleSheet(LIST_WIDGET_STYLE)
-        self.tasks_list.setSelectionMode(QListWidget.MultiSelection)  # Çoklu seçim özelliği
+        self.tasks_list.setSelectionMode(QListWidget.MultiSelection)
         
-        # Butonlar için container
+        # Görev yönetim butonları
         task_buttons = QHBoxLayout()
         
         # Düzenleme butonu
@@ -96,6 +124,12 @@ class OperationManagementTab(QWidget):
         edit_task_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
         edit_task_btn.setIcon(QIcon(get_icon_path('equalizer.png')))
         edit_task_btn.clicked.connect(self.edit_selected_task)
+        
+        # Tamamlandı butonu
+        complete_task_btn = QPushButton(" Tamamlandı")
+        complete_task_btn.setStyleSheet(GREEN_BUTTON_STYLE)
+        complete_task_btn.setIcon(QIcon(get_icon_path('check.png')))
+        complete_task_btn.clicked.connect(self.complete_selected_task)
         
         # Silme butonu
         delete_task_btn = QPushButton(" Sil")
@@ -105,122 +139,26 @@ class OperationManagementTab(QWidget):
         
         # Butonları layout'a ekle
         task_buttons.addWidget(edit_task_btn)
+        task_buttons.addWidget(complete_task_btn)
         task_buttons.addWidget(delete_task_btn)
         
-        # Widget'ları layout'a ekle
+        # Widget'ları tasks_layout'a ekle
+        tasks_layout.addLayout(filter_layout)
         tasks_layout.addWidget(self.tasks_list)
         tasks_layout.addLayout(task_buttons)
         
         tasks_group.setLayout(tasks_layout)
-        
-        # Bildirimler ve görevler için minimum yükseklik ayarla
-        notifications_group.setMinimumHeight(250)  
-        tasks_group.setMinimumHeight(250)
-        
-        # Bildirimler ve görevler için stretch değerleri
-        right_info_layout.addWidget(notifications_group, stretch=3)  
-        right_info_layout.addWidget(tasks_group, stretch=3)  
-        
-        # Üst panel düzenleme
-        top_layout.addWidget(self.map_widget, stretch=2)
-        top_layout.addWidget(right_info_panel, stretch=1)
-        
-        # Alt Panel - Ekip Yönetimi ve Görevlendirme
-        bottom_panel = QWidget()
-        bottom_layout = QHBoxLayout(bottom_panel)
-        
-        # Ekip Listesi
-        team_list_group = QGroupBox("Mevcut Ekipler")
-        team_list_layout = QVBoxLayout()
-        
-        # Tablo widget'ını oluştur
-        self.team_list = QTableWidget()
-        self.team_list.setColumnCount(8)
-        self.team_list.setHorizontalHeaderLabels(TEAM_TABLE_HEADERS)
-        self.team_list.setStyleSheet(TABLE_WIDGET_STYLE)
-        self.team_list.itemClicked.connect(self.toggle_team_status)  # Tıklama olayını bağla
-        
-        # Filtre Paneli
-        filter_panel = QWidget()
-        filter_layout = QHBoxLayout(filter_panel)
-        
-        # Kurum Filtresi
-        institution_filter = QComboBox()
-        institution_filter.addItem("Tüm Kurumlar")
-        institution_filter.setStyleSheet(COMBOBOX_STYLE)
-        institution_filter.currentTextChanged.connect(self.apply_filters)
-        
-        # Durum Filtresi
-        status_filter = QComboBox()
-        status_filter.addItems(["Tüm Durumlar", "Müsait", "Meşgul"])
-        status_filter.setStyleSheet(COMBOBOX_STYLE)
-        status_filter.currentTextChanged.connect(self.apply_filters)
-        
-        # Uzmanlık Filtresi
-        expertise_filter = QComboBox()
-        expertise_filter.addItem("Tüm Uzmanlıklar")
-        expertise_filter.addItems([
-            "USAR (Arama-Kurtarma)",
-            "Sağlık Ekibi",
-            "Enkaz Kaldırma",
-            "İlk Yardım",
-            "Yangın Söndürme",
-            "Altyapı Onarım",
-            "Lojistik Destek",
-            "Güvenlik",
-            "Barınma-İaşe",
-            "Teknik Destek",
-            "Haberleşme",
-            "Koordinasyon"
-        ])
-        expertise_filter.setStyleSheet(COMBOBOX_STYLE)
-        expertise_filter.currentTextChanged.connect(self.apply_filters)
-        
-        # Filtreleri layout'a ekle
-        filter_layout.addWidget(QLabel("Kurum:"))
-        filter_layout.addWidget(institution_filter)
-        filter_layout.addWidget(QLabel("Durum:"))
-        filter_layout.addWidget(status_filter)
-        filter_layout.addWidget(QLabel("Uzmanlık:"))
-        filter_layout.addWidget(expertise_filter)
-        
-        # Sınıf değişkenlerini kaydet
-        self.institution_filter = institution_filter
-        self.status_filter = status_filter
-        self.expertise_filter = expertise_filter
-        
-        # Alt butonlar için container
-        bottom_buttons = QHBoxLayout()
-        
-        # Ekip Yönetim Butonu
-        team_management_btn = QPushButton(" Ekip Yönetimi")
-        team_management_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
-        team_management_btn.setIcon(QIcon(get_icon_path('add-group.png')))
-        team_management_btn.clicked.connect(self.show_team_management)
-        
-        # İletişim Butonu
-        contact_button = QPushButton(" Ekip ile İletişime Geç")
-        contact_button.clicked.connect(self.contact_team)
-        contact_button.setStyleSheet(GREEN_BUTTON_STYLE)
-        contact_button.setIcon(QIcon(get_icon_path('customer-service.png')))
-        
-        # Butonları yatay düzende ekle
-        bottom_buttons.addWidget(team_management_btn)
-        bottom_buttons.addWidget(contact_button)
-        
-        team_list_layout.addWidget(filter_panel)
-        team_list_layout.addWidget(self.team_list)
-        team_list_layout.addLayout(bottom_buttons)
-        
-        team_list_group.setLayout(team_list_layout)
         
         # Görevlendirme Paneli
         assignment_group = QGroupBox("Ekip Görevlendirme")
         assignment_layout = QVBoxLayout()
         
         # Ekip seçimi
+        team_selection_layout = QHBoxLayout()
+        team_selection_layout.addWidget(QLabel("Ekip:"))
         self.team_combo = QComboBox()
         self.team_combo.setStyleSheet(COMBOBOX_STYLE)
+        team_selection_layout.addWidget(self.team_combo)
         
         # Başlık ve Lokasyon için yatay layout
         title_location_layout = QHBoxLayout()
@@ -245,11 +183,28 @@ class OperationManagementTab(QWidget):
         title_location_layout.addLayout(title_layout)
         title_location_layout.addLayout(location_layout)
         
-        # Öncelik seçimi için combobox
+        # Öncelik ve süre seçimi için layout
+        priority_duration_layout = QHBoxLayout()
+        
+        # Öncelik seçimi
+        priority_layout = QVBoxLayout()
+        priority_layout.addWidget(QLabel("Öncelik Seviyesi:"))
         self.priority_combo = QComboBox()
         self.priority_combo.addItems(TASK_PRIORITIES)
         self.priority_combo.setCurrentText("Orta (2)")
         self.priority_combo.setStyleSheet(COMBOBOX_STYLE)
+        priority_layout.addWidget(self.priority_combo)
+        
+        # Tahmini süre
+        duration_layout = QVBoxLayout()
+        duration_layout.addWidget(QLabel("Tahmini Süre (saat):"))
+        self.duration_input = QLineEdit()
+        self.duration_input.setPlaceholderText("Örn: 2.5")
+        self.duration_input.setStyleSheet(LINE_EDIT_STYLE)
+        duration_layout.addWidget(self.duration_input)
+        
+        priority_duration_layout.addLayout(priority_layout)
+        priority_duration_layout.addLayout(duration_layout)
         
         # Görev detay girişi
         self.task_input = QTextEdit()
@@ -257,14 +212,8 @@ class OperationManagementTab(QWidget):
         self.task_input.setMaximumHeight(100)
         self.task_input.setStyleSheet(TEXT_EDIT_STYLE)
         
-        # Widget'ları layout'a ekle
-        assignment_layout.addWidget(QLabel("Ekip Seç:"))
-        assignment_layout.addWidget(self.team_combo)
-        assignment_layout.addLayout(title_location_layout)  # Başlık ve lokasyonu yan yana ekle
-        assignment_layout.addWidget(QLabel("Öncelik Seviyesi:"))
-        assignment_layout.addWidget(self.priority_combo)
-        assignment_layout.addWidget(QLabel("Görev Detayları:"))
-        assignment_layout.addWidget(self.task_input)
+        # Görev atama ve geçmiş butonları
+        button_layout = QHBoxLayout()
         
         # Görev atama butonu
         assign_btn = QPushButton(" Görev Ata")
@@ -272,21 +221,35 @@ class OperationManagementTab(QWidget):
         assign_btn.setStyleSheet(GREEN_BUTTON_STYLE)
         assign_btn.clicked.connect(self.assign_task)
         
-        assignment_layout.addWidget(assign_btn)
+        # Görev geçmişi butonu
+        history_btn = QPushButton(" Görev Geçmişi")
+        history_btn.setIcon(QIcon(get_icon_path('history.png')))
+        history_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
+        history_btn.clicked.connect(self.show_mission_history)
+        
+        button_layout.addWidget(assign_btn)
+        button_layout.addWidget(history_btn)
+        
+        # Widget'ları assignment_layout'a ekle
+        assignment_layout.addLayout(team_selection_layout)
+        assignment_layout.addLayout(title_location_layout)
+        assignment_layout.addLayout(priority_duration_layout)
+        assignment_layout.addWidget(QLabel("Görev Detayları:"))
+        assignment_layout.addWidget(self.task_input)
+        assignment_layout.addLayout(button_layout)
+        
         assignment_group.setLayout(assignment_layout)
         
-        # Ekip listesi ve görevlendirme için yükseklik ayarları
-        team_list_group.setMinimumHeight(400)     # Ekip listesi minimum yükseklik
-        assignment_group.setMinimumHeight(350)     # Görevlendirme minimum yükseklik
-        assignment_group.setMaximumHeight(400)     # Görevlendirme maksimum yükseklik
+        # Sağ panel bileşenlerini ekle
+        right_layout.addWidget(tasks_group, stretch=1)
+        right_layout.addWidget(assignment_group, stretch=1)
         
-        # Alt panel layout oranları
-        bottom_layout.addWidget(team_list_group, stretch=2)
-        bottom_layout.addWidget(assignment_group, stretch=1)
+        # Ana panele sol ve sağ bölümleri ekle
+        main_panel.addWidget(left_panel, stretch=2)
+        main_panel.addWidget(right_panel, stretch=1)
         
-        # Ana layout oranları
-        main_layout.addWidget(top_panel, stretch=2)    # Üst panel için daha fazla alan
-        main_layout.addWidget(bottom_panel, stretch=3)  # Alt panel için daha fazla alan
+        # Ana layout'a paneli ekle
+        main_layout.addLayout(main_panel)
         
         self.setLayout(main_layout)
         
@@ -294,173 +257,17 @@ class OperationManagementTab(QWidget):
         self.load_sample_data()
         self.load_team_data()
 
-
-
-    def load_default_map(self):
-        """Türkiye merkezli bir harita yükler"""
-        # Türkiye için merkez koordinatları (yaklaşık olarak Ankara)
-        turkey_lat = 39.9334
-        turkey_lng = 32.8597
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-            <meta charset="utf-8">
-            <title>Operasyon Haritası - Türkiye</title>
-            <style>
-                html, body, #map {{
-                    height: 100%;
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-            <script src="https://maps.googleapis.com/maps/api/js?key={self.api_key}&callback=initMap&libraries=places" async defer></script>
-            <script>
-                var map;
-                var markers = [];
-                
-                function initMap() {{
-                    map = new google.maps.Map(document.getElementById('map'), {{
-                        center: {{lat: {turkey_lat}, lng: {turkey_lng}}},
-                        zoom: 6,
-                        mapTypeControl: true,
-                        mapTypeControlOptions: {{
-                            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-                            position: google.maps.ControlPosition.TOP_RIGHT
-                        }}
-                    }});
-                    
-                    // Ekip üyeleri için işaretleyiciler ekle (gerçek uygulamada dinamik olacaktır)
-                    addTeamMarkers();
-                }}
-                
-                function addTeamMarkers() {{
-                    // Örnek ekip lokasyonları - gerçek uygulamada bu veriler veri kaynağınızdan gelecektir
-                    var teamLocations = [
-                        {{lat: 39.9334, lng: 32.8597, name: 'Takım 1', status: 'Aktif'}},
-                        {{lat: 41.0082, lng: 28.9784, name: 'Takım 2', status: 'Görevde'}},
-                        {{lat: 38.4237, lng: 27.1428, name: 'Takım 3', status: 'Hazır'}}
-                    ];
-                    
-                    for (var i = 0; i < teamLocations.length; i++) {{
-                        var marker = new google.maps.Marker({{
-                            position: {{lat: teamLocations[i].lat, lng: teamLocations[i].lng}},
-                            map: map,
-                            title: teamLocations[i].name + ' - ' + teamLocations[i].status
-                        }});
-                        
-                        markers.push(marker);
-                        
-                        // Her işaretleyici için bilgi penceresi ekle
-                        (function(marker, data) {{
-                            var infoWindow = new google.maps.InfoWindow({{
-                                content: '<div><strong>' + data.name + '</strong><br>' + 
-                                         'Durum: ' + data.status + '</div>'
-                            }});
-                            
-                            marker.addListener('click', function() {{
-                                infoWindow.open(map, marker);
-                            }});
-                        }})(marker, teamLocations[i]);
-                    }}
-                }}
-            </script>
-        </head>
-        <body>
-            <div id="map"></div>
-        </body>
-        </html>
-        """
-        self.map_widget.setHtml(html)
-
-
-
-
-    def refresh_map(self):
-        self.harita.clear_map()  # Haritayı temizle
-        self.map_view = self.harita.initialize_map(height=470)  # Yeniden başlat
-
-
-    def add_team(self):
-        """Yeni ekip eklemek için bir dialog açar."""
-        dialog = create_team_dialog(self, self.save_new_team)
-        dialog.exec_()
-
-
-    def toggle_team_status(self, item):
-        """Durum sütununa tıklandığında durumu değiştirir"""
-        if self.team_list.column(item) == 3:  # Durum sütunu
-            current_status = item.text()
-            new_status = "Meşgul" if current_status == "Müsait" else "Müsait"
-            
-            # Yeni durum item'ı oluştur
-            new_item = QTableWidgetItem(new_status)
-            new_item.setTextAlignment(Qt.AlignCenter)
-            
-            # Duruma göre renk ayarla
-            if new_status == "Müsait":
-                new_item.setBackground(QBrush(QColor("#4CAF50")))
-            else:
-                new_item.setBackground(QBrush(QColor("#f44336")))
-            
-            # Hücreyi salt okunur yap
-            new_item.setFlags(new_item.flags() & ~Qt.ItemIsEditable)
-            
-            # Değişikliği uygula
-            self.team_list.setItem(item.row(), 3, new_item)
-
-
-    def save_new_team(self, dialog, team_id_input, leader_input, institution_input, status_combo, contact_input):
-        """Yeni ekibi kaydeder."""
-        team_id = team_id_input.text()
-        leader = leader_input.text()
-        institution = institution_input.text()
-        status = status_combo.currentText()
-        contact = contact_input.text()
-        
-        row = self.team_list.rowCount()
-        self.team_list.insertRow(row)
-        self.team_list.setItem(row, 0, QTableWidgetItem(team_id))
-        self.team_list.setItem(row, 1, QTableWidgetItem(leader))
-        self.team_list.setItem(row, 2, QTableWidgetItem(institution))
-        
-        status_item = QTableWidgetItem(status)
-        status_item.setTextAlignment(Qt.AlignCenter)
-        if status == "Müsait":
-            status_item.setBackground(QBrush(QColor("#4CAF50")))
-        else:
-            status_item.setBackground(QBrush(QColor("#f44336")))
-        self.team_list.setItem(row, 3, status_item)
-        
-        self.team_list.setItem(row, 4, QTableWidgetItem(contact))
-        self.team_combo.addItem(f"{team_id} - {leader} ({institution})")
-        self.team_list.resizeColumnsToContents()
-        dialog.accept()
-
-    def remove_selected_team(self):
-        """Seçili ekibi kaldırır."""
-        selected_items = self.team_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
-            return
-        
-        selected_row = selected_items[0].row()
-        self.team_list.removeRow(selected_row)
-
-
     def load_team_data(self):
         """Örnek ekip verilerini yükler"""
-        self.team_list.setRowCount(0)
+        self.team_management_panel.team_list.setRowCount(0)
         
         # Kurumları topla
         institutions = set()
         
         for team in TEAM_DATA:
             institutions.add(team[2])  # Kurum adlarını topla
-            row = self.team_list.rowCount()
-            self.team_list.insertRow(row)
+            row = self.team_management_panel.team_list.rowCount()
+            self.team_management_panel.team_list.insertRow(row)
             for col, data in enumerate(team):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
@@ -474,35 +281,145 @@ class OperationManagementTab(QWidget):
                     # Sadece durum sütununu salt okunur yap
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 
-                self.team_list.setItem(row, col, item)
+                self.team_management_panel.team_list.setItem(row, col, item)
             
             self.team_combo.addItem(f"{team[0]} - {team[1]} ({team[2]})")
         
         # Kurum filtresine kurumları ekle
-        self.institution_filter.addItems(sorted(institutions))
+        self.team_management_panel.institution_filter.addItems(sorted(institutions))
         
-        self.team_list.resizeColumnsToContents()
+        self.team_management_panel.team_list.resizeColumnsToContents()
 
-    def apply_filters(self):
-        """Seçili filtrelere göre ekip listesini filtreler"""
-        selected_institution = self.institution_filter.currentText()
-        selected_status = self.status_filter.currentText()
-        selected_expertise = self.expertise_filter.currentText()
+    def show_task_details(self, item):
+        """Görev detaylarını dialog penceresinde gösterir"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Görev Detayları")
+        dialog.setMinimumWidth(400)
+        layout = QVBoxLayout()
         
-        for row in range(self.team_list.rowCount()):
-            show_row = True
-            institution = self.team_list.item(row, 2).text()
-            status = self.team_list.item(row, 3).text()
-            expertise = self.team_list.item(row, 5).text() if self.team_list.item(row, 5) else ""
-            
-            if selected_institution != "Tüm Kurumlar" and institution != selected_institution:
-                show_row = False
-            if selected_status != "Tüm Durumlar" and status != selected_status:
-                show_row = False
-            if selected_expertise != "Tüm Uzmanlıklar" and expertise != selected_expertise:
-                show_row = False
+        details = QTextEdit()
+        details.setPlainText(TASK_DETAILS.get(item.text(), "Detaylı bilgi bulunamadı."))
+        details.setReadOnly(True)
+        
+        close_btn = QPushButton("Kapat")
+        close_btn.clicked.connect(dialog.accept)
+        
+        layout.addWidget(details)
+        layout.addWidget(close_btn)
+        
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def delete_selected_messages(self):
+        """Seçili mesajları siler"""
+        items_to_remove = []
+        for i in range(self.messages_list.count()):
+            item = self.messages_list.item(i)
+            if item.checkState() == Qt.Checked:
+                items_to_remove.append(item)
+        
+        for item in items_to_remove:
+            self.messages_list.takeItem(self.messages_list.row(item))
+
+    def load_sample_data(self):
+        """Örnek verileri yükler"""
+        # Görevler
+        self.tasks_list.clear()
+        for task in TASKS:
+            item = QListWidgetItem(task)
+            # Görev metnini parçala
+            task_parts = task.split(" - ")
+            if len(task_parts) >= 3:
+                priority = task_parts[2]
+                item.setData(Qt.UserRole, priority)
+            self.tasks_list.addItem(item)
+
+    def edit_selected_task(self):
+        """Seçili görevi düzenlemek için dialog açar"""
+        current_item = self.tasks_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir görev seçin!")
+            return
+        
+        dialog = create_task_edit_dialog(self, current_item, self.save_edited_task)
+        dialog.exec_()
+    
+    def save_edited_task(self, item, new_text, dialog, priority):
+        """Düzenlenen görevi kaydeder"""
+        if item:
+            # Görev metnini parçala ve yeni öncelik ile güncelle
+            task_parts = item.text().split(" - ")
+            if len(task_parts) >= 2:
+                title = task_parts[0]
+                location = task_parts[1]
+                # Yeni metni oluştur
+                updated_text = f"{title} - {location} - {priority}"
+                item.setText(updated_text)
+                item.setData(Qt.UserRole, priority)  # Öncelik seviyesini kaydet
                 
-            self.team_list.setRowHidden(row, not show_row)
+                # Görev detaylarını güncelle
+                if updated_text in TASK_DETAILS:
+                    details = TASK_DETAILS[updated_text].split("\n")
+                    updated_details = []
+                    for line in details:
+                        if line.startswith("Öncelik:"):
+                            updated_details.append(f"Öncelik: {priority}")
+                        else:
+                            updated_details.append(line)
+                    TASK_DETAILS[updated_text] = "\n".join(updated_details)
+            
+            dialog.accept()
+    
+    def delete_selected_task(self):
+        """Seçili görevi siler ve görev geçmişine ekler"""
+        current_item = self.tasks_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir görev seçin!")
+            return
+        
+        reply = QMessageBox.question(
+            self,
+            'Görev Silme Onayı',
+            'Bu görevi tamamlandı olarak işaretleyip görev geçmişine eklemek istediğinizden emin misiniz?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            task_text = current_item.text()
+            # Görev metnini parçala
+            task_parts = task_text.split(" - ")
+            if len(task_parts) >= 2:
+                task_type = task_parts[0]
+                location = task_parts[1]
+                priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
+                
+                # Şu anki tarihi al
+                from datetime import datetime
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                
+                # Yeni görev geçmişi verisi oluştur
+                new_task_history = [
+                    current_date,
+                    task_type,
+                    location,
+                    "N/A",  # Süre
+                    priority,  # Öncelik seviyesi
+                    "Tamamlandı",
+                    "Görev tamamlandı"
+                ]
+                
+                # Görev geçmişi verilerine ekle
+                from sample_data import TASK_HISTORY_DATA
+                TASK_HISTORY_DATA.insert(0, new_task_history)  # En başa ekle
+                
+                # Görevi aktif görevlerden kaldır
+                self.tasks_list.takeItem(self.tasks_list.row(current_item))
+
+    def show_mission_history(self):
+        """Görev geçmişi penceresini gösterir"""
+        dialog = MissionHistoryDialog(self)
+        dialog.exec_()
 
     def assign_task(self):
         """Seçili ekibe görev atar"""
@@ -560,15 +477,10 @@ class OperationManagementTab(QWidget):
             new_task = QListWidgetItem(task_text)
             new_task.setData(Qt.UserRole, priority)
             
-            # Öncelik seviyesine göre arka plan rengini ayarla
-            color = TASK_PRIORITY_COLORS.get(priority, "#000000")
-            new_task.setBackground(QBrush(QColor(color)))
-            
             # Görevi aktif görevler listesine ekle
             self.tasks_list.addItem(new_task)
             
             # Görev detaylarını TASK_DETAILS sözlüğüne ekle
-            from sample_data import TASK_DETAILS
             TASK_DETAILS[task_text] = (
                 f"Ekip: {selected_team}\n"
                 f"Başlık: {title}\n"
@@ -590,250 +502,58 @@ class OperationManagementTab(QWidget):
                 f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
             )
 
-
-    def contact_team(self):
-        """Seçili ekip ile iletişim penceresini açar"""
-        selected_items = self.team_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
-            return
+    def filter_tasks(self):
+        """Görevleri öncelik ve arama kriterlerine göre filtreler"""
+        search_text = self.search_input.text().lower()
+        priority_filter = self.priority_filter.currentText()
+        
+        for i in range(self.tasks_list.count()):
+            item = self.tasks_list.item(i)
+            task_text = item.text().lower()
+            task_priority = item.data(Qt.UserRole) if item.data(Qt.UserRole) else "Orta (2)"
             
-        row = selected_items[0].row()
-        team_id = self.team_list.item(row, 0).text()
-        team_leader = self.team_list.item(row, 1).text()
-        contact = self.team_list.item(row, 4).text()
+            # Hem arama metni hem de öncelik filtresine göre kontrol et
+            should_show = (search_text in task_text) and \
+                         (priority_filter == "Tümü" or priority_filter == task_priority)
+            
+            item.setHidden(not should_show)
+
+    def complete_selected_task(self):
+        """Seçili görevi tamamlandı olarak işaretler"""
+        current_item = self.tasks_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "Uyarı", "Lütfen tamamlandı olarak işaretlemek için bir görev seçin!")
+            return
         
-        dialog = create_contact_dialog(self, team_id, team_leader, contact)
-        dialog.exec_()
-
-
-    def show_notification_details(self, item):
-        """Bildirim detaylarını dialog penceresinde gösterir"""
-        dialog = NotificationDetailDialog(
-            "Bildirim Detayları",
-            NOTIFICATION_DETAILS.get(item.text(), "Detaylı bilgi bulunamadı."),
-            self
-        )
-        dialog.exec_()
-
-
-    def show_task_details(self, item):
-        """Görev detaylarını dialog penceresinde gösterir"""
-        dialog = NotificationDetailDialog(
-            "Görev Detayları",
-            TASK_DETAILS.get(item.text(), "Detaylı bilgi bulunamadı."),
-            self
-        )
-        dialog.exec_()
-
-
-    def delete_selected_messages(self):
-        """Seçili mesajları siler"""
-        items_to_remove = []
-        for i in range(self.messages_list.count()):
-            item = self.messages_list.item(i)
-            if item.checkState() == Qt.Checked:
-                items_to_remove.append(item)
-        
-        for item in items_to_remove:
-            self.messages_list.takeItem(self.messages_list.row(item))
-
-    def load_sample_data(self):
-        """Örnek verileri yükler"""
-        # Bildirimler
-        self.notification_list.addItems(NOTIFICATIONS)
-        
-        # Görevler
-        self.tasks_list.addItems(TASKS)
-        
-        # Mesajlar
-        for message_data in MESSAGES:
-            message = MessageItem(
-                message_data["sender"],
-                message_data["message"],
-                message_data["timestamp"]
+        task_text = current_item.text()
+        task_parts = task_text.split(" - ")
+        if len(task_parts) >= 2:
+            task_type = task_parts[0]
+            location = task_parts[1]
+            priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
+            
+            # Tamamlanma tarihi
+            from datetime import datetime
+            completion_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            
+            # Görev geçmişine ekle
+            from sample_data import TASK_HISTORY_DATA
+            new_task_history = [
+                completion_date,
+                task_type,
+                location,
+                self.duration_input.text() if self.duration_input.text() else "N/A",
+                priority,
+                "Tamamlandı",
+                "Görev başarıyla tamamlandı"
+            ]
+            TASK_HISTORY_DATA.insert(0, new_task_history)
+            
+            # Aktif görevlerden kaldır
+            self.tasks_list.takeItem(self.tasks_list.row(current_item))
+            
+            QMessageBox.information(
+                self,
+                "Başarılı",
+                f"Görev başarıyla tamamlandı!\n\nGörev: {task_text}"
             )
-            self.messages_list.addItem(message)
-
-
-    def edit_selected_task(self):
-        """Seçili görevi düzenlemek için dialog açar"""
-        current_item = self.tasks_list.currentItem()
-        if not current_item:
-            QMessageBox.warning(self, "Uyarı", "Lütfen düzenlemek için bir görev seçin!")
-            return
-        
-        dialog = create_task_edit_dialog(self, current_item, self.save_edited_task)
-        dialog.exec_()
-    
-    def save_edited_task(self, item, new_text, dialog, priority):
-        """Düzenlenen görevi kaydeder"""
-        if item:
-            # Görev metnini parçala ve yeni öncelik ile güncelle
-            task_parts = item.text().split(" - ")
-            if len(task_parts) >= 2:
-                title = task_parts[0]
-                location = task_parts[1]
-                # Yeni metni oluştur
-                updated_text = f"{title} - {location} - {priority}"
-                item.setText(updated_text)
-                item.setData(Qt.UserRole, priority)  # Öncelik seviyesini kaydet
-                
-                # Öncelik seviyesine göre arka plan rengini ayarla
-                color = TASK_PRIORITY_COLORS.get(priority, "#000000")
-                item.setBackground(QBrush(QColor(color)))
-                
-                # Görev detaylarını güncelle
-                if updated_text in TASK_DETAILS:
-                    details = TASK_DETAILS[updated_text].split("\n")
-                    updated_details = []
-                    for line in details:
-                        if line.startswith("Öncelik:"):
-                            updated_details.append(f"Öncelik: {priority}")
-                        else:
-                            updated_details.append(line)
-                    TASK_DETAILS[updated_text] = "\n".join(updated_details)
-            
-            dialog.accept()
-    
-    def delete_selected_task(self):
-        """Seçili görevi siler ve görev geçmişine ekler"""
-        current_item = self.tasks_list.currentItem()
-        if not current_item:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir görev seçin!")
-            return
-        
-        # Onay dialogu göster
-        reply = QMessageBox.question(
-            self,
-            'Görev Silme Onayı',
-            'Bu görevi tamamlandı olarak işaretleyip görev geçmişine eklemek istediğinizden emin misiniz?',
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            task_text = current_item.text()
-            # Görev metnini parçala
-            task_parts = task_text.split(" - ")
-            if len(task_parts) >= 2:
-                task_type = task_parts[0]
-                location = task_parts[1]
-                priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
-                
-                # Şu anki tarihi al
-                from datetime import datetime
-                current_date = datetime.now().strftime("%Y-%m-%d")
-                
-                # Yeni görev geçmişi verisi oluştur
-                new_task_history = [
-                    current_date,
-                    task_type,
-                    location,
-                    "N/A",  # Süre
-                    priority,  # Öncelik seviyesi
-                    "Tamamlandı",
-                    "Görev tamamlandı"
-                ]
-                
-                # Görev geçmişi verilerine ekle
-                from sample_data import TASK_HISTORY_DATA
-                TASK_HISTORY_DATA.insert(0, new_task_history)  # En başa ekle
-                
-                # Eğer ekip yönetimi penceresi açıksa, görev geçmişini güncelle
-                if hasattr(self, 'team_management_dialog') and self.team_management_dialog.isVisible():
-                    self.team_management_dialog.load_history_data()
-                
-                # Görevi aktif görevlerden kaldır
-                self.tasks_list.takeItem(self.tasks_list.row(current_item))
-
-    def delete_selected_notifications(self):
-        """Seçili bildirimleri siler"""
-        selected_items = self.notification_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bildirim seçin!")
-            return
-        
-        reply = QMessageBox.question(
-            self,
-            'Bildirim Silme Onayı',
-            f'{len(selected_items)} adet bildirimi silmek istediğinizden emin misiniz?',
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            for item in selected_items:
-                self.notification_list.takeItem(self.notification_list.row(item))
-
-    def reply_to_notification(self):
-        """Seçili bildirime cevap verir"""
-        selected_items = self.notification_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Uyarı", "Lütfen cevaplamak için bildirim seçin!")
-            return
-        
-        if len(selected_items) > 1:
-            QMessageBox.warning(self, "Uyarı", "Lütfen tek bir bildirim seçin!")
-            return
-        
-        notification = selected_items[0].text()
-        
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Bildirim Cevapla")
-        dialog.setMinimumWidth(400)
-        layout = QVBoxLayout()
-        
-        # Seçili bildirimin detayları
-        notification_details = QTextEdit()
-        notification_details.setPlainText(NOTIFICATION_DETAILS.get(notification, "Detay bulunamadı."))
-        notification_details.setReadOnly(True)
-        notification_details.setStyleSheet("""
-            QTextEdit {
-                background-color: #f0f0f0;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-        """)
-        
-        # Cevap yazma alanı
-        reply_label = QLabel("Cevabınız:")
-        reply_text = QTextEdit()
-        reply_text.setPlaceholderText("Cevabınızı buraya yazın...")
-        reply_text.setMinimumHeight(100)
-        
-        # Butonlar
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        )
-        buttons.accepted.connect(lambda: self.send_notification_reply(dialog, notification, reply_text.toPlainText()))
-        buttons.rejected.connect(dialog.reject)
-        
-        # Layout'a widget'ları ekle
-        layout.addWidget(QLabel("Bildirim Detayları:"))
-        layout.addWidget(notification_details)
-        layout.addWidget(reply_label)
-        layout.addWidget(reply_text)
-        layout.addWidget(buttons)
-        
-        dialog.setLayout(layout)
-        dialog.exec_()
-    
-    def send_notification_reply(self, dialog, notification, reply):
-        """Bildirime verilen cevabı gönderir"""
-        if not reply.strip():
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir cevap yazın!")
-            return
-        
-        QMessageBox.information(
-            self,
-            "Başarılı",
-            f"Cevabınız gönderildi!\n\nBildirim: {notification}\n\nCevap: {reply[:50]}..."
-        )
-        dialog.accept()
-
-    def show_team_management(self):
-        """Ekip yönetim penceresini gösterir"""
-        self.team_management_dialog = TeamManagementDialog(self)  # Referansı sakla
-        self.team_management_dialog.exec_()

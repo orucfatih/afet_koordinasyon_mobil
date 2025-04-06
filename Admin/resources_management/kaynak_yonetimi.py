@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QMessageBox
+from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QMessageBox, QFileDialog
 from PyQt5.QtGui import QColor
 from datetime import datetime
 import xlsxwriter
+import os
 from .kaynak_yonetimi_ui import KaynakYonetimUI
 from .simulate import SimulationDialog
 from sample_data import RESOURCE_DATA
@@ -22,7 +23,7 @@ class KaynakYonetimTab(QWidget):
         self.ui.search_input.textChanged.connect(self.filter_resources)
         self.ui.filter_combo.currentTextChanged.connect(self.filter_resources)
         self.ui.simulate_btn.clicked.connect(self.show_simulation_dialog)
-        self.ui.export_excel_btn.clicked.connect(lambda: self.export_resources("excel"))
+        self.ui.export_excel_btn.clicked.connect(self.export_resources)
         self.ui.resource_table.itemClicked.connect(self.show_resource_details)
         self.ui.distribute_button.clicked.connect(self.distribute_resources)
 
@@ -168,20 +169,67 @@ Son Güncelleme: 15:30
             
             self.ui.resource_table.setRowHidden(row, not show_row)
 
-    def export_resources(self, format="excel"):
-        """Kaynak listesini Excel veya PDF olarak dışa aktarır"""
-        if format == "excel":
-            workbook = xlsxwriter.Workbook('resources/kaynak_raporu.xlsx')
+    def export_resources(self):
+        """Kaynak listesini Excel dosyasına aktarır"""
+        try:
+            # Dosya kaydetme dialogunu göster
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Excel Dosyasını Kaydet",
+                os.path.expanduser("~/kaynak_listesi.xlsx"),
+                "Excel Dosyaları (*.xlsx);;Tüm Dosyalar (*)"
+            )
+            
+            if not file_path:  # Kullanıcı iptal ettiyse
+                return
+                
+            # Dosya uzantısını kontrol et ve gerekirse ekle
+            if not file_path.endswith('.xlsx'):
+                file_path += '.xlsx'
+            
+            # Excel dosyasını oluştur
+            workbook = xlsxwriter.Workbook(file_path)
             worksheet = workbook.add_worksheet()
+            
+            # Başlık formatı
+            header_format = workbook.add_format({
+                'bold': True,
+                'bg_color': '#2c3e50',
+                'font_color': 'white',
+                'border': 1,
+                'align': 'center'
+            })
+            
+            # Hücre formatı
+            cell_format = workbook.add_format({
+                'align': 'center',
+                'border': 1
+            })
             
             # Başlıkları yaz
             headers = ["Kaynak Adı", "Tür", "Miktar", "Konum", "Durum"]
             for col, header in enumerate(headers):
-                worksheet.write(0, col, header)
+                worksheet.write(0, col, header, header_format)
+                worksheet.set_column(col, col, 15)  # Sütun genişliğini ayarla
             
             # Verileri yaz
             for row in range(self.ui.resource_table.rowCount()):
                 for col in range(self.ui.resource_table.columnCount()):
-                    worksheet.write(row+1, col, self.ui.resource_table.item(row, col).text())
+                    item = self.ui.resource_table.item(row, col)
+                    cell_value = item.text() if item is not None else ""
+                    worksheet.write(row + 1, col, cell_value, cell_format)
             
             workbook.close()
+            
+            QMessageBox.information(
+                self,
+                "Başarılı",
+                f"Kaynak listesi başarıyla kaydedildi!\nDosya Konumu: {file_path}"
+            )
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Hata",
+                f"Excel dosyası oluşturulurken bir hata oluştu:\n{str(e)}"
+            )

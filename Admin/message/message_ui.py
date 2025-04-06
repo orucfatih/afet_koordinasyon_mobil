@@ -7,38 +7,15 @@ from styles.styles_dark import *
 from styles.styles_light import *
 from sample_data import MESSAGE_CONTACTS, MESSAGE_HISTORY
 import os
+from message.contact_item import ContactItem
+
 
 def get_icon_path(icon_name):
     """İkon dosyasının tam yolunu döndürür"""
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(current_dir, 'icons', icon_name)
 
-class ContactItem(QListWidgetItem):
-    def __init__(self, contact_data):
-        super().__init__()
-        self.contact_data = contact_data
-        self.id = contact_data.get('id')
-        
-        # Görünüm ayarları
-        display_text = f"{contact_data['name']}\n"
-        if 'title' in contact_data:
-            display_text += f"{contact_data['title']} - "
-        elif 'type' in contact_data:
-            display_text += f"{contact_data['type']} - "
-        elif 'location' in contact_data:
-            display_text += f"{contact_data['location']} - "
-        display_text += contact_data['status']
-        
-        self.setText(display_text)
-        self.setIcon(QIcon(get_icon_path('user.png')))
-        
-        # Durum rengini ayarla
-        if contact_data['status'] == 'Çevrimiçi' or contact_data['status'] == 'Aktif':
-            self.setForeground(QColor('#4CAF50'))
-        elif contact_data['status'] == 'Meşgul':
-            self.setForeground(QColor('#FFA500'))
-        else:
-            self.setForeground(QColor('#f44336'))
+
 
 class NewMessageDialog(QDialog):
     def __init__(self, parent=None):
@@ -343,10 +320,17 @@ class MessageDialog(QDialog):
             for message in self.chat_messages[contact_id]:
                 msg_item = QListWidgetItem(f"{message['sender']}: {message['message']}")
                 if message['type'] == 'system':
-                    msg_item.setForeground(QColor('#888888'))
+                    msg_item.setForeground(QColor('#888888'))  # Gri
                 elif message['type'] == 'received':
-                    msg_item.setForeground(QColor('#4CAF50'))
+                    msg_item.setForeground(QColor('#4CAF50'))  # Yeşil
+                elif message['type'] == 'sent':
+                    msg_item.setForeground(QColor('#4CAF50'))  # Yeşil
                 self.message_history.addItem(msg_item)
+        
+        # Başlık güncelleme
+        if hasattr(self, 'title_label'):
+            contact_title = contact_data.get('title', '')
+            self.setWindowTitle(f"Mesajlaşma - {contact_data['name']} {contact_title}")
     
     def send_message(self):
         """Mesajı gönderir"""
@@ -365,6 +349,22 @@ class MessageDialog(QDialog):
             # Mesajı hafızaya ve görünüme ekle
             self.chat_messages[self.current_chat].append(new_message)
             msg_item = QListWidgetItem(f"{new_message['sender']}: {new_message['message']}")
+            msg_item.setForeground(QColor('#4CAF50'))  # Yeşil
             self.message_history.addItem(msg_item)
             
             self.message_input.clear()
+
+class ContactItem(QListWidgetItem):
+    def __init__(self, contact_data):
+        super().__init__()
+        self.contact_data = contact_data
+        self.id = contact_data.get('id')
+        
+        # Görünüm ayarları
+        display_text = contact_data['name']
+        if 'title' in contact_data and contact_data['title']:
+            display_text += f"\n{contact_data['title']}"
+        
+        self.setText(display_text)
+        self.setIcon(QIcon(get_icon_path('user.png')))
+        self.setForeground(QColor('#4CAF50'))  # Yeşil
