@@ -274,3 +274,124 @@ STK_DETAILS = {
         "Detaylı Rapor": "Deprem bölgesinde sağlık taraması yapıldı. 15 kişi hastaneye sevk edildi, 45 kişiye yerinde müdahale edildi."
     }
 }
+
+# Vefat eden vatandaşlar için örnek veriler
+CITIZEN_DATA = {
+    "12345678901": {
+        "kisisel_bilgiler": {
+            "tc": "12345678901",
+            "ad": "Mehmet",
+            "soyad": "Yılmaz",
+            "dogum_tarihi": "1975-05-15",
+            "cinsiyet": "Erkek",
+            "uyruk": "T.C.",
+            "medeni_hal": "Evli"
+        },
+        "nufus_kayit": {
+            "anne_adi": "Fatma",
+            "baba_adi": "Ahmet",
+            "dogum_yeri": "Kahramanmaraş",
+            "es_adi": "Ayşe Yılmaz",
+            "cocuklar": ["Ali Yılmaz", "Zeynep Yılmaz"],
+            "olum_kaydi": {
+                "durum": "Var",
+                "tarih": "2024-02-06",
+                "yer": "Kahramanmaraş"
+            }
+        },
+        "olum_belgesi": {
+            "durum": "Var",
+            "belge_no": "2024-001",
+            "duzenleyen_kurum": "Kahramanmaraş Devlet Hastanesi",
+            "neden": "Deprem - Göçük Altında Kalma"
+        },
+        "sosyal_guvenlik": {
+            "sgk_durumu": "Pasif",
+            "son_guncellenme": "2024-02-06"
+        },
+        "yerlesim": {
+            "il": "Kahramanmaraş",
+            "ilce": "Onikişubat",
+            "mahalle": "Yenişehir Mah.",
+            "adres": "Deprem Cad. No:15"
+        }
+    },
+    "98765432109": {
+        "kisisel_bilgiler": {
+            "tc": "98765432109",
+            "ad": "Ayşe",
+            "soyad": "Demir",
+            "dogum_tarihi": "1980-12-23",
+            "cinsiyet": "Kadın",
+            "uyruk": "T.C.",
+            "medeni_hal": "Evli"
+        },
+        "nufus_kayit": {
+            "anne_adi": "Hatice",
+            "baba_adi": "Mustafa",
+            "dogum_yeri": "Hatay",
+            "es_adi": "Hasan Demir",
+            "cocuklar": ["Elif Demir"],
+            "olum_kaydi": {
+                "durum": "Var",
+                "tarih": "2024-02-06",
+                "yer": "Hatay"
+            }
+        },
+        "olum_belgesi": {
+            "durum": "Var",
+            "belge_no": "2024-002",
+            "duzenleyen_kurum": "Hatay Devlet Hastanesi",
+            "neden": "Deprem - Bina Çökmesi"
+        },
+        "sosyal_guvenlik": {
+            "sgk_durumu": "Pasif",
+            "son_guncellenme": "2024-02-06"
+        },
+        "yerlesim": {
+            "il": "Hatay",
+            "ilce": "Antakya",
+            "mahalle": "Cumhuriyet Mah.",
+            "adres": "Kurtuluş Sok. No:7"
+        }
+    },
+    "45678901234": {
+        "kisisel_bilgiler": {
+            "tc": "45678901234",
+            "ad": "Ali",
+            "soyad": "Kaya",
+            "dogum_tarihi": "1990-08-10",
+            "cinsiyet": "Erkek",
+            "uyruk": "T.C.",
+            "medeni_hal": "Bekar"
+        },
+        "nufus_kayit": {
+            "anne_adi": "Zeynep",
+            "baba_adi": "İbrahim",
+            "dogum_yeri": "Adıyaman",
+            "es_adi": "",
+            "cocuklar": [],
+            "olum_kaydi": {
+                "durum": "Var",
+                "tarih": "2024-02-06",
+                "yer": "Adıyaman"
+            }
+        },
+        "olum_belgesi": {
+            "durum": "Var",
+            "belge_no": "2024-003",
+            "duzenleyen_kurum": "Adıyaman Devlet Hastanesi",
+            "neden": "Deprem - Göçük Altında Kalma"
+        },
+        "sosyal_guvenlik": {
+            "sgk_durumu": "Pasif",
+            "son_guncellenme": "2024-02-06"
+        },
+        "yerlesim": {
+            "il": "Adıyaman",
+            "ilce": "Merkez",
+            "mahalle": "Fatih Mah.",
+            "adres": "Yeni Cad. No:42"
+        }
+    }
+}

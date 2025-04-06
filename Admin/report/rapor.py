@@ -1,3 +1,7 @@
+"""
+burası veritabanına bağlanacak 
+"""
+
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                            QPushButton, QTextEdit, QComboBox,
                            QGroupBox, QLineEdit, QFormLayout, 

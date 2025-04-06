@@ -266,26 +266,38 @@ DIALOG_INFO_LABEL_STYLE = "color: white; background-color: #262a3c; padding: 10p
 
 # Tab menü (Daha açık arka plan tonları ve turkuaz seçim rengi)
 TAB_WIDGET_STYLE = """
+    QTabWidget {
+        background-color: #007070;
+    }
     QTabWidget::pane {
-        border: none;
-        background-color: #2a2a2a;
-        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #1e1e1e;
+        top: -1px;
+    }
+    QTabBar {
+        background-color: #1e1e1e;
     }
     QTabBar::tab {
-        background-color: #1e1e1e;
-        color: #888888;
-        padding: 8px 16px;
-        margin-right: 2px;
-        border-top-left-radius: 5px;
-        border-top-right-radius: 5px;
+        background-color: #2a2a2a;
+        color: white;
+        padding: 8px 0px;
+        border: 1px solid #444;
+        border-bottom: none;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
     }
     QTabBar::tab:selected {
         background-color: #009999;
-        color: white;
+        margin-bottom: -1px;
     }
-    QTabBar::tab:hover:!selected {
-        background-color: #252525;
-        color: #aaaaaa;
+    QTabBar::tab:hover {
+        background-color: #444;
+    }
+    QTabBar::tab:!selected {
+        margin-top: 2px;
+    }
+    QTabWidget > QWidget > QWidget {
+        background: #1e1e1e;
     }
 """
 

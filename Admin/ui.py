@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize, Qt
 from stk_yonetim import STKYonetimTab
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
-from rapor import RaporYonetimTab
+from report.rapor import RaporYonetimTab
 from personnel import PersonelYonetimTab
 from face_recognition.face_detect_ui import MissingPersonDetectionTab
 from styles.styles_dark import *
@@ -13,6 +13,7 @@ from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
 from utils import get_icon_path
 from equipment_management.equipment_management import EquipmentManagementTab
+from report.citizen_report import CitizenReportTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):
@@ -36,6 +37,15 @@ class AfetYonetimAdmin(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setStyleSheet(TAB_WIDGET_STYLE)
         
+        # Tab bar ayarları
+        tab_bar = self.tabs.tabBar()
+        tab_bar.setUsesScrollButtons(False)  # Scroll butonlarını kaldır
+        tab_bar.setDrawBase(True)  # Tab çizgisini göster
+        
+        # Sekmelerin eşit genişlikte olmasını sağlar
+        self.tabs.setDocumentMode(True)
+        tab_bar.setExpanding(True)  # Sekmeleri eşit genişlikte dağıt
+        
         # Sekmeleri ekle
         self.tabs.addTab(OperationManagementTab(), "Operasyon Yönetimi")
         self.tabs.addTab(STKYonetimTab(), "STK Yönetimi")
@@ -44,7 +54,7 @@ class AfetYonetimAdmin(QMainWindow):
         self.tabs.addTab(PersonelYonetimTab(), "Personel Yönetim")
         self.tabs.addTab(MissingPersonDetectionTab(), "Kayıp Vatandaş Tespiti")
         self.tabs.addTab(EquipmentManagementTab(), "Ekipman Yönetimi")
-
+        self.tabs.addTab(CitizenReportTab(), "Vefat Kayıtları")
 
         # Mesaj butonu için özel bir widget oluştur
         tab_corner_widget = QWidget()
