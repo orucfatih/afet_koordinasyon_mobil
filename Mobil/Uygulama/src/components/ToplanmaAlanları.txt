@@ -1,0 +1,107 @@
+    // Toplanma alanlarını API'den çekme
+    useEffect(() => {
+      const fetchAssemblyAreas = async () => {
+        try {
+          const response = await axios.get('https://acikveri.bizizmir.com/en/api/3/action/datastore_create');
+          setAssemblyAreas(response.data); // API'den gelen veriyi state'e kaydet
+        } catch (error) {
+          console.error('Error fetching assembly areas', error);
+        }
+      };
+  
+      fetchAssemblyAreas();
+    }, []);
+  
+    // Cihazın konumunu alma
+    useEffect(() => {
+      const getLocation = () => {
+        return new Promise((resolve, reject) => {
+          Geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            },
+            (error) => {
+              console.error('Error getting location', error);
+              reject(error);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+          );
+        });
+      };
+  
+      getLocation()
+        .then(location => setUserLocation(location))
+        .catch(() => setUserLocation(null));
+    }, []);
+  
+    // Toplanma alanlarını cihaza göre sıralama fonksiyonu
+    const sortAssemblyAreasByDistance = useMemo(() => {
+      if (!userLocation || assemblyAreas.length === 0) return assemblyAreas;
+  
+      const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371; // Dünya yarıçapı (km)
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Mesafe (km)
+      };
+  
+      return [...assemblyAreas]
+        .map(area => ({
+          ...area,
+          distance: calculateDistance(userLocation.latitude, userLocation.longitude, area.latitude, area.longitude).toFixed(2) + ' km',
+        }))
+        .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+    }, [assemblyAreas, userLocation]);
+
+    -----------------------------------------
+    MapViex içine
+
+    {sortAssemblyAreasByDistance.map(area => (
+      <Marker
+        key={area.id}
+        coordinate={{ latitude: area.latitude, longitude: area.longitude }}
+        title={area.name}
+        description={`Uzaklık: ${area.distance}, Kapasite: ${area.capacity}`}
+        pinColor="green"
+      />
+    ))}
+
+    MapView Çıkışına
+          <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>Toplanma Alanları</Text>
+    <TouchableOpacity onPress={() => console.log('Tümünü Gör tıklandı!')}>
+      <Text style={styles.viewAll}>Tümünü Gör</Text>
+    </TouchableOpacity>
+  </View>
+
+  <View style={styles.assemblyButtonsContainer}>
+    {sortAssemblyAreasByDistance.slice(0, 6).map((area) => (
+      <TouchableOpacity
+        key={area.id}
+        style={styles.assemblyButton}
+        onPress={() => handleNavigateToAssemblyArea(area.latitude, area.longitude)}
+      >
+        <View style={styles.assemblyButtonContent}>
+          <Image
+            source={require('../../assets/images/assembly-icon.png')}
+            style={styles.assemblyIcon}
+          />
+          <View>
+            <Text style={styles.assemblyButtonText}>{area.name}</Text>
+            <Text style={styles.assemblyDetails}>Uzaklık: {area.distance}</Text>
+            <Text style={styles.assemblyDetails}>Kapasite: {area.capacity}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </View>
+  !!!!!!!!!!!! Gerekli Geolocation yapılamadı indirilemedi
+  

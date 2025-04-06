@@ -5,13 +5,13 @@ const AnaMenu = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/deneme.png')} // Logo için örnek bir resim
+        source={require('../../assets/images/deneme3.png')} // Logo için örnek bir resim
         style={styles.logo}
       />
       <Text style={styles.title}>Ana Menü</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('AraMenu')}
+        onPress={() => navigation.navigate('AraMenu')}  
       >
         <Image
           source={require('../../assets/images/vatandas-icon.png')} // Vatandaş Giriş ikonu
@@ -48,13 +48,22 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   logo: {
+    padding: 10,
     width: 160,
     height: 160,
     marginBottom: 20,
-    borderRadius: 120,
-    borderColor: 'red',
-    borderWidth: 2,
-  },
+    borderRadius: 120, // Tam bir daire için
+    borderWidth: 1,
+    borderColor: '#D9DDDC', // Hafif bir çerçeve rengi
+    backgroundColor: '#fff', // Arka plan rengini beyaz yapıyoruz
+    // Gölgelendirme (iOS)
+    shadowColor: 'gray', // Gölgenin rengi
+    shadowOffset: { width: 10, height: 10 }, // Gölge yönü
+    shadowOpacity: 0.5, // Gölge opaklığı
+    shadowRadius: 6, // Gölge yayılımı
+    // Gölgelendirme (Android)
+    elevation: 20, // Yüksekliği artırarak gölgeyi daha belirgin yapabilirsiniz
+  },  
   title: {
     fontSize: 24,
     fontWeight: 'bold',

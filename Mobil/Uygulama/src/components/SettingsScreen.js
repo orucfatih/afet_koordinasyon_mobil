@@ -59,12 +59,12 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Image source={require('../../assets/images/afad-logo2.png')} style={styles.logoImage} />
-        <TouchableOpacity>
-          <Icon name="info-outline" size={25} color="white" />
-        </TouchableOpacity>
-      </View>
+            <View style={styles.topBar}>
+              <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+              <TouchableOpacity style={styles.info}>
+                <Icon name="info-outline" size={25} color="white" />
+              </TouchableOpacity>
+            </View>
 
       <View style={styles.settingItem}>
         <Text style={styles.settingText}>Language</Text>
@@ -149,14 +149,24 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#D32F2F',
-    padding: 20,
+    backgroundColor: '#2D2D2D', // Koyu arka plan
+    paddingVertical: 15,
+    borderTopWidth: 2,
+    borderTopColor: '#444',
+    marginHorizontal: 0,
+    elevation: 5,  // Gölgeleme efekti
+    borderBottomLeftRadius: 20, // Üst sol köşe radius
+    borderBottomRightRadius: 20, // Üst sağ köşe radius
   },
   logoImage: {
-    width: 150,
-    height: 40,
-    resizeMode: 'cover',
+    width: 50,
+    top: 5,
+    left: 30,
+    height: 50,
+  },
+  info: {
+    top: 20,
+    right: 40,
   },
   settingItem: {
     flexDirection: 'row',
