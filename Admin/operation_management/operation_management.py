@@ -23,7 +23,7 @@ from .op_constant import TASK_PRIORITIES
 from .op_utils import get_icon_path
 from .op_dialogs import create_task_edit_dialog
 from .op_config import get_config
-from harita import GoogleMapsModule
+from harita import GoogleMapsWindow
 from dotenv import load_dotenv
 import os
 from .task_history import MissionHistoryDialog
@@ -59,8 +59,8 @@ class OperationManagementTab(QWidget):
         left_layout = QVBoxLayout(left_panel)
         
         # Harita Bölümü
-        self.map_module = GoogleMapsModule(self.api_key)
-        self.map_widget = self.map_module.map_view
+        self.map_module = GoogleMapsWindow()
+        self.map_widget = self.map_module.web_view
         self.map_widget.setMinimumHeight(300)  # Harita için minimum yükseklik
         
         # Ekip Listesi

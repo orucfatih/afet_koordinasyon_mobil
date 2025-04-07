@@ -1,7 +1,12 @@
 import sys
+import os
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
+from dotenv import load_dotenv
+
+# Ortam değişkenlerini yükle
+load_dotenv()
 
 class GoogleMapsWindow(QMainWindow):
     def __init__(self):
@@ -9,8 +14,11 @@ class GoogleMapsWindow(QMainWindow):
         self.setWindowTitle("AFAD Afet Yönetim Haritası")
         self.setGeometry(100, 100, 1200, 800)
         
-        # Google Maps API key (replace with your own valid key)
-        self.api_key = "AIzaSyDCmRzP4rGm-oM8t1iD72xqCWWGpb-eTBM"  # Gerçek API anahtarınızı buraya koyun
+        # Google Maps API key'i ortam değişkeninden al
+        self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+        if not self.api_key:
+            raise ValueError("GOOGLE_MAPS_API_KEY ortam değişkeni bulunamadı. Lütfen .env dosyasında tanımlayın.")
+        
         self.latitude = 39.9334  # Türkiye merkezi (Ankara civarı)
         self.longitude = 32.8597
         
@@ -393,7 +401,7 @@ class GoogleMapsWindow(QMainWindow):
                 }},
                 {{ 
                     name: "Konak", 
-                    coords:13 [{{lat: 38.418, lng: 27.128}}, {{lat: 38.423, lng: 27.138}}, {{lat: 38.428, lng: 27.133}}, {{lat: 38.423, lng: 27.123}}], 
+                    coords: [{{lat: 38.418, lng: 27.128}}, {{lat: 38.423, lng: 27.138}}, {{lat: 38.428, lng: 27.133}}, {{lat: 38.423, lng: 27.123}}], 
                     riskLevel: "Yüksek", 
                     riskDetail: "Deprem riski yüksek" 
                 }},
