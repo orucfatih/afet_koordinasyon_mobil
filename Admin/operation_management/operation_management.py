@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 import os
 from .task_history import MissionHistoryDialog
 from .team_management_panel import TeamManagementPanel
+from .task_management import TaskManager
 
 
 
@@ -464,37 +465,30 @@ class OperationManagementTab(QWidget):
         )
 
         if reply == QMessageBox.Yes:
-            # Görev metnini oluştur
-            task_text = f"{title} - {location} - {priority}"
-
-            # Yeni görev item'ı oluştur
-            new_task = QListWidgetItem(task_text)
-            new_task.setData(Qt.UserRole, priority)
-            
-            # Görevi aktif görevler listesine ekle
-            self.tasks_list.addItem(new_task)
-            
-            # Görev detaylarını TASK_DETAILS sözlüğüne ekle
-            TASK_DETAILS[task_text] = (
-                f"Ekip: {selected_team}\n"
-                f"Başlık: {title}\n"
-                f"Lokasyon: {location}\n"
-                f"Öncelik: {priority}\n"
-                f"Detaylar: {task_details}"
-            )
-            
-            # Input alanlarını temizle
-            self.title_input.clear()
-            self.location_input.clear()
-            self.task_input.clear()
-            self.priority_combo.setCurrentText("Orta (2)")
-            
-            # Başarılı mesajı göster
-            QMessageBox.information(
-                self,
-                "Başarılı",
-                f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
-            )
+            # TaskManager kullanarak görevi ata
+            if TaskManager.assign_task(self, selected_team, title, location, priority, task_details, self.team_management_panel.team_list):
+                # Görev metnini oluştur
+                task_text = f"{title} - {location} - {priority}"
+                
+                # Yeni görev item'ı oluştur
+                new_task = QListWidgetItem(task_text)
+                new_task.setData(Qt.UserRole, priority)
+                
+                # Görevi aktif görevler listesine ekle
+                self.tasks_list.addItem(new_task)
+                
+                # Input alanlarını temizle
+                self.title_input.clear()
+                self.location_input.clear()
+                self.task_input.clear()
+                self.priority_combo.setCurrentText("Orta (2)")
+                
+                # Başarılı mesajı göster
+                QMessageBox.information(
+                    self,
+                    "Başarılı",
+                    f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
+                )
 
     def filter_tasks(self):
         """Görevleri öncelik ve arama kriterlerine göre filtreler"""
@@ -520,6 +514,15 @@ class OperationManagementTab(QWidget):
             return
         
         task_text = current_item.text()
+        task_details = TASK_DETAILS.get(task_text, "")
+        team_name = None
+        
+        # Ekip adını task detaylarından çıkar
+        for line in task_details.split("\n"):
+            if line.startswith("Ekip:"):
+                team_name = line.replace("Ekip:", "").strip()
+                break
+        
         task_parts = task_text.split(" - ")
         if len(task_parts) >= 2:
             task_type = task_parts[0]
@@ -545,6 +548,10 @@ class OperationManagementTab(QWidget):
             
             # Aktif görevlerden kaldır
             self.tasks_list.takeItem(self.tasks_list.row(current_item))
+            
+            # Ekibin durumunu güncelle
+            if team_name:
+                TaskManager.complete_task(team_name, self.team_management_panel.team_list)
             
             QMessageBox.information(
                 self,
