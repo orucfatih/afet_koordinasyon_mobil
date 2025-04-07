@@ -7,12 +7,8 @@ from sample_data import TASK_HISTORY_DATA, TASK_HISTORY_DETAILS
 from styles.styles_dark import *
 from styles.styles_light import *
 import os
+from .op_constant import HISTORY_TABLE_HEADERS
 
-# Sabitler
-HISTORY_TABLE_HEADERS = [
-    "Tarih", "Görev Tipi", "Konum", "Süre",
-    "Öncelik", "Sonuç", "Detaylar"
-]
 
 def get_icon_path(icon_name):
     """İkon dosyasının tam yolunu döndürür"""
