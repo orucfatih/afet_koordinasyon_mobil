@@ -16,7 +16,7 @@ class GoogleMapsWindow(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
         
         # Google Maps API key'i ortam değişkeninden al
-        self.api_key = os.getenv("API_KEY")
+        self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
         if not self.api_key:
             print("\033[91mHATA: API_KEY ortam değişkeni bulunamadı!\033[0m")
             print("\033[93mLütfen .env dosyasında API_KEY değişkenini tanımlayın.\033[0m")
