@@ -9,15 +9,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class GoogleMapsWindow(QMainWindow):
+    """AFAD Afet Yönetim Haritası"""
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AFAD Afet Yönetim Haritası")
         self.setGeometry(100, 100, 1200, 800)
         
         # Google Maps API key'i ortam değişkeninden al
-        self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+        self.api_key = os.getenv("API_KEY")
         if not self.api_key:
-            raise ValueError("GOOGLE_MAPS_API_KEY ortam değişkeni bulunamadı. Lütfen .env dosyasında tanımlayın.")
+            print("\033[91mHATA: API_KEY ortam değişkeni bulunamadı!\033[0m")
+            print("\033[93mLütfen .env dosyasında API_KEY değişkenini tanımlayın.\033[0m")
+            sys.exit(1)
         
         self.latitude = 39.9334  # Türkiye merkezi (Ankara civarı)
         self.longitude = 32.8597

@@ -36,11 +36,7 @@ class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
     def __init__(self):
         super().__init__()
-        
-        load_dotenv()
-
         self.config = get_config()
-        self.api_key = self.config["api_key"]
         self.initUI()
 
     def initUI(self):
