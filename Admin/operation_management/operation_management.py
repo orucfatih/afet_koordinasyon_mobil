@@ -29,13 +29,7 @@ import os
 from .task_history import MissionHistoryDialog
 from .team_management_panel import TeamManagementPanel
 
-# Görev öncelik renkleri
-TASK_PRIORITY_COLORS = {
-    "Düşük (1)": "#808080",  # Gri
-    "Orta (2)": "#FFA500",   # Turuncu
-    "Yüksek (3)": "#FF4500", # Kırmızı-Turuncu
-    "Kritik (4)": "#FF0000"  # Kırmızı
-}
+
 
 class OperationManagementTab(QWidget):
     """Operasyon Yönetim Sekmesi"""
@@ -254,11 +248,11 @@ class OperationManagementTab(QWidget):
         self.setLayout(main_layout)
         
         # Örnek verileri yükle
-        self.load_sample_data()
+        self.load_sample_task_data()
         self.load_team_data()
 
     def load_team_data(self):
-        """Örnek ekip verilerini yükler"""
+        """Ekip verilerini alır"""
         self.team_management_panel.team_list.setRowCount(0)
         
         # Kurumları topla
@@ -321,7 +315,7 @@ class OperationManagementTab(QWidget):
         for item in items_to_remove:
             self.messages_list.takeItem(self.messages_list.row(item))
 
-    def load_sample_data(self):
+    def load_sample_task_data(self):
         """Örnek verileri yükler"""
         # Görevler
         self.tasks_list.clear()

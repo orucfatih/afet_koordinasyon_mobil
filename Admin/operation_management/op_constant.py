@@ -10,6 +10,7 @@ TASK_PRIORITIES = [
     "Kritik (4)"
 ]
 
+
 # Ekip tablosu başlıkları
 TEAM_TABLE_HEADERS = [
     "Ekip ID",
@@ -57,3 +58,8 @@ EQUIPMENT_STATUS_OPTIONS = [
     "Temel Ekipman",
     "Ekipman Yok"
 ] 
+
+HISTORY_TABLE_HEADERS = [
+    "Tarih", "Görev Tipi", "Konum", "Süre",
+    "Öncelik", "Sonuç", "Detaylar"
+]

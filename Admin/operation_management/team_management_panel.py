@@ -174,7 +174,10 @@ class TeamManagementPanel(QWidget):
         # Kurum filtresine kurumları ekle
         self.institution_filter.addItems(sorted(institutions))
         
-        self.team_list.resizeColumnsToContents()
+                # Sütunların eşit boyutta olması için
+        header = self.team_list.horizontalHeader()
+        for column in range(header.count()):
+            header.setSectionResizeMode(column, header.Stretch)
 
     def add_new_team(self):
         """Yeni ekip eklemek için dialog açar"""
@@ -213,7 +216,11 @@ class TeamManagementPanel(QWidget):
         if hasattr(self.parent, 'team_combo'):
             self.parent.team_combo.addItem(f"{data[0]} - {data[1]} ({data[2]})")
         
-        self.team_list.resizeColumnsToContents()
+        # Sütunların eşit boyutta olması için
+        header = self.team_list.horizontalHeader()
+        for column in range(header.count()):
+            header.setSectionResizeMode(column, header.Stretch)
+            
         dialog.accept()
 
     def edit_team(self):
