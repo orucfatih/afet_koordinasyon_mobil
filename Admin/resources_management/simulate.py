@@ -5,18 +5,19 @@ ulaşım-trafik veya zaman kısıtları girilmeli
 havaalanlarının kapasitesi ve havaalanlarının durumu girilmeli
 """
 
-
-
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton, 
                            QLabel, QLineEdit, QComboBox, QListWidget, 
                            QGroupBox, QSpinBox, QMessageBox, QListWidgetItem,
-                           QGridLayout)
-from PyQt5.QtCore import Qt, pyqtSignal
+                           QGridLayout, QDoubleSpinBox, QTabWidget, QWidget)
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from styles.styles_dark import *
 from styles.styles_light import *
 from utils import get_icon_path # sonraki versiyonlarda istenirse
 from .sehirler_ve_ilceler import sehirler
+from .monte_carlo import DisasterSimulation
+from .logistics_calculator import LogisticsCalculator
+from .simulation_results import SimulationResultDialog
 
 # Afad lojistik depolarının bulunduğu şehirler
 DISTRIBUTION_CENTERS = [
@@ -46,7 +47,6 @@ class SimulationDialog(QDialog):
         self.setup_ui()
         self.showFullScreen()  # Açılışta tam ekran başlat
 
-
     def setup_ui(self):
         layout = QVBoxLayout()
         layout.setSpacing(20)
@@ -65,15 +65,6 @@ class SimulationDialog(QDialog):
         self.city_combo.currentTextChanged.connect(self.update_districts)
         city_layout_h.addWidget(self.city_combo)
         city_layout.addLayout(city_layout_h)
-
-        # İlçe arama ve liste
-        district_search_layout = QHBoxLayout()
-        self.district_search = QLineEdit()
-        self.district_search.setPlaceholderText("İlçe ara...")
-        self.district_search.setStyleSheet(RESOURCE_INPUT_STYLE)
-        self.district_search.textChanged.connect(self.filter_districts)
-        district_search_layout.addWidget(self.district_search)
-        city_layout.addLayout(district_search_layout)
 
         # İlçe listesi
         self.district_list = QListWidget()
@@ -114,14 +105,43 @@ class SimulationDialog(QDialog):
         confidence_layout.addWidget(self.confidence_combo)
         params_layout.addLayout(confidence_layout)
 
+        # Yol Durumu ve Lojistik Parametreleri
+        road_group = QGroupBox("Yol ve Lojistik Parametreleri")
+        road_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        road_layout = QGridLayout()
+
+        # Yol durumu seçimi (1-5 arası)
+        self.road_condition_spin = QSpinBox()
+        self.road_condition_spin.setRange(1, 5)
+        self.road_condition_spin.setValue(3)
+        self.road_condition_spin.setStyleSheet(RESOURCE_INPUT_STYLE)
+        road_layout.addWidget(QLabel("Yol Durumu (1: Çok Kötü, 5: Çok İyi):"), 0, 0)
+        road_layout.addWidget(self.road_condition_spin, 0, 1)
+
+        # Yol durumu açıklaması
+        road_info = QLabel("Not: Yol durumu ortalama hızı etkileyecektir.\n1: 30-40 km/s, 2: 40-50 km/s, 3: 50-60 km/s, 4: 60-70 km/s, 5: 70-80 km/s")
+        road_info.setStyleSheet("color: #888; font-style: italic;")
+        road_info.setWordWrap(True)
+        road_layout.addWidget(road_info, 1, 0, 1, 2)
+
+        road_group.setLayout(road_layout)
+        params_layout.addWidget(road_group)
+
         # Dağıtım Merkezi Seçimi
         distribution_layout = QHBoxLayout()
         self.distribution_center_combo = QComboBox()
         self.distribution_center_combo.addItems(sorted(DISTRIBUTION_CENTERS))
         self.distribution_center_combo.setStyleSheet(COMBO_BOX_STYLE)
+        self.distribution_center_combo.currentTextChanged.connect(self.update_distance)
         distribution_layout.addWidget(QLabel("Dağıtım Merkezi:"))
         distribution_layout.addWidget(self.distribution_center_combo)
         params_layout.addLayout(distribution_layout)
+
+        # Mesafe bilgisi
+        self.distance_label = QLabel("")
+        self.distance_label.setStyleSheet("color: #888; font-style: italic;")
+        self.distance_label.setWordWrap(True)
+        params_layout.addWidget(self.distance_label)
 
         # Dağıtım merkezi açıklaması
         distribution_info = QLabel("Not: Seçilen dağıtım merkezinden afet bölgesine kaynak dağıtımı simüle edilecektir.")
@@ -182,13 +202,6 @@ class SimulationDialog(QDialog):
         # İlk şehir için ilçeleri yükle
         self.update_districts(self.city_combo.currentText())
 
-    def filter_districts(self, text):
-        """İlçeleri filtrele"""
-        for i in range(self.district_list.count()):
-            item = self.district_list.item(i)
-            district_name = item.text().split(" (")[0]  # İlçe adını nüfustan ayır
-            item.setHidden(text.lower() not in district_name.lower())
-
     def update_districts(self, city_name):
         """Seçili şehrin ilçelerini listele"""
         self.district_list.clear()
@@ -215,36 +228,69 @@ class SimulationDialog(QDialog):
             f"Toplam Nüfus: {total_population:,} kişi"
         )
 
+        # Mesafe bilgisini güncelle
+        self.update_distance()
+
+    def update_distance(self):
+        """Dağıtım merkezi değiştiğinde mesafeyi güncelle"""
+        if len(self.selected_districts) > 0:
+            calculator = LogisticsCalculator()
+            depot = self.distribution_center_combo.currentText()
+            target_city = self.city_combo.currentText()
+            try:
+                distance = calculator.get_distance(depot, target_city)
+                self.distance_label.setText(
+                    f"Dağıtım Merkezi ({depot}) ile Hedef Şehir ({target_city}) arası mesafe: {distance} km"
+                )
+            except ValueError:
+                self.distance_label.setText("Mesafe verisi bulunamadı")
+        else:
+            self.distance_label.setText("")
+
     def run_simulation(self):
         """Simülasyonu başlatır"""
         if not self.selected_districts:
             QMessageBox.warning(self, "Uyarı", "Lütfen en az bir ilçe seçin!")
             return
 
-        # Kaynak miktarlarını kontrol et
-        resources_str = "\n".join(
-            f"- {resource}: {self.resource_inputs[resource].value():,} {unit}"
-            for resource, unit in RESOURCES.items()
-            if self.resource_inputs[resource].value() > 0
-        )
+        # Kaynak miktarlarını kontrol et ve topla
+        resources = {}
+        for resource, input_widget in self.resource_inputs.items():
+            amount = input_widget.value()
+            if amount > 0:
+                resources[resource] = amount
 
-        if not resources_str:
+        if not resources:
             QMessageBox.warning(self, "Uyarı", "Lütfen en az bir kaynak miktarı girin!")
             return
 
-        total_population = sum(self.selected_districts.values())
-        selected_districts_str = "\n".join(
-            f"- {district}: {population:,} kişi" 
-            for district, population in self.selected_districts.items()
-        )
+        # Yol durumu kontrolü
+        road_condition = self.road_condition_spin.value()
+        if road_condition < 1 or road_condition > 5:
+            QMessageBox.warning(self, "Uyarı", "Yol durumu 1-5 arasında olmalıdır!")
+            return
+
+        # Simülasyon parametrelerini hazırla
+        simulation_params = {
+            'depot': self.distribution_center_combo.currentText(),
+            'target_districts': self.selected_districts,
+            'resources': resources,
+            'road_condition': road_condition,  # Yol durumunu simülasyona aktar
+            'iterations': self.iteration_spin.value(),
+            'confidence_level': float(self.confidence_combo.currentText().strip('%')) / 100
+        }
+
+        # Monte Carlo simülasyonunu başlat
+        logistics_calc = LogisticsCalculator()
+        simulation = DisasterSimulation(logistics_calc)
         
-        QMessageBox.information(
-            self,
-            "Simülasyon Başlatıldı",
-            f"Seçilen İlçeler:\n{selected_districts_str}\n\n"
-            f"Toplam Nüfus: {total_population:,} kişi\n"
-            f"Dağıtım Merkezi: {self.distribution_center_combo.currentText()}\n\n"
-            f"Kaynak Miktarları:\n{resources_str}\n\n"
-            f"İterasyon sayısı: {self.iteration_spin.value()}\n"
-            f"Güven aralığı: {self.confidence_combo.currentText()}"
-        ) 
+        try:
+            # Simülasyonu çalıştır
+            analysis = simulation.simulate_resource_distribution(**simulation_params)
+            
+            # Sonuçları göster
+            result_dialog = SimulationResultDialog(analysis, simulation_params, self)
+            result_dialog.exec_()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Simülasyon sırasında bir hata oluştu:\n{str(e)}") 
