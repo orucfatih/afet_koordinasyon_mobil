@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { updateCipher } from '../redux/userSlice';
+import { updatePassword } from '../redux/userSlice';
 import CustomTextInput from './CustomTextInput';
 import CustomButton from './CustomButton';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const UpdatePassword = ({setUpdatingScreen}) => {
   const [oldPassword, setOldPassword] = useState('');
@@ -14,117 +14,73 @@ const UpdatePassword = ({setUpdatingScreen}) => {
   
   const dispatch = useDispatch();
 
-  const handleUpdatePassword = () => {
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz.');
+  const handleUpdatePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Hata', 'Yeni şifreler eşleşmiyor');
       return;
     }
 
-    dispatch(updateCipher({ oldPassword, newPassword, confirmPassword }))
-      .unwrap()
-      .then((message) => {
-        Alert.alert('Başarılı', message, [{ text: 'Tamam', style: 'default' }]);
-      })
-      .catch((error) => {
-        Alert.alert('Hata', error, [{ text: 'Tamam', style: 'destructive' }]);
-      });
+    try {
+      await dispatch(updatePassword({ oldPassword, newPassword })).unwrap();
+      Alert.alert('Başarılı', 'Şifreniz başarıyla güncellendi');
+      setUpdatingScreen(false);
+    } catch (error) {
+      Alert.alert('Hata', error.message || 'Şifre güncellenirken bir hata oluştu');
+    }
   };
 
   return (
     <View style={styles.container}>
-
-        <TouchableOpacity
-          onPress={()=> setUpdatingScreen(false)}
-          style={[{}, styles.closeButtonContainer]}>
-            <Text style={styles.closeButton}>X</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Şifrenizi Güncelleyin</Text>
-
-      <View style={styles.inputContainer}>
-
-        <Text style={styles.label}>Eski Şifre</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Eski Şifrenizi Girin' onChangeText={setOldPassword} value={oldPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>Yeni Şifre</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Girin' onChangeText={setNewPassword} value={newPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>Yeni Şifre Tekrar</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Tekrar Girin' onChangeText={setConfirmPassword} value={confirmPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => setUpdatingScreen(false)}>
+          <Icon name="close" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Şifre Güncelle</Text>
       </View>
 
-      <CustomButton title="Şifreyi Güncelle" onPress={handleUpdatePassword} />
+      <CustomTextInput
+        placeholder="Eski Şifre"
+        value={oldPassword}
+        onChangeText={setOldPassword}
+        secureTextEntry
+      />
+      <CustomTextInput
+        placeholder="Yeni Şifre"
+        value={newPassword}
+        onChangeText={setNewPassword}
+        secureTextEntry
+      />
+      <CustomTextInput
+        placeholder="Yeni Şifre Tekrar"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+
+      <CustomButton
+        title="Şifreyi Güncelle"
+        onPress={handleUpdatePassword}
+      />
     </View>
   );
 };
 
-export default UpdatePassword;
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Tüm alanı kaplayacak şekilde ayarla
-    justifyContent: 'center', // Dikey olarak ortala
-    alignItems: 'center', // Yatay olarak ortala
+    flex: 1,
+    backgroundColor: '#fff',
     padding: 20,
-    backgroundColor: '#f9f9f9',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-  },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
-    color: '#495057',
-    marginBottom: 0,
-    marginTop:2,
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  passwordInputContainer: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
+    marginBottom: 20,
   },
-  eyeIcon: {
-    position: 'absolute',
-    right: 15,
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 10,
   },
-  closeButton:{
-    color:"black",
-    fontWeight:"bold",
-    textAlign:"center",
-  },
-  closeButtonContainer:{
-      backgroundColor:"lightgray",
-      width:"30",
-      height:"30",
-      borderRadius:30,
-      alignItems:"center",
-      justifyContent:"center",
-      position:"absolute",
-      top:"50",
-      right:"15",
-}
 });
+
+export default UpdatePassword;

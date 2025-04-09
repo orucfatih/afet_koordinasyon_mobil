@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faBell, faMapMarkerAlt, faSyncAlt, faBullhorn, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -56,13 +55,13 @@ const SettingsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.whistleButton} onPress={() => setHornModalVisible(true)}>
-          <FontAwesomeIcon icon={faBullhorn} size={25} color="white" style={styles.icon} />
+          <Icon name="bullhorn" size={25} color="white" style={styles.icon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
           <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.info} onPress={() => setInfoModalVisible(true)}>
-          <FontAwesomeIcon icon={faInfoCircle} size={25} color="white" style={styles.icon} />
+          <Icon name="info-circle" size={25} color="white" style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -109,7 +108,7 @@ const SettingsScreen = ({ navigation }) => {
       <View style={styles.settingsContainer}>
         <View style={styles.settingItem}>
           <View style={styles.settingLabel}>
-            <FontAwesomeIcon icon={faBell} size={20} color="#555" style={styles.icon} />
+            <Icon name="bell" size={20} color="#555" style={styles.icon} />
             <Text style={styles.settingText}>Notifications</Text>
           </View>
           <Switch
@@ -122,7 +121,7 @@ const SettingsScreen = ({ navigation }) => {
 
         <View style={styles.settingItem}>
           <View style={styles.settingLabel}>
-            <FontAwesomeIcon icon={faMapMarkerAlt} size={20} color="#555" style={styles.icon} />
+            <Icon name="map-marker" size={20} color="#555" style={styles.icon} />
             <Text style={styles.settingText}>Location Services</Text>
           </View>
           <Switch
@@ -135,7 +134,7 @@ const SettingsScreen = ({ navigation }) => {
 
         <View style={styles.settingItem}>
           <View style={styles.settingLabel}>
-            <FontAwesomeIcon icon={faSyncAlt} size={20} color="#555" style={styles.icon} />
+            <Icon name="sync" size={20} color="#555" style={styles.icon} />
             <Text style={styles.settingText}>Auto Updates</Text>
           </View>
           <Switch

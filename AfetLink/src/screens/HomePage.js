@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,33 +11,13 @@ import {
   Linking,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { Svg, Path } from 'react-native-svg';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faHome, faUser, faCog, faCamera, faPhone, faExclamationTriangle, faUsers, faInfoCircle, faBullhorn, faBell, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProfileScreen, SettingsScreen, Info, Horn } from '../components/index';
 import * as Animatable from 'react-native-animatable';
 
 const { width } = Dimensions.get('window');
-
-// Animation definitions
-Animatable.initializeRegistryWithDefinitions({
-  pulseBorder: {
-    0: { scale: 1, borderWidth: 2, borderColor: '#fff', shadowOpacity: 0.2 },
-    0.5: { scale: 1.05, borderWidth: 4, borderColor: '#ff4444', shadowOpacity: 0.4 },
-    1: { scale: 1, borderWidth: 2, borderColor: '#fff', shadowOpacity: 0.2 },
-  },
-  modernPulse: {
-    0: { scale: 1, opacity: 1 },
-    0.5: { scale: 1.1, opacity: 0.9 },
-    1: { scale: 1, opacity: 1 },
-  },
-  fadeInUpModern: {
-    0: { translateY: 50, opacity: 0 },
-    1: { translateY: 0, opacity: 1 },
-  }
-});
 
 const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -171,14 +151,6 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
           <Text style={styles.earthquakeTime}>{item.time}</Text>
           <Text style={styles.earthquakeDate}>{item.date}</Text>
         </View>
-        <Svg style={styles.dalga} height="30" width="100" viewBox="0 0 100 30">
-          <Path
-            d="M 0,20 L 10,5 L 20,15 L 30,10 L 40,20 L 50,10 L 60,25 L 70,15 L 80,20 L 90,10 L 100,30 L 110,15 L 120,20"
-            stroke="#808080"
-            strokeWidth="3"
-            fill="none"
-          />
-        </Svg>
       </View>
     );
   };
@@ -194,10 +166,10 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
           <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
-          <FontAwesomeIcon icon={faBullhorn} size={25} color="white" />
+          <Icon name="bullhorn" size={25} color="white" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
-          <FontAwesomeIcon icon={faInfoCircle} size={25} color="white" />
+          <Icon name="info-circle" size={25} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -237,7 +209,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             onPress={() => navigation.navigate('Camera')}
           >
             <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
-            <FontAwesomeIcon icon={faCamera} size={30} color="white" style={styles.camera} />
+            <Icon name="camera" size={30} color="white" style={styles.camera} />
           </TouchableOpacity>
         </Animatable.View>
 
@@ -247,7 +219,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             onPress={() => navigation.navigate('Camera')}
           >
             <View style={styles.buttonContent}>
-              <FontAwesomeIcon icon={faExclamationCircle} size={18} color="white" style={styles.buttonIcon} />
+              <Icon name="exclamation-triangle" size={18} color="white" style={styles.buttonIcon} />
               <Text 
                 style={styles.largeButtonText}
                 numberOfLines={1}
@@ -262,7 +234,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             onPress={() => console.log('Ailene Bildir')}
           >
             <View style={styles.buttonContent}>
-              <FontAwesomeIcon icon={faBell} size={16} color="white" style={styles.buttonIcon} />
+              <Icon name="bell" size={16} color="white" style={styles.buttonIcon} />
               <Text style={styles.smallButtonText}>AİLENE BİLDİR</Text>
             </View>
           </TouchableOpacity>
@@ -309,7 +281,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             >
               <View style={styles.assemblyButtonContent}>
                 <View style={styles.assemblyIconWrapper}>
-                  <FontAwesomeIcon icon={faUsers} size={30} color="white" />
+                  <Icon name="users" size={30} color="white" />
                 </View>
                 <View>
                   <Text style={styles.assemblyButtonText}>{area.name}</Text>
@@ -329,6 +301,9 @@ const HomePage = ({ navigation }) => {
   const [currentTab, setCurrentTab] = useState('Earthquake');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
+  const [user, setUser] = useState(null);
+  const fadeAnim = useRef(new Animatable.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -340,6 +315,35 @@ const HomePage = ({ navigation }) => {
       }
     };
     checkAuthentication();
+  }, []);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error('Kullanıcı bilgileri yüklenirken hata:', error);
+      }
+    };
+
+    loadUser();
+
+    // Animasyonları başlat
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const renderScreen = () => {
@@ -382,8 +386,8 @@ const HomePage = ({ navigation }) => {
                 iterationCount="infinite"
                 duration={1500}
               >
-                <FontAwesomeIcon 
-                  icon={faHome} 
+                <Icon 
+                  name="home" 
                   size={currentTab === 'Earthquake' ? 30 : 24} 
                   color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} 
                 />
@@ -399,8 +403,8 @@ const HomePage = ({ navigation }) => {
                 iterationCount="infinite"
                 duration={1500}
               >
-                <FontAwesomeIcon 
-                  icon={faUser} 
+                <Icon 
+                  name="user" 
                   size={currentTab === 'Profile' ? 30 : 24} 
                   color={currentTab === 'Profile' ? '#fff' : '#ccc'} 
                 />
@@ -416,8 +420,8 @@ const HomePage = ({ navigation }) => {
                 iterationCount="infinite"
                 duration={1500}
               >
-                <FontAwesomeIcon 
-                  icon={faCog} 
+                <Icon 
+                  name="cog" 
                   size={currentTab === 'Settings' ? 30 : 24} 
                   color={currentTab === 'Settings' ? '#fff' : '#ccc'} 
                 />
@@ -429,7 +433,7 @@ const HomePage = ({ navigation }) => {
             style={styles.emergencyButton} 
             onPress={handleEmergencyCall}
           >
-            <FontAwesomeIcon icon={faPhone} size={30} color="white" />
+            <Icon name="phone" size={30} color="white" />
           </TouchableOpacity>
         </>
       )}
@@ -575,12 +579,6 @@ export const styles = StyleSheet.create({
   earthquakeDate: {
     fontSize: 16,
     color: '#757575',
-  },
-  dalga: {
-    bottom: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
   },
   assemblyButtonsContainer: {
     flexDirection: 'column',

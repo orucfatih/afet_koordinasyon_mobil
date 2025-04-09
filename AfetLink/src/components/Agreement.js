@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView} from 'react-native'
 import React from 'react'
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccepted}) => {
   return (
@@ -9,7 +9,7 @@ const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccep
             <View style={styles.modalContent}>
             {/* Kapatma Butonu */}
             <TouchableOpacity style={styles.closeButton} onPress={() => setIsTermsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="black" />
+                <Icon name="close" size={24} color="black" />
             </TouchableOpacity>
 
             {/* Başlık */}
@@ -27,7 +27,7 @@ const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccep
                 </Text>
 
                 <Text style={styles.sectionTitle}>2. Kişisel Verilerin İşlenmesi ve Korunması</Text>
-                <Text style={styles.modalText}>İlgili Kurum/Kuruluş, Kullanıcı’nın aşağıdaki kişisel verilerini toplayabilir:</Text>
+                <Text style={styles.modalText}>İlgili Kurum/Kuruluş, Kullanıcı'nın aşağıdaki kişisel verilerini toplayabilir:</Text>
                 <Text style={styles.bulletPoint}>• Ad ve soyad</Text>
                 <Text style={styles.bulletPoint}>• Lokasyon bilgisi (GPS veya manuel giriş)</Text>
                 <Text style={styles.bulletPoint}>• Telefon numarası</Text>
@@ -55,17 +55,17 @@ const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccep
                 Kullanıcı, bu sözleşmeyi onayladığında hükümleri kabul etmiş sayılır.
                 </Text>
                 <Text style={styles.modalText}>
-                İlgili Kurum/Kuruluş, Kullanıcı’nın sözleşmeye aykırı hareket ettiğini tespit ederse, hizmetleri durdurma hakkına sahiptir.
+                İlgili Kurum/Kuruluş, Kullanıcı'nın sözleşmeye aykırı hareket ettiğini tespit ederse, hizmetleri durdurma hakkına sahiptir.
                 </Text>
 
                 <Text style={styles.sectionTitle}>5. Uyuşmazlıkların Çözümü</Text>
                 <Text style={styles.modalText}>
-                İşbu sözleşmeden doğabilecek uyuşmazlıkların çözümünde [İlgili Kurum/Kuruluş]’un bulunduğu ülke/şehrin yetkili mahkemeleri ve icra daireleri yetkilidir.
+                İşbu sözleşmeden doğabilecek uyuşmazlıkların çözümünde [İlgili Kurum/Kuruluş] 'un bulunduğu ülke/şehrin yetkili mahkemeleri ve icra daireleri yetkilidir.
                 </Text>
 
                 <Text style={styles.sectionTitle}>6. Son Hükümler</Text>
                 <Text style={styles.modalText}>
-                Bu sözleşme, Kullanıcı’nın onayı ile yürürlüğe girer ve taraflar arasında bağlayıcıdır.
+                Bu sözleşme, Kullanıcı'nın onayı ile yürürlüğe girer ve taraflar arasında bağlayıcıdır.
                 </Text>
             </ScrollView>
 

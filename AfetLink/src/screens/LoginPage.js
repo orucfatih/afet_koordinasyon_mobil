@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { Loading, CustomTextInput, CustomButton } from '../components/index.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading, login, autoLogin } from '../redux/userSlice.js';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const generateCaptcha = () => {
   return Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 karakterlik captcha
@@ -69,7 +69,7 @@ const LoginPage = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         {/* Geri Butonu */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('AraMenu')}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
+          <Icon name="arrow-back" size={28} color="#333" />
         </TouchableOpacity>
 
         <Text style={styles.title}>Hoş Geldiniz</Text>
@@ -100,7 +100,7 @@ const LoginPage = ({ navigation }) => {
               style={styles.eyeIcon}
               accessibilityLabel={secureText ? 'Şifreyi Göster' : 'Şifreyi Gizle'}
             >
-              <Ionicons name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
+              <Icon name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
             </TouchableOpacity>
           </View>
         </View>
@@ -119,7 +119,7 @@ const LoginPage = ({ navigation }) => {
             }}
             style={styles.refreshCaptcha}
           >
-            <Ionicons name="refresh-circle" size={32} color="#007BFF" />
+            <Icon name="refresh-circle" size={32} color="#007BFF" />
           </TouchableOpacity>
         </View>
 

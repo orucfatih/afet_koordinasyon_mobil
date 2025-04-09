@@ -1,29 +1,30 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUser, faUserTie } from '@fortawesome/free-solid-svg-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const AnaMenu = ({ navigation }) => {
+const AnaMenu = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../../assets/images/deneme3.png')} // Logo remains an image
+      <Image 
+        source={require('../../assets/images/deneme.png')} 
         style={styles.logo}
       />
       <Text style={styles.title}>Ana Menü</Text>
-      <TouchableOpacity
-        style={styles.button}
+      <TouchableOpacity 
+        style={styles.button} 
         onPress={() => navigation.navigate('AraMenu')}
       >
-        <FontAwesomeIcon icon={faUser} size={24} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Vatandaş Giriş</Text>
+        <Icon name="person" size={24} color="#333" />
+        <Text style={styles.buttonText}>Vatandaş Girişi</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.button}
+      <TouchableOpacity 
+        style={styles.button} 
         onPress={() => navigation.navigate('AraMenu2')}
       >
-        <FontAwesomeIcon icon={faUserTie} size={24} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Personel Giriş</Text>
+        <Icon name="people" size={24} color="#333" />
+        <Text style={styles.buttonText}>Personel Girişi</Text>
       </TouchableOpacity>
     </View>
   );
@@ -34,23 +35,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: 20,
+    backgroundColor: '#fff',
   },
   logo: {
-    padding: 10,
-    width: 160,
-    height: 160,
-    marginBottom: 20,
-    borderRadius: 120, // Circular logo
-    borderWidth: 1,
-    borderColor: '#D9DDDC',
-    backgroundColor: '#fff',
-    shadowColor: 'gray',
-    shadowOffset: { width: 10, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 20,
+    width: 200,
+    height: 200,
+    marginBottom: 50,
   },
   title: {
     fontSize: 24,
@@ -61,21 +51,16 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    backgroundColor: 'red',
-    padding: 12,
+    backgroundColor: '#f0f0f0',
+    padding: 15,
     borderRadius: 10,
+    marginVertical: 10,
     width: '80%',
-    marginBottom: 15,
-  },
-  icon: {
-    marginRight: 10, // Space between icon and text
   },
   buttonText: {
-    color: 'white',
-    fontSize: 18,
-    marginLeft: 40, // Adjust this if needed for spacing
-    fontWeight: 'bold',
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
   },
 });
 

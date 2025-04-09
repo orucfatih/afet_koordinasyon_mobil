@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CustomButton, CustomTextInput, Loading } from '../components';
 import { useDispatch, useSelector } from 'react-redux';
 import { register } from '../redux/userSlice';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const SignUpPage2 = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -67,7 +67,7 @@ const SignUpPage2 = ({ navigation }) => {
         <View style={styles.passwordInputContainer}>
           <CustomTextInput secureTextEntry={secureText} placeholder='Bir Şifre Oluşturun' onChangeText={setPassword} value={password} />
           <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+            <Icon name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
           </TouchableOpacity>
         </View>
 
@@ -75,7 +75,7 @@ const SignUpPage2 = ({ navigation }) => {
         <View style={styles.passwordInputContainer}>
           <CustomTextInput secureTextEntry={secureText} placeholder='Şifrenizi Tekrar Girin' onChangeText={setConfirmPassword} value={confirmPassword} />
           <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+            <Icon name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
           </TouchableOpacity>
         </View>
 

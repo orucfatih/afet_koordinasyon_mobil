@@ -1,69 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faBullhorn, faWaveSquare } from '@fortawesome/free-solid-svg-icons';
-import { Audio } from 'expo-av';
-import { Vibration } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
+import Sound from 'react-native-sound';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+// Ses dosyalarını yapılandır
+Sound.setCategory('Playback');
 
 const Horn = ({ setHorn }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSound, setCurrentSound] = useState(null);
 
-  // Request audio permissions
-  const requestAudioPermissions = async () => {
-    const { status } = await Audio.requestPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('Audio permissions denied');
-      return false;
-    }
-    return true;
-  };
-
-  const playSound = async (file) => {
+  const playSound = (soundName) => {
     if (isPlaying) {
-      console.log('Already playing, skipping...');
+      console.log('Zaten çalınıyor, atlanıyor...');
       return;
     }
 
     setIsPlaying(true);
 
     try {
-      // Request permissions
-      const hasPermission = await requestAudioPermissions();
-      if (!hasPermission) {
-        setIsPlaying(false);
-        return;
+      // Önceki sesi durdur
+      if (currentSound) {
+        currentSound.stop();
+        currentSound.release();
       }
 
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-      });
+      // Ses dosyasını belirle
+      let soundPath;
+      if (soundName === 'megaphone') {
+        soundPath = require('../../assets/sounds/megaphone.mp3');
+      } else if (soundName === 'highpitch') {
+        soundPath = require('../../assets/sounds/highpitch.mp3');
+      }
 
-      // Start vibration
-      const DURATION = 20000;
-      const PATTERN = [0, 1000, 500];
-      Vibration.vibrate(PATTERN, true);
-      setTimeout(() => Vibration.cancel(), DURATION);
-
-      // Load and play sound
-      console.log('Loading sound file:', file);
-      const { sound } = await Audio.Sound.createAsync(file);
-      console.log('Sound loaded, playing...');
-      await sound.playAsync();
-
-      // Handle playback status
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (!status.isPlaying && status.didJustFinish) {
-          console.log('Sound finished playing');
+      // Yeni sesi yükle ve çal
+      const sound = new Sound(soundPath, (error) => {
+        if (error) {
+          console.error('Ses yüklenirken hata:', error);
           setIsPlaying(false);
-          sound.unloadAsync();
+          return;
         }
+
+        // Titreşimi başlat
+        const DURATION = 20000;
+        const PATTERN = [0, 1000, 500];
+        Vibration.vibrate(PATTERN, true);
+        setTimeout(() => Vibration.cancel(), DURATION);
+
+        // Sesi çal
+        sound.play((success) => {
+          if (success) {
+            console.log('Ses başarıyla çalındı');
+          } else {
+            console.log('Ses çalınırken hata oluştu');
+          }
+          setIsPlaying(false);
+          Vibration.cancel();
+          sound.release();
+        });
+
+        setCurrentSound(sound);
       });
     } catch (error) {
-      console.error('Error playing sound:', error);
+      console.error('Ses çalınırken hata:', error);
       setIsPlaying(false);
     }
   };
@@ -74,19 +73,19 @@ const Horn = ({ setHorn }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.button, { opacity: isPlaying ? 0.5 : 1 }]}
-          onPress={() => playSound(require('../../assets/sounds/megaphone.mp3'))}
+          onPress={() => playSound('megaphone')}
           disabled={isPlaying}
         >
-          <FontAwesomeIcon icon={faBullhorn} size={30} color="white" style={styles.icon} />
+          <Icon name="bullhorn" size={30} color="white" style={styles.icon} />
           <Text style={styles.buttonText}>Megafon Sesi</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.button, { opacity: isPlaying ? 0.5 : 1 }]}
-          onPress={() => playSound(require('../../assets/sounds/highpitch.mp3'))}
+          onPress={() => playSound('highpitch')}
           disabled={isPlaying}
         >
-          <FontAwesomeIcon icon={faWaveSquare} size={30} color="white" style={styles.icon} />
+          <Icon name="wave-square" size={30} color="white" style={styles.icon} />
           <Text style={styles.buttonText}>Tiz Ses</Text>
         </TouchableOpacity>
 

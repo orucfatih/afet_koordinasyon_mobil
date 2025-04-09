@@ -6,10 +6,11 @@ import {
   FlatList,
   StyleSheet,
   Image,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
-import { Svg, Path } from 'react-native-svg';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ViewAll = ({ navigation }) => {
   const [earthquakeData, setEarthquakeData] = useState([]);
@@ -78,14 +79,6 @@ const ViewAll = ({ navigation }) => {
               </View>
             </View>
           </View>
-          <Svg style={styles.dalga} height="30" width="100" viewBox="0 0 100 30">
-            <Path
-              d="M 0,15 L 10,5 L 20,15 L 30,10 L 40,20 L 50,10 L 60,25 L 70,15 L 80,20 L 90,10 L 100,30 L 110,15 L 120,20"
-              stroke="grey"
-              strokeWidth="3"
-              fill="none"
-            />
-          </Svg>
         </View>
 
         <View style={styles.earthquakeInfo}>
@@ -110,7 +103,7 @@ const ViewAll = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-left" size={24} color="white" />
         </TouchableOpacity>
         <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
       </View>
@@ -213,12 +206,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
-  },
-  dalga: {
-    bottom: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
   },
   earthquakeList: {},
 });
