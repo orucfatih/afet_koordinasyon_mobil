@@ -22,6 +22,8 @@ class AfetYonetimAdmin(QMainWindow):
         super().__init__()
         self.current_theme = initial_theme
         self.message_manager = MessageManager(self)
+        self.current_tab_index = 0
+        self.tabs_per_page = 7
         self.initUI()
 
     def initUI(self):
@@ -39,46 +41,124 @@ class AfetYonetimAdmin(QMainWindow):
         
         # Tab bar ayarları
         tab_bar = self.tabs.tabBar()
-        tab_bar.setUsesScrollButtons(False)  # Scroll butonlarını kaldır
-        tab_bar.setDrawBase(True)  # Tab çizgisini göster
+        tab_bar.setUsesScrollButtons(False)
+        tab_bar.setDrawBase(True)
         
-        # Sekmelerin eşit genişlikte olmasını sağlar
         self.tabs.setDocumentMode(True)
-        tab_bar.setExpanding(True)  # Sekmeleri eşit genişlikte dağıt
+        tab_bar.setExpanding(True)
         
-        # Sekmeleri ekle
-        self.tabs.addTab(OperationManagementTab(), "Operasyon Yönetimi")
-        self.tabs.addTab(STKYonetimTab(), "STK Yönetimi")
-        self.tabs.addTab(KaynakYonetimTab(), "Kaynak Yönetimi")
-        self.tabs.addTab(RaporYonetimTab(), "Rapor")
-        self.tabs.addTab(PersonelYonetimTab(), "Personel Yönetim")
-        self.tabs.addTab(MissingPersonDetectionTab(), "Kayıp Vatandaş Tespiti")
-        self.tabs.addTab(EquipmentManagementTab(), "Ekipman Yönetimi")
-        self.tabs.addTab(CitizenReportTab(), "Vefat Kayıtları")
-
-        # Mesaj butonu için özel bir widget oluştur
-        tab_corner_widget = QWidget()
-        corner_layout = QHBoxLayout(tab_corner_widget)
-        corner_layout.setContentsMargins(0, 0, 5, 0)  # Sağ tarafta biraz boşluk bırak
+        # Buton stilleri
+        arrow_style = "QToolButton { padding: 2px; border: none; }"
+        
+        # Sol ok butonu için corner widget
+        left_corner = QWidget()
+        left_layout = QHBoxLayout(left_corner)
+        left_layout.setContentsMargins(5, 0, 0, 0)
+        left_layout.setAlignment(Qt.AlignVCenter)
+        
+        self.left_arrow = QToolButton()
+        self.left_arrow.setIcon(QIcon(get_icon_path('left_arrow.png')))
+        self.left_arrow.setIconSize(QSize(24, 24))
+        self.left_arrow.setFixedSize(QSize(28, 28))
+        self.left_arrow.setStyleSheet(arrow_style)
+        self.left_arrow.clicked.connect(self.scroll_tabs_left)
+        self.left_arrow.setEnabled(False)
+        left_layout.addWidget(self.left_arrow)
+        
+        # Sağ ok butonu ve mesaj butonu için corner widget
+        right_corner = QWidget()
+        right_layout = QHBoxLayout(right_corner)
+        right_layout.setContentsMargins(0, 0, 5, 0)
+        right_layout.setAlignment(Qt.AlignVCenter)
+        
+        self.right_arrow = QToolButton()
+        self.right_arrow.setIcon(QIcon(get_icon_path('right_arrow.png')))
+        self.right_arrow.setIconSize(QSize(24, 24))
+        self.right_arrow.setFixedSize(QSize(28, 28))
+        self.right_arrow.setStyleSheet(arrow_style)
+        self.right_arrow.clicked.connect(self.scroll_tabs_right)
         
         # Mesaj butonu
         message_btn = QToolButton()
         message_btn.setIcon(QIcon(get_icon_path('message.png')))
         message_btn.setIconSize(QSize(24, 24))
+        message_btn.setFixedSize(QSize(28, 28))
         message_btn.setToolTip("Mesajlar")
-        message_btn.setStyleSheet(MESSAGE_BUTTON_STYLE)  # Stil dosyasından çek
+        message_btn.setStyleSheet(MESSAGE_BUTTON_STYLE)
         message_btn.clicked.connect(self.message_manager.show_message_dialog)
         
-        corner_layout.addWidget(message_btn)
-        corner_layout.addStretch()  # Butonu sağa yasla
+        right_layout.addWidget(self.right_arrow)
+        right_layout.addWidget(message_btn)
         
-        # Mesaj butonu(sekmelerin sağ üst köşesine)
-        self.tabs.setCornerWidget(tab_corner_widget, Qt.TopRightCorner)
+        # Corner widget'ları tab widget'a ekle
+        self.tabs.setCornerWidget(left_corner, Qt.TopLeftCorner)
+        self.tabs.setCornerWidget(right_corner, Qt.TopRightCorner)
         
         main_layout.addWidget(self.tabs)
         
+        # Tüm sekmeleri liste olarak tut
+        self.all_tabs = [
+            ("Operasyon Yönetimi", OperationManagementTab()),
+            ("STK Yönetimi", STKYonetimTab()),
+            ("Kaynak Yönetimi", KaynakYonetimTab()),
+            ("Rapor", RaporYonetimTab()),
+            ("Personel Yönetim", PersonelYonetimTab()),
+            ("Kayıp Vatandaş Tespiti", MissingPersonDetectionTab()),
+            ("Ekipman Yönetimi", EquipmentManagementTab()),
+            ("Vefat Kayıtları", CitizenReportTab()),
+            ("İhtiyaç Talep Yönetimi", CitizenReportTab()),
+            ("Gönüllü Yönetimi", CitizenReportTab()),
+            ("Altyapı Durumu", CitizenReportTab()),
+            ("Yardım Lojistiği", CitizenReportTab()),
+            ("Vatandaş Feedback Sistemi", CitizenReportTab()),
+            ("Finansal Yönetim", CitizenReportTab()),
+            ("Senaryo Simülasyonu", CitizenReportTab()),
+            ("Bina Hasar Tespit Yönetimi", CitizenReportTab()),
+            ("Geçici İskan Planlama", CitizenReportTab()),
+            ("Kitlesel SMS/Bildirim Sistemi", CitizenReportTab())
+        ]
+        
+        # İlk sayfadaki sekmeleri göster
+        self.update_visible_tabs()
+        
         # İlk başta seçilen temayı uygula
         self.setStyleSheet(DARK_THEME_STYLE if self.current_theme == 'dark' else LIGHT_THEME_STYLE)
+        
+        # Ok butonlarının durumunu güncelle
+        self.update_arrow_states()
+
+    def update_visible_tabs(self):
+        # Mevcut sekmeleri temizle
+        self.tabs.clear()
+        
+        # Görünür sekmeleri ekle
+        start_idx = self.current_tab_index
+        end_idx = min(start_idx + self.tabs_per_page, len(self.all_tabs))
+        
+        for i in range(start_idx, end_idx):
+            tab_name, tab_widget = self.all_tabs[i]
+            self.tabs.addTab(tab_widget, tab_name)
+
+    def scroll_tabs_left(self):
+        if self.current_tab_index > 0:
+            self.current_tab_index -= self.tabs_per_page
+            self.update_visible_tabs()
+            self.update_arrow_states()
+
+    def scroll_tabs_right(self):
+        if self.current_tab_index + self.tabs_per_page < len(self.all_tabs):
+            self.current_tab_index += self.tabs_per_page
+            self.update_visible_tabs()
+            self.update_arrow_states()
+
+    def update_arrow_states(self):
+        # Sol ok durumu
+        self.left_arrow.setEnabled(self.current_tab_index > 0)
+        
+        # Sağ ok durumu
+        self.right_arrow.setEnabled(
+            self.current_tab_index + self.tabs_per_page < len(self.all_tabs)
+        )
 
     def closeEvent(self, event):
         """Kapatma butonu (çarpı) tıklanınca uyarı verir."""
