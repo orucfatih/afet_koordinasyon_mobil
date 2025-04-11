@@ -71,6 +71,32 @@ LOGIN_DARK_STYLES = """
     #themeContainer {
         background-color: transparent;
     }
+
+    #ngoSection {
+        background-color: #2d2d2d;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    QFrame[objectName^="ngoContainer"] {
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 5px;
+    }
+
+    QLabel[objectName^="ngoLabel"] {
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    QChartView {
+        background-color: transparent;
+        border: none;
+    }
 """
 
 

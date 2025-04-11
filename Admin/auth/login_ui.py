@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import (QWidget, QLabel, QLineEdit, QPushButton, 
-                           QVBoxLayout, QHBoxLayout, QCheckBox, QFrame)
+                           QVBoxLayout, QHBoxLayout, QCheckBox, QFrame, QGridLayout)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, pyqtProperty
-from PyQt5.QtGui import QFont, QPainter, QColor, QPen, QBrush, QIcon
+from PyQt5.QtGui import QFont, QPainter, QColor, QPen, QBrush, QIcon, QPixmap
 from styles.styles_dark import LOGIN_DARK_STYLES
 from styles.styles_light import LOGIN_LIGHT_STYLES
+from utils import get_icon_path
 
 class StyledLineEdit(QLineEdit):
     def __init__(self, placeholder="", parent=None):
@@ -69,13 +70,16 @@ class LoginUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Afet Yönetim Sistemi - Giriş")
-        self.setFixedSize(420, 600)
+        self.setMinimumSize(800, 800)  # Minimum size for the window
         
         self.setStyleSheet(LOGIN_DARK_STYLES)
         
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(40, 40, 40, 40)
         main_layout.setSpacing(25)
+        
+        # Top section (existing login components)
+        top_section = QVBoxLayout()
         
         # Logo Container
         logo_container = QFrame()
@@ -143,13 +147,75 @@ class LoginUI(QWidget):
         self.login_button.setCursor(Qt.PointingHandCursor)
         self.login_button.setObjectName("loginButton")
         
-        # Add all widgets to main layout
-        main_layout.addWidget(logo_container)
-        main_layout.addSpacing(20)
-        main_layout.addWidget(input_container)
-        main_layout.addWidget(theme_container)
-        main_layout.addWidget(self.login_button)
-        main_layout.addStretch()
+        # Add login components to top section
+        top_section.addWidget(logo_container)
+        top_section.addSpacing(20)
+        top_section.addWidget(input_container)
+        top_section.addWidget(theme_container)
+        top_section.addWidget(self.login_button)
+        
+        # NGO Section
+        ngo_section = QFrame()
+        ngo_section.setObjectName("ngoSection")
+        ngo_layout = QGridLayout()
+        
+        # NGO Logos and Labels
+        ngos = [
+            {"name": "AKUT", "logo": "akut.png", "color": "#e74c3c"},
+            {"name": "Kızılay", "logo": "kizilay.png", "color": "#c0392b"},
+            {"name": "UMKE", "logo": "umke.png", "color": "#2ecc71"},
+            {"name": "İHH", "logo": "ihh.png", "color": "#3498db"},
+            {"name": "Beşir Derneği", "logo": "besir.png", "color": "#9b59b6"},
+            {"name": "Ahbap", "logo": "ahbap.png", "color": "#f1c40f"}
+        ]
+        
+        for i, ngo in enumerate(ngos):
+            row = i // 3
+            col = i % 3
+            
+            # Create container for each NGO
+            ngo_container = QFrame()
+            ngo_container.setObjectName(f"ngoContainer_{i}")
+            ngo_container_layout = QVBoxLayout()
+            
+            # Logo
+            logo_label = QLabel()
+            logo_label.setFixedSize(80, 80)
+            logo_label.setScaledContents(True)
+            logo_label.setObjectName(f"ngoLogo_{i}")
+            
+            # Try to load the logo using get_icon_path
+            logo_path = get_icon_path(ngo["logo"])
+            logo_pixmap = QPixmap(logo_path)
+            if not logo_pixmap.isNull():
+                logo_label.setPixmap(logo_pixmap)
+            else:
+                # If logo can't be loaded, show colored background with first letter
+                logo_label.setStyleSheet(f"background-color: {ngo['color']}; border-radius: 10px;")
+                letter_label = QLabel(ngo["name"][0])
+                letter_label.setFont(QFont('Segoe UI', 24, QFont.Bold))
+                letter_label.setAlignment(Qt.AlignCenter)
+                letter_label.setStyleSheet("color: white;")
+                logo_label.setLayout(QVBoxLayout())
+                logo_label.layout().addWidget(letter_label)
+            
+            # Label
+            name_label = QLabel(ngo["name"])
+            name_label.setAlignment(Qt.AlignCenter)
+            name_label.setFont(QFont('Segoe UI', 12, QFont.Bold))
+            name_label.setObjectName(f"ngoLabel_{i}")
+            
+            ngo_container_layout.addWidget(logo_label, alignment=Qt.AlignCenter)
+            ngo_container_layout.addWidget(name_label, alignment=Qt.AlignCenter)
+            ngo_container.setLayout(ngo_container_layout)
+            
+            ngo_layout.addWidget(ngo_container, row, col)
+        
+        ngo_section.setLayout(ngo_layout)
+        
+        # Add all sections to main layout
+        main_layout.addLayout(top_section)
+        main_layout.addWidget(ngo_section)
         
         self.setLayout(main_layout)
 

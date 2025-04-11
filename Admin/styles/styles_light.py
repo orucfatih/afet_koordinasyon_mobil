@@ -66,6 +66,34 @@ LOGIN_LIGHT_STYLES = """
     #themeContainer {
         background-color: transparent;
     }
+
+    #ngoSection {
+        background-color: #ffffff;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #e0e0e0;
+    }
+
+    QFrame[objectName^="ngoContainer"] {
+        background-color: #f8f8f8;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 5px;
+        border: 1px solid #e0e0e0;
+    }
+
+    QLabel[objectName^="ngoLabel"] {
+        color: #333333;
+        font-size: 12px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    QChartView {
+        background-color: transparent;
+        border: none;
+    }
 """
 
 

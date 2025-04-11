@@ -100,22 +100,25 @@ class AfetYonetimAdmin(QMainWindow):
         self.all_tabs = [
             ("Operasyon Yönetimi", OperationManagementTab()),
             ("STK Yönetimi", STKYonetimTab()),
-            ("Kaynak Yönetimi", KaynakYonetimTab()),
+
             ("Rapor", RaporYonetimTab()),
             ("Personel Yönetim", PersonelYonetimTab()),
             ("Kayıp Vatandaş Tespiti", MissingPersonDetectionTab()),
             ("Ekipman Yönetimi", EquipmentManagementTab()),
             ("Vefat Kayıtları", CitizenReportTab()),
+            ("Kaynak Yönetimi", KaynakYonetimTab()),
             ("İhtiyaç Talep Yönetimi", CitizenReportTab()),
             ("Gönüllü Yönetimi", CitizenReportTab()),
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
-            ("Vatandaş Feedback Sistemi", CitizenReportTab()),
-            ("Finansal Yönetim", CitizenReportTab()),
-            ("Senaryo Simülasyonu", CitizenReportTab()),
-            ("Bina Hasar Tespit Yönetimi", CitizenReportTab()),
+
             ("Geçici İskan Planlama", CitizenReportTab()),
-            ("Kitlesel SMS/Bildirim Sistemi", CitizenReportTab())
+            ("Kitlesel SMS/Bildirim Sistemi", CitizenReportTab()),
+            ("Senaryo Simülasyonu", CitizenReportTab()),
+            ("Finansal Yönetim", CitizenReportTab()),
+            ("Vatandaş Feedback Sistemi", CitizenReportTab()),
+            ("Bina Hasar Tespit Yönetimi", CitizenReportTab()),
+
         ]
         
         # İlk sayfadaki sekmeleri göster
