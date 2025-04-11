@@ -97,7 +97,7 @@ class TeamManagementPanel(QWidget):
         
         # Ekip Düzenleme Butonu
         edit_team_btn = QPushButton(" Ekip Düzenle")
-        edit_team_btn.setIcon(QIcon(get_icon_path('edit-group.png')))
+        edit_team_btn.setIcon(QIcon(get_icon_path('edit.png')))
         edit_team_btn.setStyleSheet(DARK_BLUE_BUTTON_STYLE)
         edit_team_btn.clicked.connect(self.edit_team)
         

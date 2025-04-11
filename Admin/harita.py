@@ -60,12 +60,12 @@ class GoogleMapsWindow(QMainWindow):
             position: fixed;
             top: 0;
             left: -360px;
-            width: 360px;
+            width: 300px;
             height: 100%;
             background: linear-gradient(180deg, #ffffff, #f5f6f5);
             box-shadow: 6px 0 25px rgba(0,0,0,0.2);
             transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 30px;
+            padding: 20px;
             z-index: 1000;
             overflow-y: auto;
             border-radius: 0 15px 15px 0;
@@ -178,10 +178,10 @@ class GoogleMapsWindow(QMainWindow):
         }}
         #marker-toolbar {{
             position: fixed;
-            top: 30px;
-            right: 30px;
+            top: 15px;
+            right: 20px;
             z-index: 1001;
-            background: linear-gradient(135deg, #fff, #f5f6f5);
+            background: transparent;
             padding: 15px;
             border-radius: 12px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
@@ -195,7 +195,7 @@ class GoogleMapsWindow(QMainWindow):
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 10px;
             font-weight: 600;
             transition: all 0.3s;
             display: flex;

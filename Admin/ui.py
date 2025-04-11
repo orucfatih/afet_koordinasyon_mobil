@@ -82,7 +82,7 @@ class AfetYonetimAdmin(QMainWindow):
         message_btn = QToolButton()
         message_btn.setIcon(QIcon(get_icon_path('message.png')))
         message_btn.setIconSize(QSize(24, 24))
-        message_btn.setFixedSize(QSize(28, 28))
+        message_btn.setFixedSize(QSize(40, 40))
         message_btn.setToolTip("Mesajlar")
         message_btn.setStyleSheet(MESSAGE_BUTTON_STYLE)
         message_btn.clicked.connect(self.message_manager.show_message_dialog)
