@@ -1,7 +1,4 @@
-"""
-test amaçlıdır bu dosya içerikler kullanılmayacaktır
 
-"""
 
 
 

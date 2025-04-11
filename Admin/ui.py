@@ -13,7 +13,7 @@ from operation_management.operation_management import OperationManagementTab
 from message.message import MessageManager
 from utils import get_icon_path
 from equipment_management.equipment_management import EquipmentManagementTab
-from report.citizen_report import CitizenReportTab
+from citizen_death_report.citizen_report import CitizenReportTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):
