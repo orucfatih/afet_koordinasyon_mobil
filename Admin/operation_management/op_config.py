@@ -17,7 +17,7 @@ def get_env_file_path():
     # .env dosyası yoksa oluştur
     if not env_path.exists():
         with open(env_path, 'w', encoding='utf-8') as f:
-            f.write("# Google Maps API Key\nAPI_KEY=your_api_key_here\n")
+            f.write("# Google Maps API Key\nGOOGLE_MAPS_API_KEY=AIzaSyDCmRzP4rGm-oM8t1iD72xqCWWGpb-eTBM\n")
     
     return env_path
 
@@ -36,10 +36,11 @@ def load_api_key():
     env_path = get_env_file_path()
     load_dotenv(env_path)
     
-    api_key = os.getenv("API_KEY")
-    if not api_key or api_key == "your_api_key_here":
-        print("Uyarı: API anahtarı bulunamadı veya varsayılan değerde!")
-        print(f"Lütfen {env_path} dosyasına geçerli bir API anahtarı ekleyin.")
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        print("api key bulunamadi")
+    elif api_key=="AIzaSyDCmRzP4rGm-oM8t1iD72xqCWWGpb-eTBM":
+        print("api key bulundu")
     
     return api_key
 
