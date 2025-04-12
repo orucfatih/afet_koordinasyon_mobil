@@ -1241,4 +1241,24 @@ mesafeler = [
     [722, 991, 375, 1192, 454, 236, 639, 1084, 673, 379, 168, 1094, 1287, 45, 517, 228, 499, 280, 397, 560, 1146, 447, 993, 821, 1011, 245, 907, 713, 876, 1599, 913, 516, 715, 217, 553, 1211, 293, 554, 428, 420, 106, 490, 275, 895, 518, 827, 1232, 705, 1204, 511, 580, 669, 925, 69, 517, 1333, 465, 674, 349, 568, 850, 952, 1044, 414, 1422, 452, 114, 457, 911, 601, 311, 1246, 1415, 203, 1193, 1302, 171, 179, 966, 809, 0],
 ]
 
+# AFAD Lojistik Depoları
+DISTRIBUTION_CENTERS = [
+    "Adana", "Adıyaman", "Afyonkarahisar", "Balıkesir", "Bursa",
+    "Denizli", "Diyarbakır", "Elazığ", "Erzincan", "Erzurum",
+    "Kastamonu", "Manisa", "Kahramanmaraş", "Muğla", "Muş",
+    "Samsun", "Sivas", "Tekirdağ", "Aksaray", "Kırıkkale",
+    "Yalova", "Düzce"
+]
 
+
+if __name__ == "__main__":
+    # test için
+    sehir1 = input("1. şehri girin: ").capitalize()
+    sehir2 = input("2. şehri girin: ").capitalize()
+
+
+    i1 = iller.index(sehir1)
+    i2 = iller.index(sehir2)
+
+    # Mesafeyi yazdır
+    print(sehir1, "ile", sehir2, "arası mesafe:", mesafeler[i1][i2], "km")

@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                             QGridLayout, QMessageBox)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QPixmap
-from resources_management.sehirler_ve_ilceler import sehirler
+from simulations.sehirler_ve_ilceler import sehirler
 import os
 
 # Mevcut dosyanın bulunduğu dizini al
