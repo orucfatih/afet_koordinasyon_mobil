@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/Ionicons';
+import * as ImagePicker from 'react-native-image-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getAuth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
@@ -17,10 +17,7 @@ const CameraScreen = ({ navigation }) => {
 
   useEffect(() => {
     (async () => {
-      const { status } = await launchImageLibrary({
-        mediaType: 'photo',
-        includeBase64: false,
-      });
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
   }, []);
@@ -60,9 +57,11 @@ const CameraScreen = ({ navigation }) => {
   
   const takePicture = async () => {
     try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        includeBase64: false,
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        aspect: [3, 4],
+        quality: 1,
       });
   
       if (!result.canceled) {
@@ -70,28 +69,24 @@ const CameraScreen = ({ navigation }) => {
   
         try {
           //Kullanıcının konum izni olup olmadığını kontrol et
-          let { status } = await Geolocation.requestAuthorization('always');
+          let { status } = await Geolocation.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
             Alert.alert("Konum izni reddedildi", "Fotoğraf konum olmadan yüklenecek.");
           }
   
           //Konumu al
-          let location = await Geolocation.getCurrentPosition(
-            (position) => {
-              const coordinates = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude
-              };
+          let location = await Geolocation.getCurrentPositionAsync({});
+          const coordinates = {
+            latitude: location?.coords?.latitude || null,
+            longitude: location?.coords?.longitude || null
+          };
   
-              //Firebase'e fotoğrafı yükle ve konumu kaydet
-              uploadImageToFirebase(result.assets[0].uri, coordinates);
-            },
-            (error) => {
-              console.error('Konum alınırken hata oluştu:', error);
-              Alert.alert('Hata', 'Konum alınırken bir hata oluştu.');
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-          );
+          //Firebase'e fotoğrafı yükle ve konumu kaydet
+          const downloadURL = await uploadImageToFirebase(result.assets[0].uri, coordinates);
+  
+          Alert.alert('Başarılı', 'Fotoğraf çekildi ve başarıyla yüklendi.', [
+            { text: 'Tamam', onPress: () => navigation.goBack() }
+          ]);
         } catch (error) {
           Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu.');
         } finally {
@@ -111,10 +106,7 @@ const CameraScreen = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <Text style={styles.text}>Kamera izni gerekli</Text>
-        <TouchableOpacity style={styles.button} onPress={() => launchImageLibrary({
-          mediaType: 'photo',
-          includeBase64: false,
-        })}>
+        <TouchableOpacity style={styles.button} onPress={() => ImagePicker.requestCameraPermissionsAsync()}>
           <Text style={styles.buttonText}>İzin Ver</Text>
         </TouchableOpacity>
       </View>
@@ -125,7 +117,7 @@ const CameraScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Afet Bildirimi</Text>
       </View>
@@ -138,7 +130,7 @@ const CameraScreen = ({ navigation }) => {
           </View>
         ) : (
           <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-            <Icon name="camera" size={40} color="#fff" />
+            <Ionicons name="camera" size={40} color="#fff" />
             <Text style={styles.cameraButtonText}>Fotoğraf Çek</Text>
           </TouchableOpacity>
         )}

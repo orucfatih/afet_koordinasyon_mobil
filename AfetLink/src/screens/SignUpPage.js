@@ -10,10 +10,10 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { CustomButton, CustomTextInput, Loading, Agreement } from '../components';
+import { CustomButton, CustomTextInput, Loading, Agreement } from '../components/index.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { register } from '../redux/userSlice';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const SignUpPage = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -116,7 +116,7 @@ const SignUpPage = ({ navigation }) => {
               style={styles.eyeIcon}
               accessibilityLabel={secureText ? 'Şifreyi Göster' : 'Şifreyi Gizle'}
             >
-              <Icon name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
+              <Ionicons name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
             </TouchableOpacity>
           </View>
 
@@ -134,7 +134,7 @@ const SignUpPage = ({ navigation }) => {
               style={styles.eyeIcon}
               accessibilityLabel={secureText ? 'Şifreyi Göster' : 'Şifreyi Gizle'}
             >
-              <Icon name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
+              <Ionicons name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
             </TouchableOpacity>
           </View>
         </View>
@@ -142,7 +142,7 @@ const SignUpPage = ({ navigation }) => {
         {/* Kullanıcı Sözleşmesi */}
         <View style={styles.termsContainer}>
           <TouchableOpacity onPress={() => setIsTermsAccepted(!isTermsAccepted)}>
-            <Icon
+            <Ionicons
               name={isTermsAccepted ? 'checkbox' : 'square-outline'}
               size={24}
               color={isTermsAccepted ? '#1976D2' : '#666'}

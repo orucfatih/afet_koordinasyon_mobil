@@ -3,78 +3,67 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-na
 import { useDispatch, useSelector } from 'react-redux';
 import { getUser, logout } from '../redux/userSlice';
 import { Loading, CustomButton, UpdatePassword } from './index.js';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const ProfileScreen = () => {
   const dispatch = useDispatch();
-  const { user, loading } = useSelector(state => state.user);
-  const [isUpdatePasswordVisible, setIsUpdatePasswordVisible] = useState(false);
+
+  const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   useEffect(() => {
-    dispatch(getUser());
+    dispatch(getUser())
+      .unwrap()
+      .then((userData) => {
+        setName(userData.name || '');
+        setSurname(userData.surname || '');
+        setEmail(userData.email || '');
+        setPhone(userData.phone || '');
+      })
+      .catch((error) => console.log('Kullanıcı bilgileri alınırken hata:', error));
   }, [dispatch]);
 
+  const [updatingScreen, setUpdatingScreen] = useState(false);
+  const { isLoading } = useSelector((state) => state.user);
+
   const handleLogout = () => {
-    Alert.alert(
-      'Çıkış Yap',
-      'Çıkış yapmak istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel'
-        },
-        {
-          text: 'Çıkış Yap',
-          onPress: () => dispatch(logout())
-        }
-      ]
-    );
+    dispatch(logout());
   };
 
-  if (loading) {
+  if (isLoading) {
     return <Loading />;
+  }
+
+  if (updatingScreen) {
+    return <UpdatePassword setUpdatingScreen={setUpdatingScreen} />;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Image 
-          source={require('../../assets/images/deneme.png')} 
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Profil</Text>
-      </View>
+      <Image source={require('../../assets/images/user.png')} style={styles.profileImage} />
+      <Text style={styles.userName}>{name} {surname}</Text>
 
-      <View style={styles.profileInfo}>
-        <View style={styles.infoRow}>
-          <Icon name="envelope" size={20} color="#333" />
-          <Text style={styles.infoText}>{user?.email || 'E-posta bulunamadı'}</Text>
+      <View style={styles.infoContainer}>
+        <View style={styles.infoItem}>
+          <Ionicons name="mail" size={24} color="#007BFF" />
+          <Text style={styles.infoText}>{email}</Text>
         </View>
-        <View style={styles.infoRow}>
-          <Icon name="phone" size={20} color="#333" />
-          <Text style={styles.infoText}>{user?.phone || 'Telefon bulunamadı'}</Text>
+        <View style={styles.infoItem}>
+          <Ionicons name="call" size={24} color="#007BFF" />
+          <Text style={styles.infoText}>{phone}</Text>
         </View>
       </View>
 
-      <View style={styles.buttonContainer}>
-        <CustomButton
-          title="Şifre Değiştir"
-          onPress={() => setIsUpdatePasswordVisible(true)}
-        />
-        <CustomButton
-          title="Çıkış Yap"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-          icon={<Icon name="sign-out" size={20} color="#fff" />}
-        />
-      </View>
+      <TouchableOpacity style={styles.editButton} onPress={() => setUpdatingScreen(true)}>
+        <Text style={styles.editButtonText}>Şifre Yenile</Text>
+      </TouchableOpacity>
 
-      {isUpdatePasswordVisible && (
-        <UpdatePassword
-          visible={isUpdatePasswordVisible}
-          onClose={() => setIsUpdatePasswordVisible(false)}
-        />
-      )}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out" size={24} color="#fff" />
+        <Text style={styles.logoutText}>Çıkış Yap</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -84,41 +73,75 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  header: {
     alignItems: 'center',
-    marginBottom: 30,
+    justifyContent: 'center',
+    backgroundColor: '#f4f4f4',
+    paddingHorizontal: 20,
   },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 10,
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: '#2E86C1',
   },
-  title: {
-    fontSize: 24,
+  userName: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 10,
   },
-  profileInfo: {
-    marginBottom: 30,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  infoContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
     marginBottom: 15,
   },
-  infoText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#333',
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  buttonContainer: {
-    marginTop: 20,
+  infoText: {
+    fontSize: 16,
+    color: '#555',
+    marginLeft: 10,
+  },
+  editButton: {
+    backgroundColor: '#1976D2',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logoutButton: {
-    backgroundColor: '#dc3545',
-    marginTop: 10,
+    backgroundColor: '#D32F2F',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });

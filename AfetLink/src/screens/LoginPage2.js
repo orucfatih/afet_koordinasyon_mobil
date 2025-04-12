@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { Loading, CustomTextInput, CustomButton, Agreement } from '../components/index.js';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading, staffLogin, staffAutoLogin } from '../redux/userSlice.js';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const generateCaptcha = () => {
   return Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 karakterlik captcha
@@ -80,7 +80,7 @@ const LoginPage2 = ({ navigation }) => {
     >
             {/* Geri Butonu */}
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AraMenu")}>
-        <Icon name="arrow-back" size={24} color="black" />
+        <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Hoşgeldiniz</Text>
 
@@ -111,7 +111,7 @@ const LoginPage2 = ({ navigation }) => {
             style={styles.eyeIcon}
             accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}
           >
-            <Icon name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
           </TouchableOpacity>
         </View>
       </View>
@@ -120,7 +120,7 @@ const LoginPage2 = ({ navigation }) => {
       <View style={styles.captchaContainer}>
         <Text style={styles.captchaCode}>{captchaCode}</Text>
         <TouchableOpacity onPress={() => setCaptchaCode(generateCaptcha())} style={styles.refreshCaptcha}>
-    <Icon name="refresh-circle" size={30} color="#007BFF" />
+    <Ionicons name="refresh-circle" size={30} color="#007BFF" />
   </TouchableOpacity>
       </View>
       
@@ -134,7 +134,7 @@ const LoginPage2 = ({ navigation }) => {
       <View style={styles.termsContainer}>
   {/* Checkbox */}
   <TouchableOpacity onPress={() => setIsTermsAccepted(!isTermsAccepted)}>
-    <Icon
+    <Ionicons
       name={isTermsAccepted ? 'checkbox-outline' : 'square-outline'}
       size={24}
       color="#007BFF"

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView} from 'react-native'
 import React from 'react'
-import Icon from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccepted}) => {
   return (
@@ -9,7 +9,7 @@ const Agreement = ({isTermsModalVisible, setIsTermsModalVisible, setIsTermsAccep
             <View style={styles.modalContent}>
             {/* Kapatma Butonu */}
             <TouchableOpacity style={styles.closeButton} onPress={() => setIsTermsModalVisible(false)}>
-                <Icon name="close" size={24} color="black" />
+                <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
 
             {/* Başlık */}

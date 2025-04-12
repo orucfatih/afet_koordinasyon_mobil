@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -55,13 +55,13 @@ const SettingsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.whistleButton} onPress={() => setHornModalVisible(true)}>
-          <Icon name="bullhorn" size={25} color="white" style={styles.icon} />
+          <Ionicons name="megaphone" size={25} color="white" style={styles.icon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
           <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.info} onPress={() => setInfoModalVisible(true)}>
-          <Icon name="info-circle" size={25} color="white" style={styles.icon} />
+          <Ionicons name="information-circle" size={25} color="white" style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -107,46 +107,33 @@ const SettingsScreen = ({ navigation }) => {
 
       <View style={styles.settingsContainer}>
         <View style={styles.settingItem}>
-          <View style={styles.settingLabel}>
-            <Icon name="bell" size={20} color="#555" style={styles.icon} />
-            <Text style={styles.settingText}>Notifications</Text>
+          <View style={styles.settingLeft}>
+            <Ionicons name="notifications" size={24} color="#007BFF" />
+            <Text style={styles.settingText}>Bildirimler</Text>
           </View>
-          <Switch
-            trackColor={{ false: 'gray', true: '#D32F2F' }}
-            thumbColor={isNotificationsEnabled ? 'white' : 'white'}
-            onValueChange={toggleNotifications}
-            value={isNotificationsEnabled}
-          />
+          <Switch value={isNotificationsEnabled} onValueChange={toggleNotifications} />
         </View>
 
         <View style={styles.settingItem}>
-          <View style={styles.settingLabel}>
-            <Icon name="map-marker" size={20} color="#555" style={styles.icon} />
-            <Text style={styles.settingText}>Location Services</Text>
+          <View style={styles.settingLeft}>
+            <Ionicons name="location" size={24} color="#007BFF" />
+            <Text style={styles.settingText}>Konum Servisleri</Text>
           </View>
-          <Switch
-            trackColor={{ false: 'gray', true: '#D32F2F' }}
-            thumbColor={isLocationEnabled ? 'white' : 'white'}
-            onValueChange={toggleLocation}
-            value={isLocationEnabled}
-          />
+          <Switch value={isLocationEnabled} onValueChange={toggleLocation} />
         </View>
 
         <View style={styles.settingItem}>
-          <View style={styles.settingLabel}>
-            <Icon name="sync" size={20} color="#555" style={styles.icon} />
-            <Text style={styles.settingText}>Auto Updates</Text>
+          <View style={styles.settingLeft}>
+            <Ionicons name="sync" size={24} color="#007BFF" />
+            <Text style={styles.settingText}>Verileri Senkronize Et</Text>
           </View>
-          <Switch
-            trackColor={{ false: 'gray', true: '#D32F2F' }}
-            thumbColor={isAutoUpdatesEnabled ? 'white' : 'white'}
-            onValueChange={toggleAutoUpdates}
-            value={isAutoUpdatesEnabled}
-          />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
-          <Text style={styles.saveButtonText}>Save Settings</Text>
+        <TouchableOpacity style={styles.settingItem} onPress={handleSaveSettings}>
+          <View style={styles.settingLeft}>
+            <Ionicons name="save" size={24} color="#007BFF" />
+            <Text style={styles.settingText}>Save Settings</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -196,7 +183,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },
-  settingLabel: {
+  settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },

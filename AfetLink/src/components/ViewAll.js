@@ -7,10 +7,9 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const ViewAll = ({ navigation }) => {
   const [earthquakeData, setEarthquakeData] = useState([]);
@@ -103,7 +102,7 @@ const ViewAll = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={24} color="white" />
+          <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
       </View>
@@ -118,6 +117,9 @@ const ViewAll = ({ navigation }) => {
         keyExtractor={(item) => item.id}
         style={styles.earthquakeList}
       />
+
+      {/* Dalga efekti yerine basit bir View */}
+      <View style={[styles.dalga, { backgroundColor: '#808080', height: 2 }]} />
     </View>
   );
 };
@@ -206,6 +208,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
+  },
+  dalga: {
+    width: '100%',
+    marginVertical: 10,
+    opacity: 0.5
   },
   earthquakeList: {},
 });

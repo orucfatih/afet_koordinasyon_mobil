@@ -1,26 +1,28 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const AraMenu = () => {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.button} 
+                  {/* Geri Butonu */}
+                  <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AnaMenu")}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => alert('E-devlet ile giriş henüz uygulanmadı.')}
+      >
+        <Text style={styles.buttonText}>E-devlet ile giriş</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.button}
         onPress={() => navigation.navigate('LoginPage')}
       >
-        <Icon name="person" size={24} color="#333" />
-        <Text style={styles.buttonText}>Giriş Yap</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => navigation.navigate('SignUpPage')}
-      >
-        <Icon name="person-add" size={24} color="#333" />
-        <Text style={styles.buttonText}>Kayıt Ol</Text>
+        <Text style={styles.buttonText}>E-mail ile giriş</Text>
       </TouchableOpacity>
     </View>
   );
@@ -31,21 +33,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
+  },
+  backButton: {
+    position: "absolute",
+    top: 40, // Üstten boşluk
+    left: 20, // Soldan boşluk
+    padding: 10,
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
+    backgroundColor: 'red', // Arka plan rengi
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     width: '80%',
+    borderRadius: 8,
+    marginVertical: 10,
   },
   buttonText: {
-    marginLeft: 10,
+    color: 'white', // Yazı rengi
     fontSize: 16,
-    color: '#333',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
