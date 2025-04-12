@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from .logistics_calculator import LogisticsCalculator
 from .monte_carlo import DisasterSimulation
-from .sehirler_ve_ilceler import sehirler, DISTRIBUTION_CENTERS
+from .sehirler_ve_ilceler import sehirler, DISTRIBUTION_CENTERS, bolgelere_gore_iller
 
 class ResultDialog(QDialog):
     """Simülasyon sonuçlarını gösteren dialog"""
@@ -176,7 +176,7 @@ class SimulationTab(QWidget):
         layout.addWidget(self.progress_bar)
         
         # Simülasyon başlatma butonu
-        start_btn = QPushButton("Simülasyonu Başlat")
+        start_btn = QPushButton("Dağıtımı Simüle Et")
         start_btn.clicked.connect(self.run_resource_simulation)
         layout.addWidget(start_btn)
         
@@ -189,33 +189,84 @@ class SimulationTab(QWidget):
         return tab
 
     def populate_city_tree(self):
-        """Şehir ağacını doldur"""
+        """Şehir ağacını bölgelere göre doldur"""
         self.city_tree.clear()
         
-        for city, districts in sehirler.items():
-            city_item = QTreeWidgetItem(self.city_tree)
-            city_item.setText(0, city)
-            city_item.setFlags(city_item.flags() | Qt.ItemIsUserCheckable)
-            city_item.setCheckState(0, Qt.Unchecked)
+        # Önce bölgeleri ekle
+        for bolge, bolge_sehirleri in bolgelere_gore_iller.items():
+            bolge_item = QTreeWidgetItem(self.city_tree)
+            bolge_item.setText(0, bolge)
+            bolge_item.setFlags(bolge_item.flags() | Qt.ItemIsUserCheckable)
+            bolge_item.setCheckState(0, Qt.Unchecked)
             
-            for district, population in districts.items():
-                district_item = QTreeWidgetItem(city_item)
-                district_item.setText(0, f"{district} ({population:,} kişi)")
-                district_item.setFlags(district_item.flags() | Qt.ItemIsUserCheckable)
-                district_item.setCheckState(0, Qt.Unchecked)
-                # Nüfus bilgisini data olarak sakla
-                district_item.setData(0, Qt.UserRole, population)
+            # Bölgedeki şehirleri ekle
+            for sehir in sorted(bolge_sehirleri):
+                if sehir in sehirler:
+                    sehir_item = QTreeWidgetItem(bolge_item)
+                    sehir_item.setText(0, sehir)
+                    sehir_item.setFlags(sehir_item.flags() | Qt.ItemIsUserCheckable)
+                    sehir_item.setCheckState(0, Qt.Unchecked)
+                    
+                    # Şehrin ilçelerini ekle
+                    for ilce, nufus in sorted(sehirler[sehir].items()):
+                        ilce_item = QTreeWidgetItem(sehir_item)
+                        ilce_item.setText(0, f"{ilce} ({nufus:,} kişi)")
+                        ilce_item.setFlags(ilce_item.flags() | Qt.ItemIsUserCheckable)
+                        ilce_item.setCheckState(0, Qt.Unchecked)
+                        ilce_item.setData(0, Qt.UserRole, nufus)
 
     def on_district_selection_changed(self, item, column):
-        """Şehir veya ilçe seçimi değiştiğinde"""
-        if item.parent() is None:  # Şehir seçimi
-            city = item.text(0)
+        """Bölge, şehir veya ilçe seçimi değiştiğinde"""
+        # Sinyal döngüsünü engellemek için
+        self.city_tree.blockSignals(True)
+        
+        if item.parent() is None:  # Bölge seçimi
             check_state = item.checkState(0)
-            
-            # Tüm ilçeleri seç/kaldır
+            # Tüm şehirleri ve ilçeleri seç/kaldır
             for i in range(item.childCount()):
-                district_item = item.child(i)
-                district_item.setCheckState(0, check_state)
+                sehir_item = item.child(i)
+                sehir_item.setCheckState(0, check_state)
+                for j in range(sehir_item.childCount()):
+                    ilce_item = sehir_item.child(j)
+                    ilce_item.setCheckState(0, check_state)
+        
+        elif item.parent().parent() is None:  # Şehir seçimi
+            check_state = item.checkState(0)
+            # Önce tüm ilçelerin durumunu güncelle
+            for i in range(item.childCount()):
+                ilce_item = item.child(i)
+                ilce_item.setCheckState(0, check_state)
+            
+            # Bölgenin durumunu kontrol et ve güncelle
+            bolge_item = item.parent()
+            tum_sehirler_secili = True
+            for i in range(bolge_item.childCount()):
+                if bolge_item.child(i).checkState(0) != Qt.Checked:
+                    tum_sehirler_secili = False
+                    break
+            bolge_item.setCheckState(0, Qt.Checked if tum_sehirler_secili else Qt.Unchecked)
+        
+        else:  # İlçe seçimi
+            # Şehrin durumunu kontrol et ve güncelle
+            sehir_item = item.parent()
+            tum_ilceler_secili = True
+            for i in range(sehir_item.childCount()):
+                if sehir_item.child(i).checkState(0) != Qt.Checked:
+                    tum_ilceler_secili = False
+                    break
+            sehir_item.setCheckState(0, Qt.Checked if tum_ilceler_secili else Qt.Unchecked)
+            
+            # Bölgenin durumunu kontrol et ve güncelle
+            bolge_item = sehir_item.parent()
+            tum_sehirler_secili = True
+            for i in range(bolge_item.childCount()):
+                if bolge_item.child(i).checkState(0) != Qt.Checked:
+                    tum_sehirler_secili = False
+                    break
+            bolge_item.setCheckState(0, Qt.Checked if tum_sehirler_secili else Qt.Unchecked)
+        
+        # Sinyalleri tekrar etkinleştir
+        self.city_tree.blockSignals(False)
         
         # Seçili bölgeleri güncelle
         self.update_selected_areas()
@@ -231,33 +282,41 @@ class SimulationTab(QWidget):
         if selected_depot:
             text += f"AFAD Lojistik Deposu: {selected_depot}\n\n"
         
+        # Bölgeleri dolaş
         for i in range(self.city_tree.topLevelItemCount()):
-            city_item = self.city_tree.topLevelItem(i)
-            city = city_item.text(0)
+            bolge_item = self.city_tree.topLevelItem(i)
+            bolge = bolge_item.text(0)
             
-            selected_districts = []
-            for j in range(city_item.childCount()):
-                district_item = city_item.child(j)
-                if district_item.checkState(0) == Qt.Checked:
-                    district_name = district_item.text(0).split(" (")[0]
-                    population = district_item.data(0, Qt.UserRole)
-                    self.selected_districts[(city, district_name)] = population
-                    self.total_population += population
-                    selected_districts.append(f"{district_name} ({population:,} kişi)")
-            
-            if selected_districts:
-                # Şehir ve seçili ilçeleri göster
-                text += f"{city}:\n"
-                text += "\n".join(f"  - {d}" for d in selected_districts)
+            selected_cities = []
+            for j in range(bolge_item.childCount()):
+                sehir_item = bolge_item.child(j)
+                sehir = sehir_item.text(0)
                 
-                # Depo seçili ise mesafe bilgisini ekle
-                if selected_depot:
-                    try:
-                        distance = self.logistics_calculator.get_distance(selected_depot, city)
-                        text += f"\n  Depoya uzaklık: {distance} km"
-                    except ValueError:
-                        text += "\n  Depoya uzaklık: Hesaplanamadı"
-                text += "\n\n"
+                selected_districts = []
+                for k in range(sehir_item.childCount()):
+                    ilce_item = sehir_item.child(k)
+                    if ilce_item.checkState(0) == Qt.Checked:
+                        ilce_name = ilce_item.text(0).split(" (")[0]
+                        population = ilce_item.data(0, Qt.UserRole)
+                        self.selected_districts[(sehir, ilce_name)] = population
+                        self.total_population += population
+                        selected_districts.append(f"{ilce_name} ({population:,} kişi)")
+                
+                if selected_districts:
+                    if not selected_cities:
+                        text += f"{bolge}:\n"
+                    selected_cities.append(sehir)
+                    text += f"  {sehir}:\n"
+                    text += "\n".join(f"    - {d}" for d in selected_districts)
+                    
+                    # Depo seçili ise mesafe bilgisini ekle
+                    if selected_depot:
+                        try:
+                            distance = self.logistics_calculator.get_distance(selected_depot, sehir)
+                            text += f"\n    Depoya uzaklık: {distance} km"
+                        except ValueError:
+                            text += "\n    Depoya uzaklık: Hesaplanamadı"
+                    text += "\n\n"
         
         self.selected_areas_text.setText(text)
         self.total_population_label.setText(f"Toplam Nüfus: {self.total_population:,} kişi")
@@ -309,6 +368,41 @@ class SimulationTab(QWidget):
         tab = QWidget()
         layout = QVBoxLayout()
         
+        # Üst kısım - Şehir seçimi ve toplam nüfus
+        top_layout = QHBoxLayout()
+        
+        # Sol taraf - Şehir ağacı
+        city_group = QGroupBox("Afet Bölgeleri")
+        city_layout = QVBoxLayout()
+        
+        # Önce ağacı oluştur
+        self.impact_city_tree = QTreeWidget()
+        self.impact_city_tree.setHeaderLabel("Şehirler ve İlçeler")
+        self.impact_city_tree.setMinimumHeight(300)
+        
+        city_layout.addWidget(self.impact_city_tree)
+        city_group.setLayout(city_layout)
+        top_layout.addWidget(city_group)
+        
+        # Sağ taraf - Seçim özeti
+        summary_group = QGroupBox("Seçim Özeti")
+        summary_layout = QVBoxLayout()
+        
+        self.impact_selected_areas_text = QTextEdit()
+        self.impact_selected_areas_text.setReadOnly(True)
+        self.impact_selected_areas_text.setMinimumHeight(100)
+        
+        self.impact_total_population_label = QLabel("Toplam Nüfus: 0")
+        self.impact_total_population_label.setFont(QFont('Arial', 10, QFont.Bold))
+        
+        summary_layout.addWidget(self.impact_selected_areas_text)
+        summary_layout.addWidget(self.impact_total_population_label)
+        
+        summary_group.setLayout(summary_layout)
+        top_layout.addWidget(summary_group)
+        
+        layout.addLayout(top_layout)
+        
         # Afet parametreleri grubu
         params_group = QGroupBox("Afet Parametreleri")
         params_layout = QFormLayout()
@@ -323,11 +417,6 @@ class SimulationTab(QWidget):
         self.intensity.setRange(1, 10)
         self.intensity.setValue(7)
         params_layout.addRow("Afet Şiddeti (1-10):", self.intensity)
-        
-        # Bölge seçimi
-        self.region_combo = QComboBox()
-        self.region_combo.addItems(sehirler.keys())
-        params_layout.addRow("Etkilenen Bölge:", self.region_combo)
         
         # Nüfus yoğunluğu
         self.population_density = QSpinBox()
@@ -353,37 +442,152 @@ class SimulationTab(QWidget):
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
         
-        # Simülasyon sonuçları grubu
-        impact_results_group = QGroupBox("Simülasyon Sonuçları")
-        impact_results_layout = QVBoxLayout()
-        
-        self.impact_results_text = QTextEdit()
-        self.impact_results_text.setReadOnly(True)
-        self.impact_results_text.setMinimumHeight(200)
-        impact_results_layout.addWidget(self.impact_results_text)
-        
-        impact_results_group.setLayout(impact_results_layout)
-        layout.addWidget(impact_results_group)
-        
         # İlerleme çubuğu
         self.impact_progress_bar = QProgressBar()
         self.impact_progress_bar.setVisible(False)
         layout.addWidget(self.impact_progress_bar)
         
         # Simülasyon başlatma butonu
-        impact_start_btn = QPushButton("Simülasyonu Başlat")
+        impact_start_btn = QPushButton("Afeti Simüle Et")
         impact_start_btn.clicked.connect(self.run_impact_simulation)
         layout.addWidget(impact_start_btn)
         
         tab.setLayout(layout)
+        
+        # Tüm widget'lar oluşturulduktan sonra ağacı doldur ve sinyali bağla
+        self.populate_impact_city_tree()
+        self.impact_city_tree.itemChanged.connect(self.on_impact_district_selection_changed)
+        
         return tab
+
+    def populate_impact_city_tree(self):
+        """Afet etki simülasyonu için şehir ağacını bölgelere göre doldur"""
+        self.impact_city_tree.clear()
+        
+        # Önce bölgeleri ekle
+        for bolge, bolge_sehirleri in bolgelere_gore_iller.items():
+            bolge_item = QTreeWidgetItem(self.impact_city_tree)
+            bolge_item.setText(0, bolge)
+            bolge_item.setFlags(bolge_item.flags() | Qt.ItemIsUserCheckable)
+            bolge_item.setCheckState(0, Qt.Unchecked)
+            
+            # Bölgedeki şehirleri ekle
+            for sehir in sorted(bolge_sehirleri):
+                if sehir in sehirler:
+                    sehir_item = QTreeWidgetItem(bolge_item)
+                    sehir_item.setText(0, sehir)
+                    sehir_item.setFlags(sehir_item.flags() | Qt.ItemIsUserCheckable)
+                    sehir_item.setCheckState(0, Qt.Unchecked)
+                    
+                    # Şehrin ilçelerini ekle
+                    for ilce, nufus in sorted(sehirler[sehir].items()):
+                        ilce_item = QTreeWidgetItem(sehir_item)
+                        ilce_item.setText(0, f"{ilce} ({nufus:,} kişi)")
+                        ilce_item.setFlags(ilce_item.flags() | Qt.ItemIsUserCheckable)
+                        ilce_item.setCheckState(0, Qt.Unchecked)
+                        ilce_item.setData(0, Qt.UserRole, nufus)
+
+    def on_impact_district_selection_changed(self, item, column):
+        """Afet etki simülasyonu için bölge, şehir veya ilçe seçimi değiştiğinde"""
+        # Sinyal döngüsünü engellemek için
+        self.impact_city_tree.blockSignals(True)
+        
+        if item.parent() is None:  # Bölge seçimi
+            check_state = item.checkState(0)
+            # Tüm şehirleri ve ilçeleri seç/kaldır
+            for i in range(item.childCount()):
+                sehir_item = item.child(i)
+                sehir_item.setCheckState(0, check_state)
+                for j in range(sehir_item.childCount()):
+                    ilce_item = sehir_item.child(j)
+                    ilce_item.setCheckState(0, check_state)
+        
+        elif item.parent().parent() is None:  # Şehir seçimi
+            check_state = item.checkState(0)
+            # Önce tüm ilçelerin durumunu güncelle
+            for i in range(item.childCount()):
+                ilce_item = item.child(i)
+                ilce_item.setCheckState(0, check_state)
+            
+            # Bölgenin durumunu kontrol et ve güncelle
+            bolge_item = item.parent()
+            tum_sehirler_secili = True
+            for i in range(bolge_item.childCount()):
+                if bolge_item.child(i).checkState(0) != Qt.Checked:
+                    tum_sehirler_secili = False
+                    break
+            bolge_item.setCheckState(0, Qt.Checked if tum_sehirler_secili else Qt.Unchecked)
+        
+        else:  # İlçe seçimi
+            # Şehrin durumunu kontrol et ve güncelle
+            sehir_item = item.parent()
+            tum_ilceler_secili = True
+            for i in range(sehir_item.childCount()):
+                if sehir_item.child(i).checkState(0) != Qt.Checked:
+                    tum_ilceler_secili = False
+                    break
+            sehir_item.setCheckState(0, Qt.Checked if tum_ilceler_secili else Qt.Unchecked)
+            
+            # Bölgenin durumunu kontrol et ve güncelle
+            bolge_item = sehir_item.parent()
+            tum_sehirler_secili = True
+            for i in range(bolge_item.childCount()):
+                if bolge_item.child(i).checkState(0) != Qt.Checked:
+                    tum_sehirler_secili = False
+                    break
+            bolge_item.setCheckState(0, Qt.Checked if tum_sehirler_secili else Qt.Unchecked)
+        
+        # Sinyalleri tekrar etkinleştir
+        self.impact_city_tree.blockSignals(False)
+        
+        # Seçili bölgeleri güncelle
+        self.update_impact_selected_areas()
+
+    def update_impact_selected_areas(self):
+        """Afet etki simülasyonu için seçili bölgeleri ve toplam nüfusu güncelle"""
+        total_population = 0
+        text = ""
+        
+        # Bölgeleri dolaş
+        for i in range(self.impact_city_tree.topLevelItemCount()):
+            bolge_item = self.impact_city_tree.topLevelItem(i)
+            bolge = bolge_item.text(0)
+            
+            selected_cities = []
+            for j in range(bolge_item.childCount()):
+                sehir_item = bolge_item.child(j)
+                sehir = sehir_item.text(0)
+                
+                selected_districts = []
+                for k in range(sehir_item.childCount()):
+                    ilce_item = sehir_item.child(k)
+                    if ilce_item.checkState(0) == Qt.Checked:
+                        ilce_name = ilce_item.text(0).split(" (")[0]
+                        population = ilce_item.data(0, Qt.UserRole)
+                        total_population += population
+                        selected_districts.append(f"{ilce_name} ({population:,} kişi)")
+                
+                if selected_districts:
+                    if not selected_cities:
+                        text += f"{bolge}:\n"
+                    selected_cities.append(sehir)
+                    text += f"  {sehir}:\n"
+                    text += "\n".join(f"    - {d}" for d in selected_districts)
+                    text += "\n\n"
+        
+        self.impact_selected_areas_text.setText(text)
+        self.impact_total_population_label.setText(f"Toplam Nüfus: {total_population:,} kişi")
 
     def run_impact_simulation(self):
         """Afet etki simülasyonunu başlat"""
+        # Seçili bölge kontrolü
+        if self.impact_selected_areas_text.toPlainText().strip() == "":
+            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir bölge seçin!")
+            return
+        
         # Simülasyon parametrelerini al
         disaster_type = self.disaster_type.currentText()
         intensity = self.intensity.value()
-        region = self.region_combo.currentText()
         population = self.population_density.value()
         building_quality = self.building_quality.value()
         iterations = self.impact_iterations.value()
@@ -392,16 +596,14 @@ class SimulationTab(QWidget):
         self.impact_progress_bar.setVisible(True)
         self.impact_progress_bar.setValue(0)
         
-        # Simülasyon sonuçlarını göster (örnek)
-        results = (
-            f"Afet Türü: {disaster_type}\n"
-            f"Şiddet: {intensity}\n"
-            f"Bölge: {region}\n\n"
-            "Tahmini Etki:\n"
-            "- Bu kısım daha sonra doldurulacak\n"
-            "- Monte Carlo simülasyonu eklenecek\n"
-            "- Bina hasarları ve can kayıpları hesaplanacak"
-        )
+        try:
+            # Sonuç penceresini göster
+            dialog = ResultDialog(self)
+            dialog.result_text.setText("Afet etki simülasyonu sonuçları burada gösterilecek")
+            dialog.exec_()
+            
+        except Exception as e:
+            QMessageBox.warning(self, "Hata", f"Simülasyon çalıştırılırken hata oluştu: {str(e)}")
         
-        self.impact_results_text.setText(results)
-        self.impact_progress_bar.setVisible(False) 
+        finally:
+            self.impact_progress_bar.setVisible(False) 

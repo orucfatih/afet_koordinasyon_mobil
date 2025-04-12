@@ -1250,6 +1250,39 @@ DISTRIBUTION_CENTERS = [
     "Yalova", "Düzce"
 ]
 
+bolgelere_gore_iller = {
+    "Akdeniz": [
+        "Adana", "Antalya", "Burdur", "Hatay", "Isparta", "Mersin", 
+        "Kahramanmaraş", "Osmaniye"
+    ],
+    "Doğu Anadolu": [
+        "Ağrı", "Ardahan", "Bitlis", "Elazığ", "Erzincan", "Erzurum", 
+        "Hakkari", "Iğdır", "Kars", "Malatya", "Muş", "Tunceli", "Van"
+    ],
+    "Ege": [
+        "Afyonkarahisar", "Aydın", "Denizli", "İzmir", "Kütahya", 
+        "Manisa", "Muğla", "Uşak"
+    ],
+    "Güneydoğu Anadolu": [
+        "Adıyaman", "Batman", "Diyarbakır", "Gaziantep", "Kilis", 
+        "Mardin", "Siirt", "Şanlıurfa", "Şırnak"
+    ],
+    "İç Anadolu": [
+        "Aksaray", "Ankara", "Çankırı", "Eskişehir", "Karaman", 
+        "Kayseri", "Kırıkkale", "Kırşehir", "Konya", "Nevşehir", 
+        "Niğde", "Sivas", "Yozgat"
+    ],
+    "Karadeniz": [
+        "Amasya", "Artvin", "Bartın", "Bayburt", "Bolu", "Çorum", 
+        "Düzce", "Giresun", "Gümüşhane", "Karabük", "Kastamonu", 
+        "Ordu", "Rize", "Samsun", "Sinop", "Tokat", "Trabzon", "Zonguldak"
+    ],
+    "Marmara": [
+        "Balıkesir", "Bilecik", "Bursa", "Çanakkale", "Edirne", 
+        "İstanbul", "Kırklareli", "Kocaeli", "Sakarya", "Tekirdağ", "Yalova"
+    ]
+}
+
 
 if __name__ == "__main__":
     # test için
