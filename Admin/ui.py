@@ -14,6 +14,7 @@ from message.message import MessageManager
 from utils import get_icon_path
 from equipment_management.equipment_management import EquipmentManagementTab
 from citizen_death_report.citizen_report import CitizenReportTab
+from simulations.simulate import SimulationTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):
@@ -100,7 +101,6 @@ class AfetYonetimAdmin(QMainWindow):
         self.all_tabs = [
             ("Operasyon Yönetimi", OperationManagementTab()),
             ("STK Yönetimi", STKYonetimTab()),
-
             ("Rapor", RaporYonetimTab()),
             ("Personel Yönetim", PersonelYonetimTab()),
             ("Kayıp Vatandaş Tespiti", MissingPersonDetectionTab()),
@@ -111,14 +111,12 @@ class AfetYonetimAdmin(QMainWindow):
             ("Gönüllü Yönetimi", CitizenReportTab()),
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
-
             ("Geçici İskan Planlama", CitizenReportTab()),
             ("Kitlesel SMS/Bildirim Sistemi", CitizenReportTab()),
-            ("Senaryo Simülasyonu", CitizenReportTab()),
+            ("Senaryo Simülasyonu", SimulationTab()),
             ("Finansal Yönetim", CitizenReportTab()),
             ("Vatandaş Feedback Sistemi", CitizenReportTab()),
             ("Bina Hasar Tespit Yönetimi", CitizenReportTab()),
-
         ]
         
         # İlk sayfadaki sekmeleri göster

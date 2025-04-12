@@ -79,16 +79,11 @@ class KaynakYonetimUI:
         """İşlem butonlarını oluşturur"""
         buttons_layout = QHBoxLayout()
         
-        self.simulate_btn = QPushButton("Simüle Et")
-        self.simulate_btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
-        self.simulate_btn.setIcon(QIcon(get_icon_path('simulate.png')))
-        
         self.export_excel_btn = QPushButton("Excel'e Aktar")
         self.export_excel_btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
         self.export_excel_btn.setIcon(QIcon(get_icon_path('excel.png')))
         
-        for btn in [self.simulate_btn, self.export_excel_btn]:
-            buttons_layout.addWidget(btn)
+        buttons_layout.addWidget(self.export_excel_btn)
         
         self.left_layout.addLayout(buttons_layout)
 

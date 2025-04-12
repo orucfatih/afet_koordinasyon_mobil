@@ -4,7 +4,7 @@ Mesafeler karayolu üzerinden km cinsindendir.
 """
 
 from typing import Dict, List, Tuple
-from .sehirler_ve_ilceler import sehirler, mesafeler
+from .sehirler_ve_ilceler import sehirler, mesafeler, iller
 
 class LogisticsCalculator:
     def __init__(self):
@@ -28,11 +28,9 @@ class LogisticsCalculator:
     
     def get_distance(self, city1: str, city2: str) -> int:
         """İki şehir arasındaki mesafeyi döndür"""
-        # Şehir indekslerini bul
-        city_list = list(sehirler.keys())
         try:
-            idx1 = city_list.index(city1)
-            idx2 = city_list.index(city2)
+            idx1 = iller.index(city1)
+            idx2 = iller.index(city2)
             return mesafeler[idx1][idx2]
         except (ValueError, IndexError):
             raise ValueError(f"Mesafe verisi bulunamadı: {city1} - {city2}")

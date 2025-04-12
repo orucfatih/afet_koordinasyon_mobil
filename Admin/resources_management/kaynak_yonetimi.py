@@ -4,7 +4,6 @@ from datetime import datetime
 import xlsxwriter
 import os
 from .kaynak_yonetimi_ui import KaynakYonetimUI
-from .simulate import SimulationDialog
 from sample_data import RESOURCE_DATA
 
 class KaynakYonetimTab(QWidget):
@@ -22,15 +21,9 @@ class KaynakYonetimTab(QWidget):
         self.ui.add_button.clicked.connect(self.add_resource)
         self.ui.search_input.textChanged.connect(self.filter_resources)
         self.ui.filter_combo.currentTextChanged.connect(self.filter_resources)
-        self.ui.simulate_btn.clicked.connect(self.show_simulation_dialog)
         self.ui.export_excel_btn.clicked.connect(self.export_resources)
         self.ui.resource_table.itemClicked.connect(self.show_resource_details)
         self.ui.distribute_button.clicked.connect(self.distribute_resources)
-
-    def show_simulation_dialog(self):
-        """Simülasyon penceresini gösterir"""
-        dialog = SimulationDialog(self)
-        dialog.exec_()
 
     def add_resource(self):
         """Yeni kaynak ekler"""
