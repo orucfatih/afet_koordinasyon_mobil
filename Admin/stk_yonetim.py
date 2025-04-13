@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout,
                            QTextEdit, QComboBox,
                            QGroupBox, QLineEdit,
                            QFormLayout, QTableWidget, QTableWidgetItem, 
-                           QMessageBox, )
+                           QMessageBox, QHeaderView)
 from styles.styles_dark import *
 from styles.styles_light import *
 from PyQt5.QtGui import QIcon, QColor
@@ -71,6 +71,8 @@ class STKYonetimTab(QWidget):
         self.ngo_table.setColumnCount(6)
         self.ngo_table.setHorizontalHeaderLabels(["STK Adı", "Tür", "İletişim", "Kapasite", "Bölge", "Durum"])
         self.ngo_table.itemClicked.connect(self.show_ngo_details)
+        self.ngo_table.horizontalHeader().setStretchLastSection(True)
+        self.ngo_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         
         list_layout.addWidget(self.ngo_table)
         ngo_list_group.setLayout(list_layout)

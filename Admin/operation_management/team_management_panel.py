@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QFormLayout, QHeaderView
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QBrush, QColor
 
 # Local imports
 from sample_data import TEAM_DATA
@@ -152,6 +152,12 @@ class TeamManagementPanel(QWidget):
                     new_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
                     new_item.setData(Qt.UserRole, firebase_id)  # Firebase ID'sini koru
                     
+                    # Duruma göre arka plan rengini ayarla
+                    if new_status == "Meşgul":
+                        new_item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                    else:
+                        new_item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                    
                     # Değişikliği uygula
                     self.team_list.setItem(row, column, new_item)
                     
@@ -211,9 +217,14 @@ class TeamManagementPanel(QWidget):
                         item = QTableWidgetItem(str(data))
                         item.setTextAlignment(Qt.AlignCenter)
                         
-                        # Durum sütunu için salt okunur yap
+                        # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                         if col == 3:  # Durum sütunu
                             item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                            # Duruma göre arka plan rengini belirle
+                            if data == "Meşgul":
+                                item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                            else:
+                                item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
                         
                         # Firebase ID'sini gizli veri olarak sakla
                         item.setData(Qt.UserRole, firebase_id)
@@ -267,9 +278,14 @@ class TeamManagementPanel(QWidget):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
                 
-                # Durum sütunu için salt okunur yap
+                # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                    # Duruma göre arka plan rengini belirle
+                    if data == "Meşgul":
+                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                    else:
+                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
                 
                 self.team_list.setItem(row, col, item)
             
@@ -343,9 +359,14 @@ class TeamManagementPanel(QWidget):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
                 
-                # Durum sütunu için salt okunur yap
+                # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                    # Duruma göre arka plan rengini belirle
+                    if data == "Meşgul":
+                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                    else:
+                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
                 
                 # Firebase ID'sini sakla
                 item.setData(Qt.UserRole, firebase_id)
@@ -467,9 +488,14 @@ class TeamManagementPanel(QWidget):
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
                 
-                # Durum sütunu için salt okunur yap
+                # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                    # Duruma göre arka plan rengini belirle
+                    if data == "Meşgul":
+                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                    else:
+                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
                 
                 # Firebase ID'sini koru
                 item.setData(Qt.UserRole, firebase_id)
