@@ -5,26 +5,50 @@ Mesafeler karayolu üzerinden km cinsindendir.
 
 from typing import Dict, List, Tuple
 from .sehirler_ve_ilceler import sehirler, mesafeler, iller
+from .logistic_vehicle_const import lojistik_araclar, RESOURCE_UNITS
 
 class LogisticsCalculator:
     def __init__(self):
         self.depot_capacities: Dict[str, Dict[str, int]] = {}
-        self._initialize_data()
+        self.depot_vehicles: Dict[str, Dict[str, int]] = {}  # {depot: {"Hafif Tonaj": count, ...}}
     
-    def _initialize_data(self):
-        """Başlangıç verilerini yükle"""
-        # Depo kapasiteleri (her kaynak türü için)
-        self.depot_capacities = {
-            "Adana": {
-                "Su": 1000000,  # Litre
-                "Gıda": 500000,  # Kg
-                "İlaç": 100000,  # Kutu
-                "Çadır": 10000,  # Adet
-                "Battaniye": 50000,  # Adet
-                "Diğer": 100000  # Adet
-            },
-            # Diğer depolar için benzer veriler eklenecek
-        }
+    def add_depot(self, depot: str, capacities: Dict[str, int], vehicles: Dict[str, int]) -> None:
+        """Yeni bir depo ekle veya mevcut depo kapasitelerini güncelle"""
+        # Sadece geçerli kaynak türlerini kabul et
+        valid_capacities = {k: v for k, v in capacities.items() if k in RESOURCE_UNITS}
+        self.depot_capacities[depot] = valid_capacities
+        
+        # Sadece geçerli araç türlerini kabul et
+        valid_vehicles = {k: v for k, v in vehicles.items() if k in lojistik_araclar}
+        self.depot_vehicles[depot] = valid_vehicles
+    
+    def remove_depot(self, depot: str) -> None:
+        """Bir depoyu kaldır"""
+        if depot in self.depot_capacities:
+            del self.depot_capacities[depot]
+        if depot in self.depot_vehicles:
+            del self.depot_vehicles[depot]
+    
+    def get_all_depots(self) -> List[str]:
+        """Tüm depoları döndür"""
+        return list(self.depot_capacities.keys())
+    
+    def get_depot_capacity(self, depot: str, resource_type: str) -> int:
+        """Deponun belirli bir kaynak türü için kapasitesini döndür"""
+        if depot in self.depot_capacities and resource_type in self.depot_capacities[depot]:
+            return self.depot_capacities[depot][resource_type]
+        
+        # Varsayılan değerler - en büyük araç kapasitesinin 50 katı
+        if resource_type in RESOURCE_UNITS:
+            max_capacity = max(vehicle[resource_type] for vehicle in lojistik_araclar.values())
+            return max_capacity * 50
+        return 10000
+    
+    def get_depot_vehicles(self, depot: str) -> Dict[str, int]:
+        """Deponun araç kapasitelerini döndür"""
+        if depot in self.depot_vehicles:
+            return self.depot_vehicles[depot]
+        return {vehicle_type: 0 for vehicle_type in lojistik_araclar.keys()}
     
     def get_distance(self, city1: str, city2: str) -> int:
         """İki şehir arasındaki mesafeyi döndür"""
@@ -70,21 +94,4 @@ class LogisticsCalculator:
         min_time = base_time + loading_time + unloading_time
         max_time = min_time * 1.5  # %50 gecikme payı
         
-        return (min_time, max_time)
-    
-    def get_depot_capacity(self, depot: str, resource_type: str) -> int:
-        """Deponun belirli bir kaynak türü için kapasitesini döndür"""
-        if depot in self.depot_capacities and resource_type in self.depot_capacities[depot]:
-            return self.depot_capacities[depot][resource_type]
-        
-        # Varsayılan değerler
-        default_capacities = {
-            "Su": 500000,
-            "Gıda": 250000,
-            "İlaç": 50000,
-            "Çadır": 5000,
-            "Battaniye": 25000,
-            "Diğer": 50000
-        }
-        
-        return default_capacities.get(resource_type, 10000) 
+        return (min_time, max_time) 

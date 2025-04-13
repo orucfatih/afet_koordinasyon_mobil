@@ -1260,7 +1260,7 @@ bolgelere_gore_iller = {
         "Hakkari", "Iğdır", "Kars", "Malatya", "Muş", "Tunceli", "Van"
     ],
     "Ege": [
-        "Afyonkarahisar", "Aydın", "Denizli", "İzmir", "Kütahya", 
+        "Afyonkarahisar", "Aydın", "Denizli", "Izmir", "Kütahya", 
         "Manisa", "Muğla", "Uşak"
     ],
     "Güneydoğu Anadolu": [
@@ -1279,7 +1279,7 @@ bolgelere_gore_iller = {
     ],
     "Marmara": [
         "Balıkesir", "Bilecik", "Bursa", "Çanakkale", "Edirne", 
-        "İstanbul", "Kırklareli", "Kocaeli", "Sakarya", "Tekirdağ", "Yalova"
+        "Istanbul", "Kırklareli", "Kocaeli", "Sakarya", "Tekirdağ", "Yalova"
     ]
 }
 

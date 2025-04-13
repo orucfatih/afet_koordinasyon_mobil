@@ -14,7 +14,7 @@ from message.message import MessageManager
 from utils import get_icon_path
 from equipment_management.equipment_management import EquipmentManagementTab
 from citizen_death_report.citizen_report import CitizenReportTab
-from simulations.simulate import SimulationTab
+from simulations.simulation_tabs import SimulationTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):

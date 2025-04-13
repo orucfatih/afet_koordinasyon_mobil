@@ -133,20 +133,21 @@ class KaynakYonetimUI:
         self.resource_amount = QLineEdit()
         self.resource_amount.setMinimumWidth(min_width)
         
-        self.resource_location = QLineEdit()
+        self.resource_location = QComboBox()
         self.resource_location.setMinimumWidth(min_width)
         
         # Form alanları stilleri
-        for widget in [self.resource_name, self.resource_amount, self.resource_location]:
+        for widget in [self.resource_name, self.resource_amount]:
             widget.setStyleSheet(RESOURCE_INPUT_STYLE)
         
-        self.resource_type.setStyleSheet(COMBO_BOX_STYLE)
+        for widget in [self.resource_type, self.resource_location]:
+            widget.setStyleSheet(COMBO_BOX_STYLE)
         
         # Form alanlarını ekle
         form_layout.addRow("Kaynak Adı:", self.resource_name)
         form_layout.addRow("Kaynak Tipi:", self.resource_type)
         form_layout.addRow("Miktar:", self.resource_amount)
-        form_layout.addRow("Konum:", self.resource_location)
+        form_layout.addRow("Lojistik Merkez:", self.resource_location)
         
         # Ekle butonu
         self.add_button = QPushButton("Kaynak Ekle")
