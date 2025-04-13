@@ -1,10 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QWidget, QTableWidgetItem, QMessageBox, QFileDialog, QCompleter
 from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 from datetime import datetime
 import xlsxwriter
 import os
 from .kaynak_yonetimi_ui import KaynakYonetimUI
 from sample_data import RESOURCE_DATA
+from simulations.sehirler_ve_ilceler import DISTRIBUTION_CENTERS, bolgelere_gore_iller
 
 class KaynakYonetimTab(QWidget):
     """Kaynak Yönetim Sekmesi"""
@@ -14,7 +16,25 @@ class KaynakYonetimTab(QWidget):
         self.ui.setup_ui(self)
         self.setup_connections()
         self.distribution_history = []
+        self.setup_location_data()
         self.load_sample_resources()
+
+    def setup_location_data(self):
+        """Konum verilerini ayarla"""
+        # Lojistik merkezleri combo box'a ekle
+        self.ui.resource_location.clear()
+        self.ui.resource_location.addItems(DISTRIBUTION_CENTERS)
+        
+        # Tüm illeri bir listede topla
+        self.cities = []
+        for region_cities in bolgelere_gore_iller.values():
+            self.cities.extend(region_cities)
+        self.cities.sort()
+        
+        # Hedef şehir için autocomplete
+        completer = QCompleter(self.cities)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.ui.dist_location.setCompleter(completer)
 
     def setup_connections(self):
         """Signal-slot bağlantılarını kur"""
@@ -30,7 +50,7 @@ class KaynakYonetimTab(QWidget):
         name = self.ui.resource_name.text()
         resource_type = self.ui.resource_type.currentText()
         amount = self.ui.resource_amount.text()
-        location = self.ui.resource_location.text()
+        location = self.ui.resource_location.currentText()
         
         if name and amount and location:
             row_position = self.ui.resource_table.rowCount()
