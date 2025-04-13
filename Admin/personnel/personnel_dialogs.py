@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QTextEdit, QPushButton, QDialogButtonBox,
                            QLabel, QFormLayout, QHBoxLayout, QGroupBox, QTextBrowser,
-                           QComboBox, QMessageBox, QListWidget, QLineEdit)
+                           QComboBox, QMessageBox, QListWidget, QLineEdit, QWidget)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QDateTime
 from .constants import PERSONNEL_TABLE_HEADERS
@@ -200,46 +200,141 @@ class BasePersonnelDialog(QDialog):
             style=RED_BUTTON_STYLE, 
             on_click=self.reject
         )
-        
         btn_layout.addWidget(kaydet_btn)
         btn_layout.addWidget(iptal_btn)
-        layout.addRow(btn_layout)
+        
+        # QFormLayout için düzgün şekilde bir satır olarak ekleyin
+        btn_container = QWidget()
+        btn_container.setLayout(btn_layout)
+        layout.addRow("", btn_container)
     
     def save_personnel_data(self):
+        """Personel bilgilerini kaydeder"""
         try:
-            self.personnel_data = PersonnelFormFields.collect_personnel_info(self.input_fields)
-            self.personnel_data["status"] = self.status_combo.currentText()
-            self.personnel_data["last_update"] = QDateTime.currentDateTime().toString("dd.MM.yyyy HH:mm")
-
-            if not self.personnel_data.get('name') or not self.personnel_data.get('phone'):
+            personnel_info = PersonnelFormFields.collect_personnel_info(self.input_fields)
+            personnel_info['status'] = self.status_combo.currentText()
+            
+            # Boş alan kontrolü
+            if not personnel_info.get('name') or not personnel_info.get('phone'):
                 QMessageBox.warning(self, "Uyarı", "İsim ve telefon alanları zorunludur!")
-                return False
-
-            current_team = PersonnelStateManager.get_current_team()
-            print(f"Saving personnel for team: {current_team}") 
-            if not current_team:
-                QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
-                return False
-
-            ref = firebase_db.reference(f'teams/{current_team}/members')
-
-            new_personnel = {
-                'name': self.personnel_data['name'],
-                'phone': self.personnel_data['phone'],
-                'status': self.personnel_data['status'],
-                'last_update': self.personnel_data['last_update']
+                return
+            
+            # Şu anki ekip ID'sini al
+            current_team_id = PersonnelStateManager.get_current_team()
+            
+            if not current_team_id:
+                QMessageBox.warning(self, "Hata", "Ekip bilgisi bulunamadı. Lütfen bir ekip seçin.")
+                return
+            
+            # Firebase referansı
+            teams_ref = firebase_db.reference(f'/teams/{current_team_id}')
+            team_data = teams_ref.get()
+            
+            if not team_data:
+                QMessageBox.warning(self, "Hata", "Ekip bilgisi bulunamadı.")
+                return
+            
+            # Tarih bilgisini ekle
+            current_time = QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+            
+            # Personel türkçe ve ingilizce alanlar için hazırlama
+            personnel_info_tr = {
+                'adSoyad': personnel_info.get('name', ''),
+                'telefon': personnel_info.get('phone', ''),
+                'evTelefonu': personnel_info.get('home_phone', ''),
+                'ePosta': personnel_info.get('email', ''),
+                'adres': personnel_info.get('address', ''),
+                'unvan': personnel_info.get('title', ''),
+                'uzmanlik': personnel_info.get('specialization', ''),
+                'tecrube': personnel_info.get('experience', ''),
+                'sonGuncelleme': current_time
             }
-
-            ref.push(new_personnel)
-            QMessageBox.information(self, "Başarılı", "Personel başarıyla kaydedildi!")
-            return True
-
+            
+            personnel_info_en = {
+                'name': personnel_info.get('name', ''),
+                'phone': personnel_info.get('phone', ''),
+                'home_phone': personnel_info.get('home_phone', ''),
+                'email': personnel_info.get('email', ''),
+                'address': personnel_info.get('address', ''),
+                'title': personnel_info.get('title', ''),
+                'specialization': personnel_info.get('specialization', ''),
+                'experience': personnel_info.get('experience', ''),
+                'status': personnel_info.get('status', 'AFAD'),
+                'last_update': current_time
+            }
+            
+            # Ekibin 'members' alanını kontrol et
+            if 'members' not in team_data:
+                # Members yoksa boş liste yap
+                team_data['members'] = []
+                teams_ref.update({'members': []})
+            
+            members = team_data['members']
+            
+            # Düzenleme ya da ekleme işlemi
+            if self.personnel:  # Düzenleme modu
+                if isinstance(members, list):
+                    updated = False
+                    for i, member in enumerate(members):
+                        # Türkçe veya İngilizce isimle eşleşme kontrolü
+                        if (member.get('adSoyad') == self.personnel.get('name') or 
+                            member.get('name') == self.personnel.get('name')):
+                            # Listedeki ilgili üyeyi güncelle
+                            members[i] = personnel_info_tr
+                            updated = True
+                            break
+                    
+                    # Güncelleme yapılmadıysa, yeni ekle
+                    if not updated:
+                        members.append(personnel_info_tr)
+                        
+                    # Listeyi Firebase'e gönder
+                    teams_ref.update({'members': members})
+                        
+                elif isinstance(members, dict):
+                    # Dict yapısındaysa güncelleme
+                    member_id = None
+                    for mid, member in members.items():
+                        if member.get('name') == self.personnel.get('name'):
+                            member_id = mid
+                            break
+                    
+                    if member_id:
+                        teams_ref.child('members').child(member_id).update(personnel_info_en)
+                    else:
+                        # Bulunamadıysa yeni ID ile ekle
+                        new_id = firebase_db.reference('/').push().key
+                        teams_ref.child('members').child(new_id).set(personnel_info_en)
+                else:
+                    # Yapı bozuksa düzelt
+                    teams_ref.update({'members': [personnel_info_tr]})
+            else:  # Yeni personel ekleme modu
+                if isinstance(members, list):
+                    # Liste yapısındaysa sonuna ekle
+                    members.append(personnel_info_tr)
+                    teams_ref.update({'members': members})
+                elif isinstance(members, dict) or members == {}:
+                    # Dict yapısındaysa yeni ID ile ekle
+                    new_id = firebase_db.reference('/').push().key
+                    teams_ref.child('members').child(new_id).set(personnel_info_en)
+                else:
+                    # Yapı bozuksa düzelt
+                    teams_ref.update({'members': [personnel_info_tr]})
+            
+            QMessageBox.information(self, "Başarılı", "Personel bilgileri kaydedildi!")
+            self.accept()
+            
         except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Kayıt sırasında hata oluştu: {str(e)}")
-            return False
+            print(f"Kaydetme hatası: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Hata", f"Personel kaydedilirken hata oluştu: {str(e)}")
     
     def get_personnel_data(self):
-        return self.personnel_data
+        """Form alanlarındaki personel bilgilerini döndürür"""
+        result = PersonnelFormFields.collect_personnel_info(self.input_fields)
+        result['status'] = self.status_combo.currentText()
+        return result
 
 
 class PersonnelFormFields:

@@ -136,11 +136,14 @@ Son Güncelleme: 15:30
 
     def load_sample_resources(self):
         """Örnek kaynak verilerini yükler"""
-        for data in RESOURCE_DATA:
+        for row_index, data in enumerate(RESOURCE_DATA):
             row_position = self.ui.resource_table.rowCount()
             self.ui.resource_table.insertRow(row_position)
+            
             for column, value in enumerate(data):
-                self.ui.resource_table.setItem(row_position, column, QTableWidgetItem(value))
+                item = QTableWidgetItem(value)
+                item.setForeground(QColor("#E1E1E6"))
+                self.ui.resource_table.setItem(row_position, column, item)
 
     def filter_resources(self):
         """Kaynakları filtreler"""

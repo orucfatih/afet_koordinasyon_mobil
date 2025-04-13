@@ -4,18 +4,18 @@
 
 
 # Dark tema renkleri ve stil tanımları
-DARK_BACKGROUND = "#2c3e50"
-DARK_TEXT_COLOR = "#ffffff"
-DARK_INPUT_BG = "rgba(255, 255, 255, 0.1)"
-DARK_INPUT_FOCUS_BG = "rgba(255, 255, 255, 0.2)"
-DARK_BUTTON_BG = "#3498db"
-DARK_BUTTON_HOVER_BG = "#2980b9"
+DARK_BACKGROUND = "#191622"
+DARK_TEXT_COLOR = "#E1E1E6"
+DARK_INPUT_BG = "rgba(33, 32, 44, 0.8)"
+DARK_INPUT_FOCUS_BG = "rgba(41, 40, 55, 0.9)"
+DARK_BUTTON_BG = "#500073"
+DARK_BUTTON_HOVER_BG = "#3f005a"
 
 # Login page stil tanımları
 LOGIN_DARK_STYLES = """
     QWidget {
-        background-color: #1a1a1a;
-        color: #ffffff;
+        background-color:rgb(29, 27, 38);
+        color: #E1E1E6;
         font-family: 'Segoe UI', sans-serif;
     }
     
@@ -24,11 +24,11 @@ LOGIN_DARK_STYLES = """
     }
     
     #logoLabel {
-        color: #4CAF50;
+        color:rgb(190, 9, 21);
     }
     
     #titleLabel {
-        color: #ffffff;
+        color: #E1E1E6;
     }
     
     #inputContainer {
@@ -36,24 +36,24 @@ LOGIN_DARK_STYLES = """
     }
     
     QLineEdit {
-        background-color: #2d2d2d;
-        border: 2px solid #2d2d2d;
+        background-color: #201c2b;
+        border: 2px solid #201c2b;
         border-radius: 8px;
         padding: 5px 15px;
-        color: #ffffff;
+        color: #E1E1E6;
         font-size: 14px;
     }
     
     QLineEdit:focus {
-        border: 2px solid #4CAF50;
+        border: 2px solid #500073;
     }
     
     QLineEdit::placeholder {
-        color: #808080;
+        color: #6c6a7c;
     }
     
     #loginButton {
-        background-color: #4CAF50;
+        background-color:rgb(195, 6, 50);
         border: none;
         border-radius: 8px;
         color: white;
@@ -61,11 +61,11 @@ LOGIN_DARK_STYLES = """
     }
     
     #loginButton:hover {
-        background-color: #45a049;
+        background-color:rgb(90, 11, 11);
     }
     
     #loginButton:pressed {
-        background-color: #3d8b40;
+        background-color:rgb(106, 9, 15);
     }
     
     #themeContainer {
@@ -73,21 +73,21 @@ LOGIN_DARK_STYLES = """
     }
 
     #ngoSection {
-        background-color: #2d2d2d;
+        background-color: #201c2b;
         border-radius: 15px;
         padding: 20px;
         margin-top: 20px;
     }
 
     QFrame[objectName^="ngoContainer"] {
-        background-color: #1a1a1a;
+        background-color: #13111b;
         border-radius: 10px;
         padding: 15px;
         margin: 5px;
     }
 
     QLabel[objectName^="ngoLabel"] {
-        color: #ffffff;
+        color: #E1E1E6;
         font-size: 12px;
         font-weight: bold;
         margin-top: 10px;
@@ -105,8 +105,8 @@ LOGIN_DARK_STYLES = """
 DARK_THEME_STYLE = """
     /* Genel arka plan */
     QWidget {
-        background-color: #1e1e1e; /* Koyu siyah ton */
-        color: white; /* Yazı rengi */
+        background-color: #13111b; /* Koyu arkaplan */
+        color: #E1E1E6; /* Yazı rengi */
     }
     """
 
@@ -115,23 +115,23 @@ DARK_THEME_STYLE = """
 # Buton stilleri (Daha açık siyah ton)
 BUTTON_STYLE = """
     QPushButton {
-        background-color: #2a2a2a; /* Daha açık bir siyah */
-        color: white;
+        background-color: #201c2b; /* Daha açık bir koyu ton */
+        color: #E1E1E6;
         padding: 8px 16px;
         border-radius: 4px;
-        border: 1px solid #444; /* İnce gri kenarlık */
+        border: 1px solid #2d2b38; /* İnce kenarlık */
     }
     QPushButton:hover {
-        background-color: #444; /* Hover efekti */
+        background-color: #2d2b38; /* Hover efekti */
     }
     QPushButton:pressed {
-        background-color: #009999; /* Tıklandığında turkuaz */
+        background-color:rgb(97, 11, 134); /* Tıklandığında mor */
     }
 """
 
 GREEN_BUTTON_STYLE = """
     QPushButton {
-        background-color: #2ecc71;
+        background-color:rgb(19, 188, 109);
         color: white;
         border: none;
         border-radius: 5px;
@@ -139,17 +139,17 @@ GREEN_BUTTON_STYLE = """
         font-size: 14px;
     }
     QPushButton:hover {
-        background-color: #27ae60;
+        background-color:rgb(13, 170, 113);
     }
     QPushButton:pressed {
-        background-color: #219a52;
+        background-color: #1ca163;
     }
 """
 
 
 RED_BUTTON_STYLE = """
     QPushButton {
-        background-color: #e74c3c;
+        background-color: #e95678;
         color: white;
         border: none;
         border-radius: 5px;
@@ -157,16 +157,16 @@ RED_BUTTON_STYLE = """
         font-size: 14px;
     }
     QPushButton:hover {
-        background-color: #c0392b;
+        background-color: #d44d6e;
     }
     QPushButton:pressed {
-        background-color: #a93226;
+        background-color: #c04465;
     }
 """
 # Koyu Mavi Buton (Profesyonel)
 DARK_BLUE_BUTTON_STYLE = """
     QPushButton {
-        background-color: #3498db;
+        background-color: #5e78e6;
         color: white;
         border: none;
         border-radius: 5px;
@@ -174,32 +174,32 @@ DARK_BLUE_BUTTON_STYLE = """
         font-size: 14px;
     }
     QPushButton:hover {
-        background-color: #2980b9;
+        background-color: #4c66d4;
     }
     QPushButton:pressed {
-        background-color: #2471a3;
+        background-color: #4055c2;
     }
 """
 
 REFRESH_BUTTON_STYLE = """
     QPushButton {
-        background-color: #4CAF50;
+        background-color: #37da25;
         color: white;
         padding: 5px 10px;
         border-radius: 4px;
     }
     QPushButton:hover {
-        background-color: #45a049;
+        background-color: #10c947;
     }
 """
 
 # Liste widget stilleri (Daha açık arka plan)
 LIST_WIDGET_STYLE = """
     QListWidget {
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         border-radius: 5px;
         border: none;
-        color: white;
+        color: #E1E1E6;
         padding: 5px;
     }
     QListWidget::item {
@@ -208,20 +208,20 @@ LIST_WIDGET_STYLE = """
         margin: 2px;
     }
     QListWidget::item:hover {
-        background-color: #3a3a3a;
+        background-color: #2d2b38;
     }
     QListWidget::item:selected {
-        background-color: #404040;
+        background-color: #500073;
     }
 """
 
 # ComboBox stilleri
 COMBOBOX_STYLE = """
     QComboBox {
-        background-color: #262a3c;
-        color: white;
+        background-color: #201c2b;
+        color: #E1E1E6;
         padding: 5px;
-        border: 1px solid #3a3f55;
+        border: 1px solid #2d2b38;
         border-radius: 4px;
     }
     QComboBox::drop-down {
@@ -237,10 +237,10 @@ COMBOBOX_STYLE = """
 # LineEdit stilleri
 LINE_EDIT_STYLE = """
     QLineEdit {
-        background-color: #2e2e2e;
-        color: white;
+        background-color: #201c2b;
+        color: #E1E1E6;
         padding: 5px;
-        border: 1px solid #555;
+        border: 1px solid #2d2b38;
         border-radius: 4px;
     }
 """
@@ -248,82 +248,82 @@ LINE_EDIT_STYLE = """
 # TextEdit stilleri
 TEXT_EDIT_STYLE = """
     QTextEdit {
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         border: none;
         border-radius: 5px;
         padding: 8px;
-        color: white;
+        color: #E1E1E6;
         font-size: 14px;
     }
     QTextEdit:focus {
-        background-color: #333333;
+        background-color: #2d2b38;
     }
 """
 
 # Dialog içindeki TextEdit stilleri
 DIALOG_TEXT_STYLE = """
     QTextEdit {
-        background-color: #282829;
+        background-color: #201c2b;
         padding: 10px;
-        border: 1px solid #3a3f55;
+        border: 1px solid #2d2b38;
     }
 """
 
 # Label stilleri
-TITLE_LABEL_STYLE = "font-size: 14px; font-weight: bold; color: white;"
+TITLE_LABEL_STYLE = "font-size: 14px; font-weight: bold; color: #E1E1E6;"
 
 #Map stilleri
 MAP_STYLE = """
 QLabel {
-    background-color: #2b2b2b;  /* Koyu arka plan */
-    color: #f0f0f0;            /* Açık yazı rengi */
-    font-size: 18px;           /* Orta boy yazı */
-    font-weight: bold;         /* Kalın yazı */
-    padding: 10px;             /* İçerik boşluğu */
-    border: 2px solid #444;    /* İnce çerçeve */
-    border-radius: 10px;       /* Yumuşak köşeler */
-    text-align: center;        /* Metin ortalama */
+    background-color: #191622;
+    color: #E1E1E6;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+    border: 2px solid #2d2b38;
+    border-radius: 10px;
+    text-align: center;
 }
 """
 
 
 # Dialog bilgi label stilleri
-DIALOG_INFO_LABEL_STYLE = "color: white; background-color: #262a3c; padding: 10px;"
+DIALOG_INFO_LABEL_STYLE = "color: #E1E1E6; background-color: #201c2b; padding: 10px;"
 
 # Tab menü (Daha açık arka plan tonları ve turkuaz seçim rengi)
 TAB_WIDGET_STYLE = """
     QTabWidget {
-        background-color: #007070;
+        background-color: #500073;
     }
     QTabWidget::pane {
-        border: 1px solid #444;
-        background-color: #1e1e1e;
+        border: 1px solid #2d2b38;
+        background-color: #13111b;
         top: -1px;
     }
     QTabBar {
-        background-color: #1e1e1e;
+        background-color: #13111b;
     }
     QTabBar::tab {
-        background-color: #2a2a2a;
-        color: white;
+        background-color: #201c2b;
+        color: #E1E1E6;
         padding: 8px 0px;
-        border: 1px solid #444;
+        border: 1px solid #2d2b38;
         border-bottom: none;
         border-top-left-radius: 4px;
         border-top-right-radius: 4px;
     }
     QTabBar::tab:selected {
-        background-color: #009999;
+        background-color: #500073;
         margin-bottom: -1px;
     }
     QTabBar::tab:hover {
-        background-color: #444;
+        background-color: #3f005a;
     }
     QTabBar::tab:!selected {
         margin-top: 2px;
     }
     QTabWidget > QWidget > QWidget {
-        background: #1e1e1e;
+        background: #13111b;
     }
 """
 
@@ -338,7 +338,7 @@ MESSAGE_BUTTON_STYLE = """
         background-color: transparent;
     }
     QToolButton:hover {
-        background-color: #009999; /* Turkuaz hover rengi */
+        background-color: #500073;
     }
 """
 
@@ -346,88 +346,88 @@ MESSAGE_BUTTON_STYLE = """
 # Tablo widget stilleri (Başlık ve hücre renkleri düzenlendi)
 TABLE_WIDGET_STYLE = """
     QTableWidget {
-        background-color: #1e1e1e; /* Genel arka plan */
-        color: white; /* Yazı rengi */
+        background-color: #13111b;
+        color: #E1E1E6;
         border: none;
     }
     QTableWidget::item {
-        background-color: #2e2e2e; /* Hücre arka planı */
-        color: white;
-        border: 1px solid #555; /* Hücre kenarlıkları */
+        background-color: #201c2b;
+        color: #E1E1E6;
+        border: 1px solid #2d2b38;
     }
     QTableWidget::item:selected {
-        background-color: #009999; /* Seçili hücre arka planı */
+        background-color: #500073;
         color: white;
     }
     QTableWidget::item:hover {
-        background-color: #444; /* Hover efekti */
+        background-color: #2d2b38;
     }
     QTableWidget::item:focus {
-        border: 2px solid #009999; /* Seçili hücre kenarlığı */
+        border: 2px solid #500073;
     }
     QHeaderView::section {
-        background-color: #2e2e2e; /* Başlık arka planı */
-        color: white; /* Başlık yazı rengi */
+        background-color: #201c2b;
+        color: #E1E1E6;
         font-weight: bold;
         padding: 5px;
-        border: 1px solid #3a3f55; /* Başlık kenarlığı */
+        border: 1px solid #2d2b38;
     }
     QTableCornerButton::section {
-        background-color: #2e2e2e; /* Sol üst köşe hücresinin rengi */
-        border: 1px solid #3a3f55;
+        background-color: #201c2b;
+        border: 1px solid #2d2b38;
     }
 """
 
 #Takım Ağacı Stilleri
 TEAM_TREE_STYLE = """
     QTreeWidget {
-        background-color: #1e1e1e; /* Genel arka plan (daha koyu siyah) */
-        border: 1px solid #3a3f55; /* Kenarlık */
-        color: white; /* Yazı rengi */
+        background-color: #13111b;
+        border: 1px solid #2d2b38;
+        color: #E1E1E6;
     }
     QTreeWidget::item {
-        background-color: #2a2a2a; /* Hücre arka planı (daha açık siyah) */
-        padding: 5px; /* Hücre içi boşluk */
-        border-bottom: 1px solid #3a3f55; /* Alt çizgi */
-        color: white;
+        background-color: #201c2b;
+        padding: 5px;
+        border-bottom: 1px solid #2d2b38;
+        color: #E1E1E6;
     }
     QTreeWidget::item:selected {
-        background-color: #009999; /* Seçili hücre arka planı (turkuaz ton) */
+        background-color: #500073;
         color: white;
     }
     QTreeWidget::item:hover {
-        background-color: #444; /* Hover efekti (gri ton) */
+        background-color: #2d2b38;
     }
     QHeaderView::section {
-        background-color: #2e2e2e; /* Başlık arka planı */
-        color: white; /* Başlık yazı rengi */
+        background-color: #201c2b;
+        color: #E1E1E6;
         font-weight: bold;
         padding: 5px;
-        border: 1px solid #3a3f55; /* Başlık kenarlığı */
+        border: 1px solid #2d2b38;
     }
 """
 
 # Arama ve filtreleme stilleri
 SEARCH_BOX_STYLE = """
     QLineEdit {
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         border: none;
         border-radius: 5px;
         padding: 8px;
-        color: white;
+        color: #E1E1E6;
         font-size: 14px;
     }
     QLineEdit:focus {
-        background-color: #333333;
+        background-color: #2d2b38;
     }
 """
 
 COMBO_BOX_STYLE = """
     QComboBox {
-        background-color: #2e2e2e;
-        color: white;
+        background-color: #201c2b;
+        color: #E1E1E6;
         padding: 5px;
-        border: 1px solid #555;
+        border: 1px solid #2d2b38;
         border-radius: 3px;
     }
     QComboBox::drop-down {
@@ -442,10 +442,10 @@ COMBO_BOX_STYLE = """
 
 HEADER_STYLE = """
     QHeaderView::section {
-        background-color: #2e2e2e;
-        color: white;
+        background-color: #201c2b;
+        color: #E1E1E6;
         padding: 5px;
-        border: 1px solid #3a3f55;
+        border: 1px solid #2d2b38;
         font-weight: bold;
     }
 """
@@ -453,7 +453,7 @@ HEADER_STYLE = """
 # Düzenle butonu için özel mavi stil
 EDIT_BUTTON_STYLE = """
 QPushButton {
-    background-color: #2980b9;
+    background-color: #5e78e6;
     color: white;
     border: none;
     padding: 5px 15px;
@@ -461,17 +461,17 @@ QPushButton {
     font-weight: bold;
 }
 QPushButton:hover {
-    background-color: #3498db;
+    background-color: #4c66d4;
 }
 QPushButton:pressed {
-    background-color: #2475a8;
+    background-color: #4055c2;
 }
 """
 
 # İletişim butonları için özel turuncu stil
 COMMUNICATION_BUTTON_STYLE = """
 QPushButton {
-    background-color: #d35400;
+    background-color: #f7b267;
     color: white;
     border: none;
     padding: 5px 15px;
@@ -479,17 +479,17 @@ QPushButton {
     font-weight: bold;
 }
 QPushButton:hover {
-    background-color: #e67e22;
+    background-color: #f8a250;
 }
 QPushButton:pressed {
-    background-color: #c44e00;
+    background-color: #f69133;
 }
 """
 
 # Kaynak Yönetimi Arama Widget Stili
 SEARCH_WIDGET_STYLE = """
     QWidget {
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         border-radius: 8px;
         padding: 10px;
         margin-top: 10px;
@@ -501,12 +501,12 @@ RESOURCE_INPUT_STYLE = """
     QLineEdit {
         padding: 8px;
         border-radius: 4px;
-        background: #333;
-        color: white;
-        border: 1px solid #555;
+        background: #191622;
+        color: #E1E1E6;
+        border: 1px solid #2d2b38;
     }
     QLineEdit:focus {
-        border: 1px solid #009688;
+        border: 1px solid #500073;
     }
 """
 
@@ -515,47 +515,56 @@ RESOURCE_BUTTON_STYLE = """
     QPushButton {
         padding: 10px;
         border-radius: 5px;
-        background: #2a2a2a;
-        color: white;
-        border: 1px solid #009688;
+        background: #201c2b;
+        color: #E1E1E6;
+        border: 1px solid #de2525;
     }
     QPushButton:hover {
-        background: #009688;
+        background: #bc2131;
     }
 """
 
 # Kaynak Yönetimi Tablo Stili
 RESOURCE_TABLE_STYLE = """
     QTableWidget {
-        background-color: #2a2a2a;
+        background-color: #13111b;
         border-radius: 8px;
         padding: 5px;
-        gridline-color: #444;
+        gridline-color: #2d2b38;
     }
     QTableWidget::item {
         padding: 8px;
-        border-bottom: 1px solid #444;
+        border-bottom: 1px solid #2d2b38;
+        color: #E1E1E6;
+        background-color: #201c2b;
+    }
+    QTableWidget::item:alternate {
+        background-color: #191622;
     }
     QHeaderView::section {
-        background-color: #009688;
+        background-color: #0d00a6;
         padding: 8px;
         border: none;
         font-weight: bold;
+        color: white;
     }
 """
 
 # Kaynak Yönetimi GroupBox Stili
 RESOURCE_GROUP_STYLE = """
     QGroupBox {
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         border-radius: 8px;
         padding: 15px;
-        margin-top: 10px;
+        margin-top: 20px;
     }
     QGroupBox::title {
-        color: #009688;
+        color: white;
+        background-color: #0d00a6;
+        padding: 5px 10px;
+        border-radius: 4px;
         subcontrol-position: top center;
-        padding: 5px;
+        margin-top: -10px;
     }
 """
 
@@ -564,32 +573,32 @@ RESOURCE_ADD_BUTTON_STYLE = """
     QPushButton {
         padding: 10px;
         border-radius: 5px;
-        background: #009688;
+        background: #1dc925;
         color: white;
         border: none;
         font-weight: bold;
     }
     QPushButton:hover {
-        background: #00796b;
+        background: #5260da;
     }
 """
 
 # Kaynak Yönetimi TextEdit Stili
 RESOURCE_TEXT_EDIT_STYLE = """
     QTextEdit {
-        background-color: #333;
+        background-color: #191622;
         border-radius: 4px;
         padding: 10px;
-        color: white;
-        border: 1px solid #555;
+        color: #E1E1E6;
+        border: 1px solid #2d2b38;
     }
 """
 
 # Ana pencere stili
 MAIN_WINDOW_STYLE = """
     QMainWindow {
-        background-color: #1e1e1e;
-        color: white;
+        background-color: #1a1e1e;
+        color: #E1E1E6;
     }
 """
 
@@ -597,34 +606,34 @@ MAIN_WINDOW_STYLE = """
 SCROLLBAR_STYLE = """
     QScrollBar:vertical {
         border: none;
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         width: 10px;
         margin: 0px;
     }
     QScrollBar::handle:vertical {
-        background-color: #404040;
+        background-color: #2d2b38;
         min-height: 30px;
         border-radius: 5px;
     }
     QScrollBar::handle:vertical:hover {
-        background-color: #505050;
+        background-color: #3a3846;
     }
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
         height: 0px;
     }
     QScrollBar:horizontal {
         border: none;
-        background-color: #2a2a2a;
+        background-color: #201c2b;
         height: 10px;
         margin: 0px;
     }
     QScrollBar::handle:horizontal {
-        background-color: #404040;
+        background-color: #2d2b38;
         min-width: 30px;
         border-radius: 5px;
     }
     QScrollBar::handle:horizontal:hover {
-        background-color: #505050;
+        background-color: #3a3846;
     }
     QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
         width: 0px;

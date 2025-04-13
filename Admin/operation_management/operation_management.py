@@ -29,6 +29,10 @@ import os
 from .task_history import MissionHistoryDialog
 from .team_management_panel import TeamManagementPanel
 from .task_management import TaskManager
+# Firebase veritabanı işlemleri için import
+from database import get_database_ref, get_storage_bucket, initialize_firebase
+import time
+import uuid
 
 
 
@@ -37,6 +41,10 @@ class OperationManagementTab(QWidget):
     def __init__(self):
         super().__init__()
         self.config = get_config()
+        # Firebase referansları
+        self.tasks_ref = get_database_ref('/operations/tasks')
+        self.teams_ref = get_database_ref('/operations/teams')
+        self.task_history_ref = get_database_ref('/operations/task_history')
         self.initUI()
 
     def initUI(self):
@@ -249,81 +257,237 @@ class OperationManagementTab(QWidget):
         self.load_team_data()
 
     def load_team_data(self):
-        """Ekip verilerini alır"""
-        self.team_management_panel.team_list.setRowCount(0)
-        
-        # Kurumları topla
-        institutions = set()
-        
-        for team in TEAM_DATA:
-            institutions.add(team[2])  # Kurum adlarını topla
-            row = self.team_management_panel.team_list.rowCount()
-            self.team_management_panel.team_list.insertRow(row)
-            for col, data in enumerate(team):
-                item = QTableWidgetItem(str(data))
-                item.setTextAlignment(Qt.AlignCenter)
-                
-                # Durum sütunu için özel ayarlar
-                if col == 3:  # Durum sütunu
-                    if data == "Müsait":
-                        item.setBackground(QBrush(QColor("#4CAF50")))
-                    else:
-                        item.setBackground(QBrush(QColor("#f44336")))
-                    # Sadece durum sütununu salt okunur yap
-                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                
-                self.team_management_panel.team_list.setItem(row, col, item)
+        """Firebase'den ekip verilerini yükler"""
+        try:
+            # Firebase'den takım verilerini al
+            teams_data = self.teams_ref.get()
             
-            self.team_combo.addItem(f"{team[0]} - {team[1]} ({team[2]})")
-        
-        # Kurum filtresine kurumları ekle
-        self.team_management_panel.institution_filter.addItems(sorted(institutions))
-        
-        self.team_management_panel.team_list.resizeColumnsToContents()
+            if teams_data:
+                # Combobox'ı temizle
+                self.team_combo.clear()
+                
+                # Firebase verilerini işle
+                for team_id, team_info in teams_data.items():
+                    team_name = team_info.get('team_name', 'İsimsiz Ekip')
+                    self.team_combo.addItem(team_name, team_id)
+                
+                # TeamManagementPanel'a verileri gönder
+                self.team_management_panel.update_team_list(teams_data)
+            else:
+                # Eğer Firebase'de veri yoksa örnek veriyi kullan
+                print("Firebase'de takım verisi bulunamadı, örnek veri kullanılıyor.")
+                for team in TEAM_DATA:
+                    # TEAM_DATA liste içinde liste formatında olduğu için
+                    # team_name, doğrudan team[0] indeksinden alınır
+                    team_name = team[0]  # Takım ID'si (aynı zamanda adı)
+                    team_leader = team[1]  # Takım lideri
+                    institution = team[2]  # Kurum
+                    self.team_combo.addItem(f"{team_name} - {team_leader} ({institution})")
+                
+                # TeamManagementPanel'a örnek verileri gönder
+                self.team_management_panel.update_team_list(TEAM_DATA)
+                
+        except Exception as e:
+            print(f"Ekip verisi yüklenirken hata: {str(e)}")
+            # Hata durumunda örnek veriyi kullan
+            for team in TEAM_DATA:
+                # TEAM_DATA dizisinden doğru şekilde bilgileri al
+                team_name = team[0]  # Takım ID'si (aynı zamanda adı)
+                team_leader = team[1]  # Takım lideri
+                institution = team[2]  # Kurum
+                self.team_combo.addItem(f"{team_name} - {team_leader} ({institution})")
+            
+            # TeamManagementPanel'a örnek verileri gönder
+            self.team_management_panel.update_team_list(TEAM_DATA)
 
     def show_task_details(self, item):
-        """Görev detaylarını dialog penceresinde gösterir"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Görev Detayları")
-        dialog.setMinimumWidth(400)
-        layout = QVBoxLayout()
+        """Seçilen görevin detaylarını gösterir"""
+        task_id = item.data(Qt.UserRole)
         
-        details = QTextEdit()
-        details.setPlainText(TASK_DETAILS.get(item.text(), "Detaylı bilgi bulunamadı."))
-        details.setReadOnly(True)
+        try:
+            # Firebase'den görev verilerini al
+            task_data = self.tasks_ref.child(task_id).get()
+            
+            if task_data:
+                # Detay penceresini hazırla
+                details_dialog = QDialog(self)
+                details_dialog.setWindowTitle(f"Görev Detayı: {task_data.get('title', 'İsimsiz Görev')}")
+                details_dialog.setMinimumWidth(500)
+                details_dialog.setMinimumHeight(400)
+                
+                layout = QVBoxLayout()
+                
+                # Görev detayları
+                form_layout = QFormLayout()
+                form_layout.addRow("Başlık:", QLabel(task_data.get('title', '')))
+                form_layout.addRow("Ekip:", QLabel(task_data.get('team', '')))
+                form_layout.addRow("Lokasyon:", QLabel(task_data.get('location', '')))
+                form_layout.addRow("Öncelik:", QLabel(task_data.get('priority', '')))
+                form_layout.addRow("Tahmini Süre:", QLabel(f"{task_data.get('duration', '')} saat"))
+                
+                # Detaylar için text edit
+                details_text = QTextEdit()
+                details_text.setReadOnly(True)
+                details_text.setText(task_data.get('details', ''))
+                details_text.setMinimumHeight(150)
+                
+                # Butonlar
+                buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+                buttons.accepted.connect(details_dialog.accept)
+                
+                layout.addLayout(form_layout)
+                layout.addWidget(QLabel("Detaylar:"))
+                layout.addWidget(details_text)
+                layout.addWidget(buttons)
+                
+                details_dialog.setLayout(layout)
+                details_dialog.exec_()
+            else:
+                # Firebase'de veri bulunamazsa örnek veriyi kullan
+                self._show_legacy_task_details(task_id)
+                
+        except Exception as e:
+            print(f"Görev detayları görüntülenirken hata: {str(e)}")
+            # Hata durumunda örnek veriyi kullan
+            self._show_legacy_task_details(task_id)
+    
+    def _show_legacy_task_details(self, task_id):
+        """Örnek veri ile görev detaylarını gösterir (eski yöntem)"""
+        # Görev bilgilerini bul
+        for i in range(self.tasks_list.count()):
+            item = self.tasks_list.item(i)
+            if item.data(Qt.UserRole) == task_id:
+                task_text = item.text()
+                
+                # TASK_DETAILS'dan detayları al
+                task_detail = TASK_DETAILS.get(task_text)
+                
+                if not task_detail:
+                    QMessageBox.warning(self, "Hata", "Görev detayları bulunamadı.")
+                    return
+                
+                # Detay penceresini hazırla
+                details_dialog = QDialog(self)
+                details_dialog.setWindowTitle(f"Görev Detayı")
+                details_dialog.setMinimumWidth(500)
+                details_dialog.setMinimumHeight(400)
+                
+                layout = QVBoxLayout()
+                
+                # Detaylar için text edit
+                details_text = QTextEdit()
+                details_text.setReadOnly(True)
+                details_text.setText(task_detail)  # Doğrudan string'i göster
+                details_text.setMinimumHeight(150)
+                
+                # Butonlar
+                buttons = QDialogButtonBox(QDialogButtonBox.Ok)
+                buttons.accepted.connect(details_dialog.accept)
+                
+                layout.addWidget(QLabel("Detaylar:"))
+                layout.addWidget(details_text)
+                layout.addWidget(buttons)
+                
+                details_dialog.setLayout(layout)
+                details_dialog.exec_()
+                return
         
-        close_btn = QPushButton("Kapat")
-        close_btn.clicked.connect(dialog.accept)
-        
-        layout.addWidget(details)
-        layout.addWidget(close_btn)
-        
-        dialog.setLayout(layout)
-        dialog.exec_()
+        QMessageBox.warning(self, "Hata", "Görev bulunamadı.")
+        return
 
-    def delete_selected_messages(self):
-        """Seçili mesajları siler"""
-        items_to_remove = []
-        for i in range(self.messages_list.count()):
-            item = self.messages_list.item(i)
-            if item.checkState() == Qt.Checked:
-                items_to_remove.append(item)
+    def delete_selected_task(self):
+        """Seçilen görevi siler"""
+        selected_items = self.tasks_list.selectedItems()
         
-        for item in items_to_remove:
-            self.messages_list.takeItem(self.messages_list.row(item))
+        if not selected_items:
+            QMessageBox.warning(self, "Uyarı", "Lütfen silinecek bir görev seçin.")
+            return
+        
+        reply = QMessageBox.question(self, 'Görev Silme', 
+                                     f"Seçilen {len(selected_items)} görevi silmek istediğinizden emin misiniz?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            try:
+                for item in selected_items:
+                    task_id = item.data(Qt.UserRole)
+                    
+                    # Firebase'den görevi sil
+                    self.tasks_ref.child(task_id).delete()
+                    
+                    # Listeden kaldır
+                    self.tasks_list.takeItem(self.tasks_list.row(item))
+                
+                QMessageBox.information(self, "Başarılı", 
+                                       f"{len(selected_items)} görev başarıyla silindi.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", 
+                                    f"Görevler silinirken hata oluştu: {str(e)}")
 
     def load_sample_task_data(self):
-        """Örnek verileri yükler"""
-        # Görevler
+        """Firebase'den görev verilerini yükler veya örnek veri kullanır"""
+        try:
+            # Firebase'den görev verilerini al
+            tasks_data = self.tasks_ref.get()
+            
+            if tasks_data:
+                # Görev listesini temizle
+                self.tasks_list.clear()
+                
+                # Firebase verilerini işle
+                for task_id, task_info in tasks_data.items():
+                    title = task_info.get('title', 'İsimsiz Görev')
+                    priority = task_info.get('priority', 'Orta (2)')
+                    location = task_info.get('location', 'Belirtilmemiş')
+                    team = task_info.get('team', 'Atanmamış')
+                    
+                    # Liste öğesini oluştur
+                    item = QListWidgetItem(f"{title} - {team} - {location}")
+                    item.setData(Qt.UserRole, task_id)  # task_id'yi sakla
+                    
+                    # Önceliğe göre renk belirle
+                    if "Yüksek" in priority:
+                        item.setForeground(QBrush(QColor("#FF6B6B")))
+                    elif "Orta" in priority:
+                        item.setForeground(QBrush(QColor("#FFD93D")))
+                    
+                    self.tasks_list.addItem(item)
+            else:
+                # Eğer Firebase'de veri yoksa örnek veriyi kullan
+                print("Firebase'de görev verisi bulunamadı, örnek veri kullanılıyor.")
+                self._load_legacy_sample_data()
+                
+        except Exception as e:
+            print(f"Görev verisi yüklenirken hata: {str(e)}")
+            # Hata durumunda örnek veriyi kullan
+            self._load_legacy_sample_data()
+    
+    def _load_legacy_sample_data(self):
+        """Örnek veri ile görev listesini doldurur (eski yöntem)"""
         self.tasks_list.clear()
         for task in TASKS:
-            item = QListWidgetItem(task)
-            # Görev metnini parçala
+            # TASKS listesi string olduğu için string'i parçalara ayırıyoruz
             task_parts = task.split(" - ")
             if len(task_parts) >= 3:
+                title = task_parts[0]
+                location = task_parts[1]
                 priority = task_parts[2]
-                item.setData(Qt.UserRole, priority)
-            self.tasks_list.addItem(item)
+                
+                # Benzersiz ID oluştur
+                task_id = str(uuid.uuid4())
+                
+                # Liste öğesini oluştur
+                item = QListWidgetItem(f"{title} - {location} - {priority}")
+                item.setData(Qt.UserRole, task_id)  # Benzersiz ID'yi sakla
+                
+                # Önceliğe göre renk belirle
+                if "Yüksek" in priority or "Acil" in priority:
+                    item.setForeground(QBrush(QColor("#FF6B6B")))
+                elif "Orta" in priority:
+                    item.setForeground(QBrush(QColor("#FFD93D")))
+                
+                self.tasks_list.addItem(item)
 
     def edit_selected_task(self):
         """Seçili görevi düzenlemek için dialog açar"""
@@ -361,130 +525,78 @@ class OperationManagementTab(QWidget):
             
             dialog.accept()
     
-    def delete_selected_task(self):
-        """Seçili görevi siler ve görev geçmişine ekler"""
-        current_item = self.tasks_list.currentItem()
-        if not current_item:
-            QMessageBox.warning(self, "Uyarı", "Lütfen silmek için bir görev seçin!")
-            return
-        
-        reply = QMessageBox.question(
-            self,
-            'Görev Silme Onayı',
-            'Bu görevi tamamlandı olarak işaretleyip görev geçmişine eklemek istediğinizden emin misiniz?',
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            task_text = current_item.text()
-            # Görev metnini parçala
-            task_parts = task_text.split(" - ")
-            if len(task_parts) >= 2:
-                task_type = task_parts[0]
-                location = task_parts[1]
-                priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
-                
-                # Şu anki tarihi al
-                from datetime import datetime
-                current_date = datetime.now().strftime("%Y-%m-%d")
-                
-                # Yeni görev geçmişi verisi oluştur
-                new_task_history = [
-                    current_date,
-                    task_type,
-                    location,
-                    "N/A",  # Süre
-                    priority,  # Öncelik seviyesi
-                    "Tamamlandı",
-                    "Görev tamamlandı"
-                ]
-                
-                # Görev geçmişi verilerine ekle
-                from sample_data import TASK_HISTORY_DATA
-                TASK_HISTORY_DATA.insert(0, new_task_history)  # En başa ekle
-                
-                # Görevi aktif görevlerden kaldır
-                self.tasks_list.takeItem(self.tasks_list.row(current_item))
-
     def show_mission_history(self):
         """Görev geçmişi penceresini gösterir"""
         dialog = MissionHistoryDialog(self)
         dialog.exec_()
 
     def assign_task(self):
-        """Seçili ekibe görev atar"""
-        # Seçili ekibi kontrol et
-        selected_team = self.team_combo.currentText()
-        if not selected_team:
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir ekip seçin!")
-            return
-
-        # Görev başlığı kontrolü
+        """Yeni görevi oluşturup Firebase'e kaydeder"""
+        # Form verilerini al
         title = self.title_input.text().strip()
-        if not title:
-            QMessageBox.warning(self, "Uyarı", "Lütfen görev başlığını girin!")
-            return
-
-        # Lokasyon kontrolü
         location = self.location_input.text().strip()
-        if not location:
-            QMessageBox.warning(self, "Uyarı", "Lütfen görev lokasyonunu girin!")
-            return
-
-        # Görev detaylarını kontrol et
-        task_details = self.task_input.toPlainText().strip()
-        if not task_details:
-            QMessageBox.warning(self, "Uyarı", "Lütfen görev detaylarını girin!")
-            return
-
-        # Öncelik seviyesini al
+        details = self.task_input.toPlainText().strip()
         priority = self.priority_combo.currentText()
-
-        # Onay mesajı oluştur
-        confirmation_text = (
-            f"Aşağıdaki görev atamasını onaylıyor musunuz?\n\n"
-            f"Ekip: {selected_team}\n"
-            f"Başlık: {title}\n"
-            f"Lokasyon: {location}\n"
-            f"Öncelik: {priority}\n"
-            f"Detaylar: {task_details}"
-        )
-
-        # Onay dialogu göster
-        reply = QMessageBox.question(
-            self,
-            'Görev Atama Onayı',
-            confirmation_text,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-
-        if reply == QMessageBox.Yes:
-            # TaskManager kullanarak görevi ata
-            if TaskManager.assign_task(self, selected_team, title, location, priority, task_details, self.team_management_panel.team_list):
-                # Görev metnini oluştur
-                task_text = f"{title} - {location} - {priority}"
-                
-                # Yeni görev item'ı oluştur
-                new_task = QListWidgetItem(task_text)
-                new_task.setData(Qt.UserRole, priority)
-                
-                # Görevi aktif görevler listesine ekle
-                self.tasks_list.addItem(new_task)
-                
-                # Input alanlarını temizle
-                self.title_input.clear()
-                self.location_input.clear()
-                self.task_input.clear()
-                self.priority_combo.setCurrentText("Orta (2)")
-                
-                # Başarılı mesajı göster
-                QMessageBox.information(
-                    self,
-                    "Başarılı",
-                    f"Görev başarıyla atandı!\n\nEkip: {selected_team}"
-                )
+        team = self.team_combo.currentText()
+        team_id = self.team_combo.currentData()  # Firebase team ID
+        
+        # Süre kontrol
+        try:
+            duration = float(self.duration_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "Hata", "Lütfen geçerli bir süre giriniz.")
+            return
+            
+        # Boş alan kontrolü
+        if not title or not location or not details:
+            QMessageBox.warning(self, "Eksik Bilgi", 
+                                "Lütfen tüm gerekli alanları doldurunuz.")
+            return
+        
+        try:
+            # Benzersiz ID oluştur
+            task_id = str(uuid.uuid4())
+            
+            # Firebase'e kaydedilecek görev verisi
+            task_data = {
+                'id': task_id,
+                'title': title,
+                'location': location,
+                'details': details,
+                'priority': priority,
+                'team': team,
+                'team_id': team_id,  # Firebase team ID
+                'duration': duration,
+                'status': 'active',
+                'created_at': time.time(),
+                'updated_at': time.time()
+            }
+            
+            # Firebase'e görevi ekle
+            self.tasks_ref.child(task_id).set(task_data)
+            
+            # UI'ı güncelle
+            item = QListWidgetItem(f"{title} - {team} - {location}")
+            item.setData(Qt.UserRole, task_id)
+            
+            if "Yüksek" in priority:
+                item.setForeground(QBrush(QColor("#FF6B6B")))
+            elif "Orta" in priority:
+                item.setForeground(QBrush(QColor("#FFD93D")))
+            
+            self.tasks_list.addItem(item)
+            
+            # Form alanlarını temizle
+            self.title_input.clear()
+            self.location_input.clear()
+            self.task_input.clear()
+            self.duration_input.clear()
+            self.priority_combo.setCurrentText("Orta (2)")
+            
+            QMessageBox.information(self, "Başarılı", "Görev başarıyla oluşturuldu.")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Görev oluşturulurken hata oluştu: {str(e)}")
 
     def filter_tasks(self):
         """Görevleri öncelik ve arama kriterlerine göre filtreler"""
@@ -503,54 +615,42 @@ class OperationManagementTab(QWidget):
             item.setHidden(not should_show)
 
     def complete_selected_task(self):
-        """Seçili görevi tamamlandı olarak işaretler"""
-        current_item = self.tasks_list.currentItem()
-        if not current_item:
-            QMessageBox.warning(self, "Uyarı", "Lütfen tamamlandı olarak işaretlemek için bir görev seçin!")
+        """Seçilen görevi tamamlandı olarak işaretler ve arşive taşır"""
+        selected_items = self.tasks_list.selectedItems()
+        
+        if not selected_items:
+            QMessageBox.warning(self, "Uyarı", "Lütfen tamamlanacak bir görev seçin.")
             return
         
-        task_text = current_item.text()
-        task_details = TASK_DETAILS.get(task_text, "")
-        team_name = None
+        reply = QMessageBox.question(self, 'Görev Tamamlama', 
+                                     f"Seçilen {len(selected_items)} görevi tamamlandı olarak işaretlemek istiyor musunuz?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         
-        # Ekip adını task detaylarından çıkar
-        for line in task_details.split("\n"):
-            if line.startswith("Ekip:"):
-                team_name = line.replace("Ekip:", "").strip()
-                break
-        
-        task_parts = task_text.split(" - ")
-        if len(task_parts) >= 2:
-            task_type = task_parts[0]
-            location = task_parts[1]
-            priority = current_item.data(Qt.UserRole) if current_item.data(Qt.UserRole) else "Orta (2)"
-            
-            # Tamamlanma tarihi
-            from datetime import datetime
-            completion_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-            
-            # Görev geçmişine ekle
-            from sample_data import TASK_HISTORY_DATA
-            new_task_history = [
-                completion_date,
-                task_type,
-                location,
-                self.duration_input.text() if self.duration_input.text() else "N/A",
-                priority,
-                "Tamamlandı",
-                "Görev başarıyla tamamlandı"
-            ]
-            TASK_HISTORY_DATA.insert(0, new_task_history)
-            
-            # Aktif görevlerden kaldır
-            self.tasks_list.takeItem(self.tasks_list.row(current_item))
-            
-            # Ekibin durumunu güncelle
-            if team_name:
-                TaskManager.complete_task(team_name, self.team_management_panel.team_list)
-            
-            QMessageBox.information(
-                self,
-                "Başarılı",
-                f"Görev başarıyla tamamlandı!\n\nGörev: {task_text}"
-            )
+        if reply == QMessageBox.Yes:
+            try:
+                for item in selected_items:
+                    task_id = item.data(Qt.UserRole)
+                    
+                    # Görev verilerini al
+                    task_data = self.tasks_ref.child(task_id).get()
+                    
+                    if task_data:
+                        # Görevi completed olarak güncelle
+                        task_data['status'] = 'completed'
+                        task_data['completed_at'] = time.time()
+                        
+                        # Görevi arşive taşı
+                        self.task_history_ref.child(task_id).set(task_data)
+                        
+                        # Aktif görevlerden kaldır
+                        self.tasks_ref.child(task_id).delete()
+                        
+                        # Listeden kaldır
+                        self.tasks_list.takeItem(self.tasks_list.row(item))
+                
+                QMessageBox.information(self, "Başarılı", 
+                                       f"{len(selected_items)} görev başarıyla tamamlandı.")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", 
+                                    f"Görevler tamamlanırken hata oluştu: {str(e)}")

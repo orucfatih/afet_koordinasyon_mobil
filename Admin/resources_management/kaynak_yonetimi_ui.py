@@ -194,20 +194,24 @@ class KaynakYonetimUI:
             progress.setValue(level)
             progress.setStyleSheet("""
                 QProgressBar {
-                    border: 1px solid #ccc;
+                    border: 1px solid #2d2b38;
                     border-radius: 5px;
                     text-align: center;
                     height: 20px;
                     margin: 5px 0;
+                    background-color: #191622;
+                    color: white;
                 }
                 QProgressBar::chunk {
-                    background-color: #4CAF50;
+                    background-color: #500073;
+                    border-radius: 4px;
                 }
             """)
             
             resource_layout = QHBoxLayout()
             label = QLabel(resource)
             label.setMinimumWidth(100)
+            label.setStyleSheet("color: #E1E1E6; font-weight: bold;")
             resource_layout.addWidget(label)
             resource_layout.addWidget(progress)
             
