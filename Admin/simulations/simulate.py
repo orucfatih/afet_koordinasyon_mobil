@@ -6,8 +6,10 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from .logistics_calculator import LogisticsCalculator
-from .monte_carlo import DisasterSimulation
 from .sehirler_ve_ilceler import sehirler, DISTRIBUTION_CENTERS, bolgelere_gore_iller
+from .logistic_vehicle_const import lojistik_araclar, RESOURCE_UNITS
+
+
 
 class ResultDialog(QDialog):
     """Simülasyon sonuçlarını gösteren dialog"""
@@ -35,7 +37,9 @@ class SimulationTab(QWidget):
     def __init__(self):
         super().__init__()
         self.logistics_calculator = LogisticsCalculator()
-        self.disaster_simulation = DisasterSimulation(self.logistics_calculator)
+        #########################################################
+        #self.disaster_simulation = DisasterSimulation(self.logistics_calculator)
+        #########################################################
         self.selected_districts = {}  # {(il, ilçe): nüfus}
         self.total_population = 0
         
@@ -43,7 +47,9 @@ class SimulationTab(QWidget):
         self.city_tree = None
         self.selected_areas_text = None
         self.total_population_label = None
-        self.depot_combo = None
+        self.depot_list = None  # Depo listesi widget'ı
+        self.depot_capacity_inputs = {}  # Depo kapasite giriş alanları
+        self.depot_vehicle_inputs = {}  # Depo araç kapasitesi giriş alanları
         self.road_condition = None
         self.iterations = None
         self.resource_inputs = {}
@@ -97,7 +103,6 @@ class SimulationTab(QWidget):
         city_group = QGroupBox("Afet Bölgeleri")
         city_layout = QVBoxLayout()
         
-        # Önce ağacı oluştur ama sinyali henüz bağlama
         self.city_tree = QTreeWidget()
         self.city_tree.setHeaderLabel("Şehirler ve İlçeler")
         self.city_tree.setMinimumHeight(300)
@@ -110,7 +115,6 @@ class SimulationTab(QWidget):
         summary_group = QGroupBox("Seçim Özeti")
         summary_layout = QVBoxLayout()
         
-        # Önce metin alanını oluştur
         self.selected_areas_text = QTextEdit()
         self.selected_areas_text.setReadOnly(True)
         self.selected_areas_text.setMinimumHeight(100)
@@ -126,15 +130,108 @@ class SimulationTab(QWidget):
         
         layout.addLayout(top_layout)
         
-        # Orta kısım - Dağıtım parametreleri
-        params_group = QGroupBox("Dağıtım Parametreleri")
-        params_layout = QFormLayout()
+        # Orta kısım - Depo seçimi ve kapasiteleri
+        depot_group = QGroupBox("AFAD Lojistik Depoları")
+        depot_layout = QVBoxLayout()
+        
+        # Depo listesi
+        self.depot_list = QTreeWidget()
+        header_labels = ["Depo"]
+        # Kaynak başlıkları
+        for resource, unit in RESOURCE_UNITS.items():
+            header_labels.append(f"{resource} ({unit})")
+        # Araç başlıkları
+        header_labels.extend(lojistik_araclar.keys())
+        
+        self.depot_list.setHeaderLabels(header_labels)
+        self.depot_list.setMinimumHeight(150)
+        depot_layout.addWidget(self.depot_list)
+        
+        # Depo ekleme alanı
+        add_depot_layout = QHBoxLayout()
         
         # Depo seçimi
+        depot_select_layout = QVBoxLayout()
+        depot_select_layout.addWidget(QLabel("Depo Seçimi:"))
         self.depot_combo = QComboBox()
         self.depot_combo.addItems(DISTRIBUTION_CENTERS)
-        self.depot_combo.currentTextChanged.connect(self.update_selected_areas)
-        params_layout.addRow("AFAD Lojistik Deposu:", self.depot_combo)
+        depot_select_layout.addWidget(self.depot_combo)
+        add_depot_layout.addLayout(depot_select_layout)
+        
+        # Kaynak kapasiteleri
+        resource_capacity_layout = QVBoxLayout()
+        capacity_inputs_layout = QHBoxLayout()
+        self.depot_capacity_inputs = {}
+        for resource, unit in RESOURCE_UNITS.items():
+            input_layout = QVBoxLayout()
+            label = QLabel(f"{resource}\n({unit})")
+            label.setAlignment(Qt.AlignCenter)
+            input_layout.addWidget(label)
+            
+            spinbox = QSpinBox()
+            spinbox.setRange(0, 1000000)
+            spinbox.setSingleStep(1000)
+            # Varsayılan değer olarak en büyük araç kapasitesinin 10 katını kullan
+            default_value = max(vehicle[resource] for vehicle in lojistik_araclar.values()) * 10
+            spinbox.setValue(default_value)
+            self.depot_capacity_inputs[resource] = spinbox
+            input_layout.addWidget(spinbox)
+            
+            capacity_inputs_layout.addLayout(input_layout)
+        
+        resource_capacity_layout.addLayout(capacity_inputs_layout)
+        add_depot_layout.addLayout(resource_capacity_layout)
+        
+        # Araç kapasiteleri
+        vehicle_capacity_layout = QVBoxLayout()
+        vehicle_inputs_layout = QHBoxLayout()
+        self.depot_vehicle_inputs = {}
+        
+        for vehicle_type in lojistik_araclar.keys():
+            input_layout = QVBoxLayout()
+            
+            # Araç tipini ve kapasitelerini gösteren detaylı label
+            vehicle_info = [f"{resource}: {capacity} {RESOURCE_UNITS[resource]}"
+                          for resource, capacity in lojistik_araclar[vehicle_type].items()]
+            tooltip = "\n".join(vehicle_info)
+            
+            label = QLabel(vehicle_type)
+            label.setAlignment(Qt.AlignCenter)
+            label.setToolTip(tooltip)
+            input_layout.addWidget(label)
+            
+            spinbox = QSpinBox()
+            spinbox.setRange(0, 100)
+            spinbox.setSingleStep(1)
+            spinbox.setValue(5)
+            spinbox.setToolTip(tooltip)
+            self.depot_vehicle_inputs[vehicle_type] = spinbox
+            input_layout.addWidget(spinbox)
+            
+            vehicle_inputs_layout.addLayout(input_layout)
+        
+        vehicle_capacity_layout.addLayout(vehicle_inputs_layout)
+        add_depot_layout.addLayout(vehicle_capacity_layout)
+        
+        # Depo ekle/kaldır butonları
+        button_layout = QVBoxLayout()
+        add_depot_btn = QPushButton("Depo Ekle")
+        add_depot_btn.clicked.connect(self.add_depot)
+        button_layout.addWidget(add_depot_btn)
+        
+        remove_depot_btn = QPushButton("Depo Kaldır")
+        remove_depot_btn.clicked.connect(self.remove_depot)
+        button_layout.addWidget(remove_depot_btn)
+        
+        add_depot_layout.addLayout(button_layout)
+        
+        depot_layout.addLayout(add_depot_layout)
+        depot_group.setLayout(depot_layout)
+        layout.addWidget(depot_group)
+        
+        # Alt kısım - Simülasyon parametreleri
+        params_group = QGroupBox("Simülasyon Parametreleri")
+        params_layout = QFormLayout()
         
         # Yol durumu
         self.road_condition = QSpinBox()
@@ -152,23 +249,6 @@ class SimulationTab(QWidget):
         
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
-        
-        # Alt kısım - Kaynak seçimi
-        resource_group = QGroupBox("Kaynak Seçimi")
-        resource_layout = QFormLayout()
-        
-        # Kaynak miktarları için spinbox'lar
-        self.resource_inputs = {}
-        for resource in ["Su", "Gıda", "Çadır", "Battaniye", "İlaç", "Diğer"]:
-            spinbox = QSpinBox()
-            spinbox.setRange(0, 1000000)
-            spinbox.setSingleStep(100)
-            spinbox.setSuffix(" birim")
-            self.resource_inputs[resource] = spinbox
-            resource_layout.addRow(f"{resource}:", spinbox)
-        
-        resource_group.setLayout(resource_layout)
-        layout.addWidget(resource_group)
         
         # İlerleme çubuğu
         self.progress_bar = QProgressBar()
@@ -277,11 +357,6 @@ class SimulationTab(QWidget):
         self.total_population = 0
         text = ""
         
-        # Seçili depo
-        selected_depot = self.depot_combo.currentText()
-        if selected_depot:
-            text += f"AFAD Lojistik Deposu: {selected_depot}\n\n"
-        
         # Bölgeleri dolaş
         for i in range(self.city_tree.topLevelItemCount()):
             bolge_item = self.city_tree.topLevelItem(i)
@@ -308,33 +383,86 @@ class SimulationTab(QWidget):
                     selected_cities.append(sehir)
                     text += f"  {sehir}:\n"
                     text += "\n".join(f"    - {d}" for d in selected_districts)
-                    
-                    # Depo seçili ise mesafe bilgisini ekle
-                    if selected_depot:
-                        try:
-                            distance = self.logistics_calculator.get_distance(selected_depot, sehir)
-                            text += f"\n    Depoya uzaklık: {distance} km"
-                        except ValueError:
-                            text += "\n    Depoya uzaklık: Hesaplanamadı"
                     text += "\n\n"
         
         self.selected_areas_text.setText(text)
         self.total_population_label.setText(f"Toplam Nüfus: {self.total_population:,} kişi")
+
+    def add_depot(self):
+        """Yeni bir depo ekle"""
+        depot = self.depot_combo.currentText()
+        
+        # Depo kapasitelerini al
+        capacities = {}
+        for resource, spinbox in self.depot_capacity_inputs.items():
+            capacities[resource] = spinbox.value()
+        
+        # Araç kapasitelerini al
+        vehicles = {}
+        for vehicle_type, spinbox in self.depot_vehicle_inputs.items():
+            vehicles[vehicle_type] = spinbox.value()
+        
+        # Depoyu LogisticsCalculator'a ekle
+        self.logistics_calculator.add_depot(depot, capacities, vehicles)
+        
+        # Depo listesini güncelle
+        self.update_depot_list()
+        
+        # Depoyu combo box'tan kaldır
+        self.depot_combo.removeItem(self.depot_combo.currentIndex())
+
+    def remove_depot(self):
+        """Seçili depoyu kaldır"""
+        selected_items = self.depot_list.selectedItems()
+        if not selected_items:
+            return
+        
+        depot = selected_items[0].text(0)
+        
+        # Depoyu LogisticsCalculator'dan kaldır
+        self.logistics_calculator.remove_depot(depot)
+        
+        # Depoyu combo box'a geri ekle
+        self.depot_combo.addItem(depot)
+        
+        # Depo listesini güncelle
+        self.update_depot_list()
+
+    def update_depot_list(self):
+        """Depo listesini güncelle"""
+        self.depot_list.clear()
+        
+        for depot in self.logistics_calculator.get_all_depots():
+            item = QTreeWidgetItem([depot])
+            
+            # Kaynak kapasiteleri
+            for i, resource in enumerate(RESOURCE_UNITS.keys()):
+                capacity = self.logistics_calculator.get_depot_capacity(depot, resource)
+                item.setText(i + 1, f"{capacity:,}")
+            
+            # Araç kapasiteleri
+            vehicles = self.logistics_calculator.get_depot_vehicles(depot)
+            for i, vehicle_type in enumerate(lojistik_araclar.keys()):
+                count = vehicles.get(vehicle_type, 0)
+                item.setText(i + len(RESOURCE_UNITS) + 1, str(count))
+            
+            self.depot_list.addTopLevelItem(item)
+        
+        # Sütun genişliklerini ayarla
+        for i in range(self.depot_list.columnCount()):
+            self.depot_list.resizeColumnToContents(i)
 
     def run_resource_simulation(self):
         """Kaynak dağıtım simülasyonunu başlat"""
         if not self.selected_districts:
             QMessageBox.warning(self, "Uyarı", "Lütfen en az bir bölge seçin!")
             return
-        
-        # Kaynak miktarlarını topla
-        resources = {
-            resource: spinbox.value()
-            for resource, spinbox in self.resource_inputs.items()
-        }
+            
+        if not self.logistics_calculator.get_all_depots():
+            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir depo ekleyin!")
+            return
         
         # Simülasyon parametrelerini al
-        depot = self.depot_combo.currentText()
         road_condition = self.road_condition.value()
         iterations = self.iterations.value()
         
@@ -345,9 +473,7 @@ class SimulationTab(QWidget):
         try:
             # Simülasyonu çalıştır
             results = self.disaster_simulation.simulate_resource_distribution(
-                depot=depot,
                 target_districts=self.selected_districts,
-                resources=resources,
                 road_condition=road_condition,
                 iterations=iterations
             )
