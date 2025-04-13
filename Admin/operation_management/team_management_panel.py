@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QBrush, QColor
+from PyQt5.QtWidgets import QApplication
 
 # Local imports
 from sample_data import TEAM_DATA
@@ -50,7 +51,43 @@ class TeamManagementPanel(QWidget):
         self.team_list = QTableWidget()
         self.team_list.setColumnCount(len(TEAM_TABLE_HEADERS))
         self.team_list.setHorizontalHeaderLabels(TEAM_TABLE_HEADERS)
-        self.team_list.setStyleSheet(TABLE_WIDGET_STYLE)
+        
+        # Özel tablo stili oluştur - hücre arka plan renklendirmesine izin veren
+        custom_table_style = """
+            QTableWidget {
+                background-color: #13111b;
+                color: #E1E1E6;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                /* Seçildiğinde hiçbir şeyi değiştirme - renkleri koru */
+                color: inherit;
+                border: none;
+            }
+            /* Hover efektini tamamen kaldır */
+            QTableWidget::item:hover {
+                /* Fare üzerine geldiğinde hiçbir değişiklik olmasın */
+                background-color: transparent;
+                border: none;
+            }
+            QHeaderView::section {
+                background-color: #201c2b;
+                color: #E1E1E6;
+                font-weight: bold;
+                padding: 5px;
+                border: 1px solid #2d2b38;
+            }
+            QTableCornerButton::section {
+                background-color: #201c2b;
+                border: 1px solid #2d2b38;
+            }
+        """
+        
+        # Özel tablo stilini uygula
+        self.team_list.setStyleSheet(custom_table_style)
+        
+        # Seçimi tamamen devre dışı bırak
+        self.team_list.setSelectionMode(QTableWidget.NoSelection)
         
         # Durum sütununa tıklama olayını bağla
         self.team_list.cellClicked.connect(self.handle_cell_click)
@@ -152,14 +189,23 @@ class TeamManagementPanel(QWidget):
                     new_item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
                     new_item.setData(Qt.UserRole, firebase_id)  # Firebase ID'sini koru
                     
-                    # Duruma göre arka plan rengini ayarla
+                    # Duruma göre arka plan ve yazı rengini ayarla - buton renkleriyle uyumlu
                     if new_status == "Meşgul":
-                        new_item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                        # Ekip Sil butonu ile aynı kırmızı renk
+                        new_item.setBackground(QBrush(QColor("#e95678")))  # Ekip Sil butonunun kırmızısı
+                        new_item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                     else:
-                        new_item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                        # Yeni Ekip Ekle butonu ile aynı yeşil renk
+                        new_item.setBackground(QBrush(QColor("#13bc6d")))  # Yeni Ekip Ekle butonunun yeşili
+                        new_item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                     
-                    # Değişikliği uygula
+                    # Değişikliği uygula ve güncelle
+                    self.team_list.blockSignals(True)  # Sinyalleri geçici olarak engelle
                     self.team_list.setItem(row, column, new_item)
+                    self.team_list.blockSignals(False)  # Sinyalleri yeniden etkinleştir
+                    
+                    # Uygulama olaylarını işle - GUI güncellemesi için
+                    QApplication.processEvents()
                     
                 except Exception as e:
                     QMessageBox.critical(self, "Hata", f"Durum güncellenirken hata: {str(e)}")
@@ -220,11 +266,15 @@ class TeamManagementPanel(QWidget):
                         # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                         if col == 3:  # Durum sütunu
                             item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                            # Duruma göre arka plan rengini belirle
+                            # Duruma göre arka plan ve yazı rengini ayarla
                             if data == "Meşgul":
-                                item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                                # Ekip Sil butonu ile aynı kırmızı renk
+                                item.setBackground(QBrush(QColor("#e95678")))  # Ekip Sil butonunun kırmızısı
+                                item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                             else:
-                                item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                                # Yeni Ekip Ekle butonu ile aynı yeşil renk
+                                item.setBackground(QBrush(QColor("#13bc6d")))  # Yeni Ekip Ekle butonunun yeşili
+                                item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                         
                         # Firebase ID'sini gizli veri olarak sakla
                         item.setData(Qt.UserRole, firebase_id)
@@ -281,11 +331,15 @@ class TeamManagementPanel(QWidget):
                 # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                    # Duruma göre arka plan rengini belirle
+                    # Duruma göre arka plan ve yazı rengini ayarla
                     if data == "Meşgul":
-                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                        # Ekip Sil butonu ile aynı kırmızı renk
+                        item.setBackground(QBrush(QColor("#e95678")))  # Ekip Sil butonunun kırmızısı
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                     else:
-                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                        # Yeni Ekip Ekle butonu ile aynı yeşil renk
+                        item.setBackground(QBrush(QColor("#13bc6d")))  # Yeni Ekip Ekle butonunun yeşili
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                 
                 self.team_list.setItem(row, col, item)
             
@@ -362,11 +416,15 @@ class TeamManagementPanel(QWidget):
                 # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                    # Duruma göre arka plan rengini belirle
+                    # Duruma göre arka plan ve yazı rengini ayarla
                     if data == "Meşgul":
-                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                        # Ekip Sil butonu ile aynı kırmızı renk
+                        item.setBackground(QBrush(QColor("#e95678")))  # Ekip Sil butonunun kırmızısı
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                     else:
-                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                        # Yeni Ekip Ekle butonu ile aynı yeşil renk
+                        item.setBackground(QBrush(QColor("#13bc6d")))  # Yeni Ekip Ekle butonunun yeşili
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                 
                 # Firebase ID'sini sakla
                 item.setData(Qt.UserRole, firebase_id)
@@ -491,11 +549,15 @@ class TeamManagementPanel(QWidget):
                 # Durum sütunu için salt okunur yap ve arka plan rengini ayarla
                 if col == 3:  # Durum sütunu
                     item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                    # Duruma göre arka plan rengini belirle
+                    # Duruma göre arka plan ve yazı rengini ayarla
                     if data == "Meşgul":
-                        item.setBackground(QBrush(QColor("#FF6B6B")))  # Kırmızı
+                        # Ekip Sil butonu ile aynı kırmızı renk
+                        item.setBackground(QBrush(QColor("#e95678")))  # Ekip Sil butonunun kırmızısı
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                     else:
-                        item.setBackground(QBrush(QColor("#6BCB77")))  # Yeşil
+                        # Yeni Ekip Ekle butonu ile aynı yeşil renk
+                        item.setBackground(QBrush(QColor("#13bc6d")))  # Yeni Ekip Ekle butonunun yeşili
+                        item.setForeground(QBrush(QColor("#FFFFFF")))  # Beyaz yazı
                 
                 # Firebase ID'sini koru
                 item.setData(Qt.UserRole, firebase_id)
