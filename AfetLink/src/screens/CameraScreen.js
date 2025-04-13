@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import * as ImagePicker from 'react-native-image-picker';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  Alert, 
+  ActivityIndicator, 
+  Platform,
+  PermissionsAndroid,
+  SafeAreaView,
+  StatusBar
+} from 'react-native';
+import { launchCamera } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getAuth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -9,22 +20,57 @@ import app from '../../firebaseConfig';
 import Geolocation from 'react-native-geolocation-service';
 
 const CameraScreen = ({ navigation }) => {
-  const [hasPermission, setHasPermission] = useState(null);
   const [uploading, setUploading] = useState(false);
   const auth = getAuth(app);
   const storage = getStorage(app);
   const db = getFirestore(app);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: "Kamera İzni",
+            message: "Afet bildirimi yapabilmek için kamera izni gerekli.",
+            buttonNeutral: "Daha Sonra Sor",
+            buttonNegative: "İptal",
+            buttonPositive: "Tamam"
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: "Konum İzni",
+            message: "Afet bildiriminin konumunu kaydetmek için konum izni gerekli.",
+            buttonNeutral: "Daha Sonra Sor",
+            buttonNegative: "İptal",
+            buttonPositive: "Tamam"
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const uploadImageToFirebase = async (uri, coordinates) => {
     try {
-      const auth = getAuth();
       await auth.currentUser.reload();
   
       const response = await fetch(uri);
@@ -36,13 +82,12 @@ const CameraScreen = ({ navigation }) => {
       await uploadBytes(storageRef, blob);
       const downloadURL = await getDownloadURL(storageRef);
   
-      //Firestore'a bilgileri kaydet
       await setDoc(doc(db, `afet-bildirimleri/${auth.currentUser.uid}/images`, fileName), {
         imageUrl: downloadURL,
         timestamp: new Date(),
         fileName: fileName,
         status: "yeni",
-        location: coordinates, //Konum bilgisi eklendi
+        location: coordinates,
         description: "",
         severity: "normal",
         type: "genel"
@@ -57,102 +102,207 @@ const CameraScreen = ({ navigation }) => {
   
   const takePicture = async () => {
     try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        aspect: [3, 4],
-        quality: 1,
-      });
-  
-      if (!result.canceled) {
-        setUploading(true);
-  
-        try {
-          //Kullanıcının konum izni olup olmadığını kontrol et
-          let { status } = await Geolocation.requestForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert("Konum izni reddedildi", "Fotoğraf konum olmadan yüklenecek.");
+      const hasCameraPermission = await requestCameraPermission();
+      if (!hasCameraPermission) {
+        Alert.alert('İzin Gerekli', 'Fotoğraf çekmek için kamera izni gerekli.');
+        return;
+      }
+
+      const hasLocationPermission = await requestLocationPermission();
+      if (!hasLocationPermission) {
+        Alert.alert('Uyarı', 'Konum izni olmadan devam edilecek.');
+      }
+
+      const options = {
+        mediaType: 'photo',
+        includeBase64: false,
+        maxHeight: 1280,
+        maxWidth: 1280,
+        quality: 0.7,
+        saveToPhotos: false,
+        presentationStyle: 'fullScreen',
+        cameraType: 'back',
+        includeExtra: true,
+        formatAsMp4: false,
+        rotation: 0,
+        durationLimit: 0,
+        videoQuality: 'high'
+      };
+
+      const result = await launchCamera(options);
+      console.log('Kamera sonucu:', JSON.stringify(result, null, 2));
+
+      if (!result || result.didCancel || !result.assets) {
+        console.log('Kamera iptal edildi veya sonuç yok');
+        return;
+      }
+
+      if (result.errorCode) {
+        console.error('Kamera hatası:', result.errorMessage);
+        Alert.alert('Hata', `Kamera hatası: ${result.errorMessage}`);
+        return;
+      }
+
+      const asset = result.assets[0];
+      if (!asset || !asset.uri) {
+        console.error('Fotoğraf alınamadı');
+        Alert.alert('Hata', 'Fotoğraf alınamadı');
+        return;
+      }
+
+      setUploading(true);
+
+      try {
+        let coordinates = { latitude: null, longitude: null };
+        if (hasLocationPermission) {
+          try {
+            const location = await new Promise((resolve, reject) => {
+              Geolocation.getCurrentPosition(
+                position => resolve(position),
+                error => reject(error),
+                { 
+                  enableHighAccuracy: true, 
+                  timeout: 15000, 
+                  maximumAge: 10000,
+                  distanceFilter: 0,
+                  forceRequestLocation: true
+                }
+              );
+            });
+
+            if (location?.coords) {
+              coordinates = {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+              };
+            }
+          } catch (locationError) {
+            console.warn('Konum alınamadı:', locationError);
           }
-  
-          //Konumu al
-          let location = await Geolocation.getCurrentPositionAsync({});
-          const coordinates = {
-            latitude: location?.coords?.latitude || null,
-            longitude: location?.coords?.longitude || null
-          };
-  
-          //Firebase'e fotoğrafı yükle ve konumu kaydet
-          const downloadURL = await uploadImageToFirebase(result.assets[0].uri, coordinates);
-  
-          Alert.alert('Başarılı', 'Fotoğraf çekildi ve başarıyla yüklendi.', [
-            { text: 'Tamam', onPress: () => navigation.goBack() }
-          ]);
-        } catch (error) {
-          Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu.');
-        } finally {
-          setUploading(false);
         }
+
+        const fileUri = Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri;
+        
+        await uploadImageToFirebase(fileUri, coordinates);
+
+        Alert.alert(
+          'Başarılı', 
+          'Fotoğraf başarıyla yüklendi.', 
+          [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+        );
+      } catch (error) {
+        console.error('Yükleme hatası:', error);
+        Alert.alert(
+          'Hata',
+          'Fotoğraf yüklenemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.'
+        );
+      } finally {
+        setUploading(false);
       }
     } catch (error) {
-      console.error('Fotoğraf çekilirken hata oluştu:', error);
-      Alert.alert('Hata', 'Fotoğraf çekilirken bir hata oluştu.');
+      console.error('Genel hata:', error);
+      Alert.alert(
+        'Hata',
+        'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
+      );
+      setUploading(false);
     }
   };
 
-  if (hasPermission === null) {
-    return <View style={styles.container}><Text style={styles.text}>İzin kontrolü yapılıyor...</Text></View>;
-  }
-  if (hasPermission === false) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Kamera izni gerekli</Text>
-        <TouchableOpacity style={styles.button} onPress={() => ImagePicker.requestCameraPermissionsAsync()}>
-          <Text style={styles.buttonText}>İzin Ver</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Afet Bildirimi</Text>
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.description}>Afet bölgesindeki durumu fotoğraflamak için kamerayı kullanın.</Text>
-        {uploading ? (
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.uploadingText}>Fotoğraf yükleniyor...</Text>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-            <Ionicons name="camera" size={40} color="#fff" />
-            <Text style={styles.cameraButtonText}>Fotoğraf Çek</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-        )}
+          <Text style={styles.title}>Afet Bildirimi</Text>
+        </View>
+        <View style={styles.content}>
+          <Text style={styles.description}>Afet bölgesindeki durumu fotoğraflamak için kamerayı kullanın.</Text>
+          {uploading ? (
+            <View style={styles.uploadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.uploadingText}>Fotoğraf yükleniyor...</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
+              <Ionicons name="camera" size={40} color="#fff" />
+              <Text style={styles.cameraButtonText}>Fotoğraf Çek</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { marginRight: 15 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  description: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 30 },
-  cameraButton: { backgroundColor: '#007AFF', padding: 20, borderRadius: 15, alignItems: 'center' },
-  cameraButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginTop: 10 },
-  text: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 20 },
-  button: { backgroundColor: '#007AFF', padding: 15, borderRadius: 10 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  uploadingContainer: { alignItems: 'center' },
-  uploadingText: { marginTop: 10, fontSize: 16, color: '#666' }
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+  },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#fff' 
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  backButton: { 
+    padding: 8,
+  },
+  title: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#333',
+    marginLeft: 16,
+  },
+  content: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20 
+  },
+  description: { 
+    fontSize: 16, 
+    color: '#666', 
+    textAlign: 'center', 
+    marginBottom: 30 
+  },
+  cameraButton: { 
+    backgroundColor: '#007AFF', 
+    padding: 20, 
+    borderRadius: 15, 
+    alignItems: 'center',
+    width: '80%',
+  },
+  cameraButtonText: { 
+    color: '#fff', 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginTop: 10 
+  },
+  uploadingContainer: { 
+    alignItems: 'center' 
+  },
+  uploadingText: { 
+    marginTop: 10, 
+    fontSize: 16, 
+    color: '#666' 
+  }
 });
 
 export default CameraScreen;

@@ -236,7 +236,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.largeButton} 
-            onPress={() => navigation.navigate('Camera')}
+            onPress={() => navigation.navigate('UnderDebris')}
           >
             <View style={styles.buttonContent}>
               <Ionicons name="warning" size={18} color="white" style={styles.buttonIcon} />

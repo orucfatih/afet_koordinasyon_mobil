@@ -5,6 +5,7 @@ import TemporaryHome from "./TemporaryHome";
 import HomePage2 from "./HomePage2";
 import LoginPage2 from "./LoginPage2";
 import SignUpPage2 from "./SignUpPage2";
+import UnderDebrisScreen from "./UnderDebrisScreen";
 
 export{
 
@@ -15,4 +16,5 @@ export{
     HomePage2,
     LoginPage2,
     SignUpPage2,
+    UnderDebrisScreen,
 }
