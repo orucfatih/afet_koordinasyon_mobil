@@ -22,7 +22,7 @@ from styles.styles_light import *
 from .op_constant import TASK_PRIORITIES
 from .op_utils import get_icon_path
 from .op_dialogs import create_task_edit_dialog
-from .op_config import get_config
+from config import get_config
 from harita import GoogleMapsWindow
 from dotenv import load_dotenv
 import os

@@ -4,9 +4,10 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 from dotenv import load_dotenv
+from config import load_google_maps_api_key, init_config
 
 # Ortam değişkenlerini yükle
-load_dotenv()
+init_config()
 
 class GoogleMapsWindow(QMainWindow):
     """AFAD Afet Yönetim Haritası"""
@@ -15,11 +16,11 @@ class GoogleMapsWindow(QMainWindow):
         self.setWindowTitle("AFAD Afet Yönetim Haritası")
         self.setGeometry(100, 100, 1200, 800)
         
-        # Google Maps API key'i ortam değişkeninden al
-        self.api_key = os.getenv("GOOGLE_MAPS_API_KEY")
-        if not self.api_key:
-            print("\033[91mHATA: API_KEY ortam değişkeni bulunamadı!\033[0m")
-            print("\033[93mLütfen .env dosyasında API_KEY değişkenini tanımlayın.\033[0m")
+        # Google Maps API key'i config modülünden al
+        self.api_key = load_google_maps_api_key()
+        if not self.api_key or self.api_key == "your_api_key_here":
+            print("\033[91mHATA: GOOGLE_MAPS_API_KEY ortam değişkeni bulunamadı veya varsayılan değerde!\033[0m")
+            print("\033[93mLütfen .env dosyasında GOOGLE_MAPS_API_KEY değişkenini tanımlayın.\033[0m")
             sys.exit(1)
         
         self.latitude = 39.9334  # Türkiye merkezi (Ankara civarı)

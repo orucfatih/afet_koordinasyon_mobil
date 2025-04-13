@@ -1,6 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, db, storage
 import os
+<<<<<<< Updated upstream
 import json
 from dotenv import load_dotenv
 from pathlib import Path
@@ -9,6 +10,16 @@ from pathlib import Path
 # .env dosyasını projenin kök dizininde ara
 root_dir = Path(__file__).resolve().parent.parent
 dotenv_path = root_dir / '.env'
+=======
+from config import init_config, get_env_file_path
+from dotenv import load_dotenv
+
+# Konfigurasyon ayarlarını başlat
+init_config()
+
+# .env dosyasını yükle
+dotenv_path = get_env_file_path()
+>>>>>>> Stashed changes
 load_dotenv(dotenv_path)
 
 def initialize_firebase():
