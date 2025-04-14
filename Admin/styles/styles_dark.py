@@ -640,4 +640,116 @@ SCROLLBAR_STYLE = """
     }
 """
 
+# Citizen Report modülüne ait stil tanımlamaları
+CITIZEN_TABLE_STYLE = """
+    QTableWidget {
+        background-color: #1e222f;
+        alternate-background-color: #2c3e50;
+        color: white;
+        gridline-color: #3a3f55;
+        border: 1px solid #3a3f55;
+        border-radius: 4px;
+    }
+    QTableWidget::item {
+        padding: 4px;
+        border: none;
+    }
+    QTableWidget::item:selected {
+        background-color: #3498db;
+        color: white;
+    }
+    QHeaderView::section {
+        background-color: #34495e;
+        color: white;
+        padding: 6px;
+        border: 1px solid #3a3f55;
+        font-weight: bold;
+    }
+    QTableWidget QTableCornerButton::section {
+        background-color: #34495e;
+        border: 1px solid #3a3f55;
+    }
+    QScrollBar:vertical {
+        background-color: #2c3e50;
+        width: 12px;
+        margin: 0px;
+    }
+    QScrollBar::handle:vertical {
+        background-color: #3a3f55;
+        min-height: 20px;
+        border-radius: 4px;
+    }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        height: 0px;
+    }
+"""
+
+CITIZEN_GREEN_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #2ecc71;
+    }
+    QPushButton:pressed {
+        background-color: #219653;
+    }
+"""
+
+CITIZEN_DARK_BLUE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #2980b9;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #3498db;
+    }
+    QPushButton:pressed {
+        background-color: #1c587f;
+    }
+"""
+
+CITIZEN_RED_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #c0392b;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #e74c3c;
+    }
+    QPushButton:pressed {
+        background-color: #922b21;
+    }
+"""
+
+CITIZEN_ORANGE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #d35400;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #e67e22;
+    }
+    QPushButton:pressed {
+        background-color: #b64100;
+    }
+"""
+
 
