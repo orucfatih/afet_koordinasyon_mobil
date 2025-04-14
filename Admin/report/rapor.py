@@ -20,6 +20,24 @@ from utils import get_icon_path
 from database import get_database_ref, get_storage_bucket, initialize_firebase
 import uuid
 
+# Silme butonu için özel stil tanımı
+RESOURCE_DELETE_BUTTON_STYLE = """
+QPushButton {
+    background-color: #e74c3c;
+    color: white;
+    border: 1px solid #c0392b;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: #c0392b;
+}
+QPushButton:pressed {
+    background-color: #a93226;
+}
+"""
+
 class RaporYonetimTab(QWidget):
     """Rapor Yönetim Sekmesi"""
     def __init__(self):
@@ -164,12 +182,25 @@ class RaporYonetimTab(QWidget):
         list_group.setLayout(list_layout)
         right_layout.addWidget(list_group)
         
-        # Silme Butonu
-        self.delete_button = QPushButton("Seçili Raporu Sil")
-        self.delete_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        # Butonlar için layout
+        actions_layout = QHBoxLayout()
+        
+        # Silme Butonu (küçültülmüş)
+        self.delete_button = QPushButton("Sil")
+        self.delete_button.setStyleSheet(RESOURCE_DELETE_BUTTON_STYLE)
         self.delete_button.setIcon(QIcon(get_icon_path('bin.png')))
+        self.delete_button.setMaximumWidth(100)
         self.delete_button.clicked.connect(self.delete_selected_report)
-        right_layout.addWidget(self.delete_button)
+        
+        # PDF'e Aktar Butonu
+        self.export_pdf_button = QPushButton("PDF'e Aktar")
+        self.export_pdf_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.export_pdf_button.setIcon(QIcon(get_icon_path('pdf.png')))
+        self.export_pdf_button.clicked.connect(self.export_to_pdf)
+        
+        actions_layout.addWidget(self.delete_button)
+        actions_layout.addWidget(self.export_pdf_button)
+        right_layout.addLayout(actions_layout)
         
         # Panel genişliklerini ayarla
         left_panel.setMinimumWidth(600)  # Sol panel minimum genişlik
@@ -418,3 +449,194 @@ class RaporYonetimTab(QWidget):
                 
         except Exception as e:
             QMessageBox.critical(self, "Hata", f"Rapor detayları yüklenirken hata oluştu: {str(e)}")
+
+    def export_to_pdf(self):
+        """Seçili raporu PDF olarak dışa aktarır"""
+        try:
+            # Reportlab kütüphanesini import et
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib import colors
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+            
+            # Türkçe karakterler için font desteği ekle
+            try:
+                # Arial veya DejaVuSans gibi Türkçe destekleyen fontlar
+                # Önce DejaVuSans'ı deneyelim, yaygın olarak bulunur
+                pdfmetrics.registerFont(TTFont('DejaVuSans', 'fonts/DejaVuSans.ttf'))
+                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'fonts/DejaVuSans-Bold.ttf'))
+                
+                # Ana font olarak DejaVuSans kullan
+                main_font = 'DejaVuSans'
+                bold_font = 'DejaVuSans-Bold'
+            except:
+                # Font yoksa sistem fontlarını dene
+                try:
+                    # Windows'ta Arial fontunu dene
+                    pdfmetrics.registerFont(TTFont('Arial', 'C:/Windows/Fonts/arial.ttf'))
+                    pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+                    
+                    main_font = 'Arial'
+                    bold_font = 'Arial-Bold'
+                except:
+                    # Hiçbir Türkçe destekli font bulunamazsa Helvetica kullan (Türkçe karakterler tam görünmeyebilir)
+                    main_font = 'Helvetica'
+                    bold_font = 'Helvetica-Bold'
+                    QMessageBox.warning(self, "Uyarı", "Türkçe karakter desteği için uygun font bulunamadı.\nTürkçe karakterler düzgün görüntülenmeyebilir.")
+            
+            # Seçili raporun ID'sini al
+            secili_satirlar = self.reports_table.selectedItems()
+            if not secili_satirlar:
+                QMessageBox.warning(self, "Uyarı", "Lütfen PDF'e aktarılacak bir rapor seçin.")
+                return
+                
+            report_id = secili_satirlar[0].data(Qt.UserRole)
+            if not report_id:
+                QMessageBox.warning(self, "Uyarı", "Rapor ID'si bulunamadı.")
+                return
+                
+            # Firebase'den rapor verilerini al
+            report_data = self.reports_ref.child(report_id).get()
+            if not report_data:
+                QMessageBox.warning(self, "Uyarı", "Rapor verileri bulunamadı.")
+                return
+                
+            # Dosya adı için rapor bilgilerini al
+            bolge = report_data.get('bolge', 'Bilinmeyen_Bolge')
+            tur = report_data.get('tur', 'Rapor').replace(' ', '_')
+            tarih_str = report_data.get('tarih', '')
+            tarih = QDateTime.fromString(tarih_str, Qt.ISODate).toString("yyyyMMdd_HHmm")
+            
+            # Kullanıcıdan kaydetme konumu al
+            from PyQt5.QtWidgets import QFileDialog
+            dosya_adi = f"Rapor_{bolge}_{tur}_{tarih}.pdf"
+            dosya_yolu, _ = QFileDialog.getSaveFileName(
+                self, "PDF Kaydet", dosya_adi, "PDF Dosyası (*.pdf)"
+            )
+            
+            if not dosya_yolu:
+                return  # Kullanıcı iptal etti
+            
+            # PDF oluştur
+            doc = SimpleDocTemplate(
+                dosya_yolu,
+                pagesize=letter,
+                rightMargin=72, leftMargin=72,
+                topMargin=72, bottomMargin=18,
+                encoding='utf-8'  # UTF-8 kodlaması kullan
+            )
+            
+            # Türkçe karakterleri destekleyen stiller
+            styles = getSampleStyleSheet()
+            styles.add(ParagraphStyle(
+                name='TurkishHeading1',
+                fontName=bold_font,
+                fontSize=18,
+                spaceAfter=12,
+                encoding='utf-8'
+            ))
+            styles.add(ParagraphStyle(
+                name='TurkishHeading2',
+                fontName=bold_font,
+                fontSize=14,
+                spaceAfter=10,
+                encoding='utf-8'
+            ))
+            styles.add(ParagraphStyle(
+                name='TurkishNormal',
+                fontName=main_font,
+                fontSize=12,
+                spaceAfter=8,
+                encoding='utf-8'
+            ))
+            
+            # İçerik elemanları
+            elements = []
+            
+            # AFAD Logosu (varsa)
+            try:
+                from reportlab.platypus import Image
+                logo_path = 'icons/afad_logo.png'
+                if os.path.exists(logo_path):
+                    logo = Image(logo_path, width=1.5*inch, height=1*inch)
+                    elements.append(logo)
+                    elements.append(Spacer(1, 0.2 * inch))
+            except:
+                pass
+            
+            # Rapor başlığı
+            elements.append(Paragraph(f"{tur}", styles['TurkishHeading1']))
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            # Temel bilgiler tablosu
+            tarih_format = QDateTime.fromString(tarih_str, Qt.ISODate).toString("dd.MM.yyyy HH:mm")
+            basic_info = [
+                ["Rapor Tarihi:", tarih_format],
+                ["Bölge:", report_data.get('bolge', '')],
+                ["Rapor Türü:", report_data.get('tur', '')]
+            ]
+            
+            t = Table(basic_info, colWidths=[1.5*inch, 4*inch])
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
+                ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+                ('FONTNAME', (0, 0), (0, -1), bold_font),
+                ('FONTNAME', (1, 0), (1, -1), main_font),
+                ('FONTSIZE', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('BACKGROUND', (1, 0), (-1, -1), colors.white),
+                ('BOX', (0, 0), (-1, -1), 1, colors.black),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            # Özet
+            elements.append(Paragraph("Durum Özeti", styles['TurkishHeading2']))
+            ozet_text = report_data.get('ozet', '')
+            if ozet_text:
+                elements.append(Paragraph(ozet_text, styles['TurkishNormal']))
+            else:
+                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            # Detaylı bilgiler
+            elements.append(Paragraph("Detaylı Bilgiler", styles['TurkishHeading2']))
+            detay_text = report_data.get('detaylar', '')
+            if detay_text:
+                elements.append(Paragraph(detay_text, styles['TurkishNormal']))
+            else:
+                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            # İhtiyaçlar ve öneriler
+            elements.append(Paragraph("İhtiyaçlar ve Öneriler", styles['TurkishHeading2']))
+            ihtiyac_text = report_data.get('ihtiyaclar', '')
+            if ihtiyac_text:
+                elements.append(Paragraph(ihtiyac_text, styles['TurkishNormal']))
+            else:
+                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
+                
+            # Altbilgi - Footer
+            footer_text = f"Bu rapor {QDateTime.currentDateTime().toString('dd.MM.yyyy HH:mm')} tarihinde oluşturulmuştur."
+            elements.append(Spacer(1, 0.5 * inch))
+            elements.append(Paragraph(footer_text, styles['TurkishNormal']))
+            
+            # PDF oluştur
+            doc.build(elements)
+            
+            QMessageBox.information(self, "Başarılı", f"Rapor PDF olarak kaydedildi: {dosya_yolu}")
+            
+        except ModuleNotFoundError:
+            QMessageBox.warning(self, "Uyarı", 
+                               "PDF oluşturmak için reportlab kütüphanesi gereklidir.\n"
+                               "Lütfen şu komutu çalıştırın: pip install reportlab")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"PDF oluşturulurken hata oluştu: {str(e)}")
+            import traceback
+            traceback.print_exc()
