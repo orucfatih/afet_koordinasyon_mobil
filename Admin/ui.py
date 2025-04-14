@@ -15,6 +15,7 @@ from utils import get_icon_path
 from equipment_management.equipment_management import EquipmentManagementTab
 from citizen_death_report.citizen_report import CitizenReportTab
 from simulations.simulation_tabs import SimulationTab
+from mass_sms.mass_sms_tab import MassSMSTab
 import os
 
 class AfetYonetimAdmin(QMainWindow):
@@ -112,7 +113,7 @@ class AfetYonetimAdmin(QMainWindow):
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
             ("Geçici İskan Planlama", CitizenReportTab()),
-            ("Kitlesel SMS/Bildirim Sistemi", CitizenReportTab()),
+            ("Kitlesel SMS/Bildirim Sistemi", MassSMSTab()),
             ("Senaryo Simülasyonu", SimulationTab()),
             ("Finansal Yönetim", CitizenReportTab()),
             ("Vatandaş Feedback Sistemi", CitizenReportTab()),
