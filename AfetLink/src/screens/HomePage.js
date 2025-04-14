@@ -444,7 +444,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#2D2D2D',
-    paddingVertical: 30,
+    paddingVertical: 50,
     borderTopWidth: 2,
     borderTopColor: '#444',
     elevation: 5,
@@ -459,16 +459,17 @@ export const styles = StyleSheet.create({
   logoImage: {
     width: 50,
     height: 50,
-    top: -20,
     position: 'absolute',
     left: width / 2 - 25,
   },
   whistleButton: {
     position: 'absolute',
     left: 20,
+    top: 70,
   },
   info: {
     right: 40,
+    top: 20,
   },
   scrollContent: {
     paddingTop: 80,
