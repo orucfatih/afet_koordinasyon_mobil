@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -17,7 +17,6 @@ import { getAuth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import app from '../../firebaseConfig';
-import Geolocation from 'react-native-geolocation-service';
 
 const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
@@ -25,55 +24,34 @@ const CameraScreen = ({ navigation }) => {
   const storage = getStorage(app);
   const db = getFirestore(app);
 
-  const requestCameraPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: "Kamera İzni",
-            message: "Afet bildirimi yapabilmek için kamera izni gerekli.",
-            buttonNeutral: "Daha Sonra Sor",
-            buttonNegative: "İptal",
-            buttonPositive: "Tamam"
-          }
+  const getCurrentLocation = () => {
+    return new Promise((resolve) => {
+      if (navigator && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+          },
+          (error) => {
+            console.log('Konum hatası:', error);
+            resolve({ latitude: null, longitude: null });
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
         );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
+      } else {
+        resolve({ latitude: null, longitude: null });
       }
-    }
-    return true;
-  };
-
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: "Konum İzni",
-            message: "Afet bildiriminin konumunu kaydetmek için konum izni gerekli.",
-            buttonNeutral: "Daha Sonra Sor",
-            buttonNegative: "İptal",
-            buttonPositive: "Tamam"
-          }
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
-      }
-    }
-    return true;
+    });
   };
 
   const uploadImageToFirebase = async (uri, coordinates) => {
     try {
-      await auth.currentUser.reload();
-  
-      const response = await fetch(uri);
+      // URL formatını kontrol et
+      const correctUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
+      
+      const response = await fetch(correctUri);
       const blob = await response.blob();
   
       const fileName = `${auth.currentUser.uid}_${Date.now()}.jpg`;
@@ -87,7 +65,7 @@ const CameraScreen = ({ navigation }) => {
         timestamp: new Date(),
         fileName: fileName,
         status: "yeni",
-        location: coordinates,
+        location: coordinates || { latitude: null, longitude: null },
         description: "",
         severity: "normal",
         type: "genel"
@@ -101,111 +79,93 @@ const CameraScreen = ({ navigation }) => {
   };
   
   const takePicture = async () => {
-    try {
-      const hasCameraPermission = await requestCameraPermission();
-      if (!hasCameraPermission) {
-        Alert.alert('İzin Gerekli', 'Fotoğraf çekmek için kamera izni gerekli.');
-        return;
-      }
-
-      const hasLocationPermission = await requestLocationPermission();
-      if (!hasLocationPermission) {
-        Alert.alert('Uyarı', 'Konum izni olmadan devam edilecek.');
-      }
-
-      const options = {
-        mediaType: 'photo',
-        includeBase64: false,
-        maxHeight: 1280,
-        maxWidth: 1280,
-        quality: 0.7,
-        saveToPhotos: false,
-        presentationStyle: 'fullScreen',
-        cameraType: 'back',
-        includeExtra: true,
-        formatAsMp4: false,
-        rotation: 0,
-        durationLimit: 0,
-        videoQuality: 'high'
-      };
-
-      const result = await launchCamera(options);
-      console.log('Kamera sonucu:', JSON.stringify(result, null, 2));
-
-      if (!result || result.didCancel || !result.assets) {
-        console.log('Kamera iptal edildi veya sonuç yok');
-        return;
-      }
-
-      if (result.errorCode) {
-        console.error('Kamera hatası:', result.errorMessage);
-        Alert.alert('Hata', `Kamera hatası: ${result.errorMessage}`);
-        return;
-      }
-
-      const asset = result.assets[0];
-      if (!asset || !asset.uri) {
-        console.error('Fotoğraf alınamadı');
-        Alert.alert('Hata', 'Fotoğraf alınamadı');
-        return;
-      }
-
-      setUploading(true);
-
+    // İzinleri kontrol et
+    if (Platform.OS === 'android') {
       try {
-        let coordinates = { latitude: null, longitude: null };
-        if (hasLocationPermission) {
-          try {
-            const location = await new Promise((resolve, reject) => {
-              Geolocation.getCurrentPosition(
-                position => resolve(position),
-                error => reject(error),
-                { 
-                  enableHighAccuracy: true, 
-                  timeout: 15000, 
-                  maximumAge: 10000,
-                  distanceFilter: 0,
-                  forceRequestLocation: true
-                }
-              );
-            });
+        const cameraPermission = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA
+        );
+        
+        if (cameraPermission !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('İzin Gerekli', 'Kamera izni olmadan fotoğraf çekilemez.');
+          return;
+        }
+        
+        // Konum izni iste
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+      } catch (err) {
+        console.error("İzin hatası:", err);
+        return;
+      }
+    }
 
-            if (location?.coords) {
-              coordinates = {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude
-              };
-            }
-          } catch (locationError) {
-            console.warn('Konum alınamadı:', locationError);
-          }
+    // Kamerayı başlat - çok basit seçeneklerle
+    const options = {
+      mediaType: 'photo',
+      includeBase64: false,
+      quality: 0.7,
+      maxWidth: 1000,
+      maxHeight: 1000,
+      saveToPhotos: false
+    };
+
+    try {
+      launchCamera(options, async (response) => {
+        if (response.didCancel) {
+          console.log('Kullanıcı kamerayı iptal etti');
+          return;
+        }
+        
+        if (response.errorCode) {
+          console.log('Kamera hatası: ', response.errorMessage);
+          Alert.alert('Hata', 'Kamera açılırken bir hata oluştu.');
+          return;
+        }
+        
+        if (!response.assets || !response.assets[0] || !response.assets[0].uri) {
+          console.log('Fotoğraf alınamadı');
+          Alert.alert('Hata', 'Fotoğraf alınamadı.');
+          return;
         }
 
-        const fileUri = Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri;
+        // Fotoğraf alındı, yüklemeye başla
+        setUploading(true);
         
-        await uploadImageToFirebase(fileUri, coordinates);
-
-        Alert.alert(
-          'Başarılı', 
-          'Fotoğraf başarıyla yüklendi.', 
-          [{ text: 'Tamam', onPress: () => navigation.goBack() }]
-        );
-      } catch (error) {
-        console.error('Yükleme hatası:', error);
-        Alert.alert(
-          'Hata',
-          'Fotoğraf yüklenemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.'
-        );
-      } finally {
-        setUploading(false);
-      }
+        try {
+          const { uri } = response.assets[0];
+          console.log("Fotoğraf URI:", uri);
+          
+          // Konum almaya çalış
+          let locationCoordinates;
+          try {
+            locationCoordinates = await getCurrentLocation();
+            console.log("Konum alındı:", locationCoordinates);
+          } catch (locationError) {
+            console.log("Konum alınamadı:", locationError);
+            locationCoordinates = { latitude: null, longitude: null };
+          }
+          
+          // Firebase'e yükle (konumla birlikte)
+          await uploadImageToFirebase(uri, locationCoordinates);
+          
+          // Başarılı mesajı göster
+          Alert.alert(
+            'Başarılı',
+            'Fotoğraf başarıyla yüklendi.',
+            [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+          );
+        } catch (error) {
+          console.error('Yükleme hatası:', error);
+          Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu.');
+        } finally {
+          setUploading(false);
+        }
+      });
     } catch (error) {
       console.error('Genel hata:', error);
-      Alert.alert(
-        'Hata',
-        'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
-      );
-      setUploading(false);
+      Alert.alert('Hata', 'Bir hata oluştu.');
     }
   };
 
