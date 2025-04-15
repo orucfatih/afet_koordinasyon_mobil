@@ -197,7 +197,7 @@ class LoginUI(QWidget):
         # Create cards
         self.personel_card = LoginCard("Personel Girişi", "afad.png", main_window=self)
         self.personel_card.setObjectName("personel")
-        self.admin_card = LoginCard("Admin Girişi", "bakanlik.png", main_window=self)
+        self.admin_card = LoginCard("Yönetici Girişi", "bakanlik.png", main_window=self)
         self.admin_card.setObjectName("admin")
         
         login_cards.addWidget(self.personel_card)
@@ -354,7 +354,7 @@ class LoginUI(QWidget):
         if login_type == "personel":
             self.login_type_label.setText("Personel Girişi")
         else:
-            self.login_type_label.setText("Admin Girişi")
+            self.login_type_label.setText("Yönetici Girişi")
         self.stacked_widget.setCurrentIndex(1)
         self.username_input.clear()
         self.password_input.clear()

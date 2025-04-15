@@ -93,10 +93,13 @@ class LoginPage(LoginUI):
                 stored_password = credentials.get("password")
                 
             if username == stored_username and password == stored_password:
-                from ui import AfetYonetimAdmin
+                if self.current_login_type == "personel":
+                    from ui import AfetYonetimAdmin
+                    self.main_window = AfetYonetimAdmin(initial_theme=self.theme)
+                else:
+                    from ManagerApp.ui import YonetimPaneli
+                    self.main_window = YonetimPaneli(initial_theme=self.theme)
                 
-                # Ana pencereyi aç
-                self.main_window = AfetYonetimAdmin(initial_theme=self.theme)
                 self.main_window.show()
                 self.close()
             else:
