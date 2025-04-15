@@ -524,7 +524,7 @@ sehirler = {
         "Yalvaç": 46688,
         "Yenişarbademli": 2087
     },
-    "İstanbul": {
+    "Istanbul": {
         "Adalar": 15238,
         "Arnavutköy": 282488,
         "Ataşehir": 425094,
@@ -565,7 +565,7 @@ sehirler = {
         "Üsküdar": 531825,
         "Zeytinburnu": 293574
     },
-    "İzmir": {
+    "Izmir": {
         "Aliağa": 96974,
         "Balçova": 79681,
         "Bayındır": 40414,

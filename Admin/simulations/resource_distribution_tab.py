@@ -2,11 +2,16 @@ from PyQt5.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                            QPushButton, QComboBox, QSpinBox, QProgressBar,
                            QFormLayout, QGroupBox, QMessageBox, QTreeWidget, QTreeWidgetItem)
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
 
 from .logistics_calculator import LogisticsCalculator
 from .sehirler_ve_ilceler import DISTRIBUTION_CENTERS
 from .logistic_vehicle_const import lojistik_araclar, RESOURCE_UNITS
 from .base_components import BaseSimulationTab
+
+# run simulation metodunda kullanılan diğer importlar
+#from .results.result_mcts import ResourceDistributionMCTS
+#from .results.mcts_dialog import MCTSResultDialog
 
 class ResourceDistributionTab(BaseSimulationTab):
     """Kaynak Dağıtım Simülasyonu Sekmesi"""
@@ -241,15 +246,50 @@ class ResourceDistributionTab(BaseSimulationTab):
         # Simülasyon parametrelerini al
         road_condition = self.road_condition.value()
         iterations = self.iterations.value()
-        selected_districts = self.city_tree_manager.get_selected_districts()
+        
+        # Seçili ilçeleri (şehir, ilçe) çiftleri olarak al
+        selected_districts = []
+        all_districts = {}  # Tüm seçili ilçeleri ve nüfuslarını sakla
+        
+        for (city, district), population in self.city_tree_manager.get_selected_districts().items():
+            selected_districts.append((city, district))
+            all_districts[(city, district)] = population
         
         # İlerleme çubuğunu göster
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
         
         try:
-            # TODO: Monte Carlo Tree Search simülasyonunu burada implement et
-            QMessageBox.information(self, "Bilgi", "Monte Carlo Tree Search simülasyonu henüz implement edilmedi.")
+            # Monte Carlo Tree Search simülasyonunu başlat
+            from .results.result_mcts import ResourceDistributionMCTS
+            from .results.mcts_dialog import MCTSResultDialog
+            
+            mcts = ResourceDistributionMCTS(
+                logistics_calculator=self.logistics_calculator,
+                districts=selected_districts,
+                road_condition=road_condition
+            )
+            
+            # İlerleme çubuğu callback'i
+            def update_progress(value):
+                self.progress_bar.setValue(int(value))
+                QApplication.processEvents()  # UI'ı güncelle
+            
+            # Callback'i MCTS'ye ekle
+            mcts.progress_callback = update_progress
+            
+            # Simülasyonu çalıştır
+            best_actions, total_cost = mcts.simulate(iterations)
+            
+            # Sonuçları göster - logistics_calculator ve tüm ilçeleri gönder
+            dialog = MCTSResultDialog(
+                actions=best_actions, 
+                total_cost=total_cost, 
+                logistics_calculator=self.logistics_calculator, 
+                selected_districts=all_districts,
+                parent=self
+            )
+            dialog.exec_()
             
         except Exception as e:
             QMessageBox.warning(self, "Hata", f"Simülasyon çalıştırılırken hata oluştu: {str(e)}")

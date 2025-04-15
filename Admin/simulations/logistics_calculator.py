@@ -50,6 +50,14 @@ class LogisticsCalculator:
             return self.depot_vehicles[depot]
         return {vehicle_type: 0 for vehicle_type in lojistik_araclar.keys()}
     
+    def get_all_depot_resources(self) -> Dict[str, Dict[str, int]]:
+        """Tüm depoların kaynak kapasitelerini döndür"""
+        return self.depot_capacities.copy()
+    
+    def get_all_depot_vehicles(self) -> Dict[str, Dict[str, int]]:
+        """Tüm depoların araç kapasitelerini döndür"""
+        return self.depot_vehicles.copy()
+    
     def get_distance(self, city1: str, city2: str) -> int:
         """İki şehir arasındaki mesafeyi döndür"""
         try:
@@ -94,4 +102,85 @@ class LogisticsCalculator:
         min_time = base_time + loading_time + unloading_time
         max_time = min_time * 1.5  # %50 gecikme payı
         
-        return (min_time, max_time) 
+        return (min_time, max_time)
+
+    def get_district_city_distance(self, district_pair: Tuple[str, str], city: str) -> int:
+        """İlçe ile şehir arasındaki mesafeyi hesapla (şehir merkezini baz alır)"""
+        # İlçe bilgisini (şehir, ilçe) çiftinden al
+        district_city, district_name = district_pair
+        
+        # Eğer ilçe hedef şehrin kendi ilçesiyse, mesafeyi 0 kabul et
+        if district_city == city:
+            return 0
+        
+        # İlçenin şehri ile hedef şehir arasındaki mesafeyi döndür
+        return self.get_distance(district_city, city)
+
+    def calculate_transport_cost(self, depot: str, district: Tuple[str, str],
+                               vehicle_type: str, resources: Dict[str, int], road_condition: int) -> Tuple[float, float]:
+        """Taşıma maliyetini hesapla"""
+        # Mesafeyi hesapla
+        distance = self.get_district_city_distance(district, depot)
+        
+        # Araç başına km maliyeti (yakıt, bakım, vs.)
+        cost_per_km = {
+            "Hafif Tonaj": 2.5,
+            "Orta Tonaj": 3.5,
+            "Ağır Tonaj (TIR)": 5.0
+        }
+        
+        # Toplam kaynak miktarı
+        total_resources = sum(resources.values())
+        
+        # Baz maliyet
+        base_cost = distance * cost_per_km[vehicle_type]
+        
+        # Yol durumuna göre ek maliyet
+        condition_multiplier = 1 + (5 - road_condition) * 0.2  # Kötü yol = daha yüksek maliyet
+        
+        # Minimum ve maksimum maliyetler
+        min_cost = base_cost * condition_multiplier
+        max_cost = min_cost * 1.3  # %30 beklenmeyen giderler
+        
+        return (min_cost, max_cost)
+
+    def calculate_daily_needs(self, population: int) -> Dict[str, int]:
+        """Nüfusa göre günlük ihtiyaçları hesapla"""
+        daily_needs_per_person = {
+            "Su": 3,        # litre/gün
+            "Gıda": 2,      # öğün/gün
+            "İlaç": 0.2,    # kutu/gün
+            "Çadır": 0.2,   # adet/kişi (5 kişilik aile varsayımı)
+            "Battaniye": 1, # adet/kişi
+            "Diğer": 0.5    # paket/gün
+        }
+        
+        return {
+            resource: int(population * amount)
+            for resource, amount in daily_needs_per_person.items()
+        }
+
+    def calculate_transport_details(self, depot: str, district: Tuple[str, str], 
+                                  road_condition: int) -> Dict[str, float]:
+        """Taşıma detaylarını hesapla (mesafe, süre, hız)"""
+        distance = self.get_district_city_distance(district, depot)
+        avg_speed = self.calculate_average_speed(road_condition)
+        
+        # Sabit yükleme/boşaltma süreleri
+        loading_time = 1.0  # saat
+        unloading_time = 1.0  # saat
+        
+        # Yolculuk süresi
+        travel_time = distance / avg_speed
+        
+        # Toplam süre
+        total_time = travel_time + loading_time + unloading_time
+        
+        return {
+            "distance": distance,
+            "average_speed": avg_speed,
+            "loading_time": loading_time,
+            "unloading_time": unloading_time,
+            "travel_time": travel_time,
+            "total_time": total_time
+        } 
