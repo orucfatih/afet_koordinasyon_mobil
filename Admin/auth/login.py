@@ -61,32 +61,52 @@ class StyledToggle(QCheckBox):
         self._animation.setEndValue(end_value)
         self._animation.start()
 
-login_file = os.path.join(os.path.dirname(__file__), 'login.txt')
 class LoginPage(LoginUI):
     def __init__(self, parent=None):
         super().__init__()
         self.parent = parent
         self.login_button.clicked.connect(self.login)
+        self.current_login_type = None
+
+    def show_login_form(self, login_type):
+        self.current_login_type = login_type
+        super().show_login_form(login_type)
 
     def login(self):
-        username = self.username_input.text()
-        password = self.password_input.text()
+        username = self.username_input.text().strip()
+        password = self.password_input.text().strip()
         
+        if not username or not password:
+            QMessageBox.warning(self, "Hata", "Kullanıcı adı ve şifre boş olamaz!")
+            return
+            
         try:
+            # Giriş tipine göre doğru dosyayı seç
+            if self.current_login_type == "personel":
+                login_file = os.path.join(os.path.dirname(__file__), 'personel_login.txt')
+            else:
+                login_file = os.path.join(os.path.dirname(__file__), 'admin_login.txt')
+            
             with open(login_file, 'r') as file:
                 credentials = json.load(file)
                 stored_username = credentials.get("username")
                 stored_password = credentials.get("password")
-        except (FileNotFoundError, json.JSONDecodeError):
-            QMessageBox.warning(self, "Hata", "Login dosyası bulunamadı veya bozuk!")
-            return
-        
-        if username == stored_username and password == stored_password:
-            from ui import AfetYonetimAdmin
-            
-            # Ana pencereye seçilen temayı aktar
-            self.main_window = AfetYonetimAdmin(initial_theme=self.theme)
-            self.main_window.show()
-            self.close()
-        else:
-            QMessageBox.warning(self, "Hata", "Kullanıcı adı veya şifre yanlış!")
+                
+            if username == stored_username and password == stored_password:
+                from ui import AfetYonetimAdmin
+                
+                # Ana pencereyi aç
+                self.main_window = AfetYonetimAdmin(initial_theme=self.theme)
+                self.main_window.show()
+                self.close()
+            else:
+                QMessageBox.warning(self, "Hata", "Kullanıcı adı veya şifre yanlış!")
+                self.password_input.clear()
+                self.password_input.setFocus()
+                
+        except FileNotFoundError:
+            QMessageBox.critical(self, "Hata", f"Giriş dosyası bulunamadı!")
+        except json.JSONDecodeError:
+            QMessageBox.critical(self, "Hata", f"Giriş dosyası bozuk!")
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Giriş hatası: {str(e)}")
