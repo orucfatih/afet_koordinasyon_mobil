@@ -1,3 +1,13 @@
+"""
+bu uygulama şifre işlemleri 
+kullanıcı atama 
+verilen karar kontrolleri ve onaylama
+gibi bir üst seviye işlemleri yapabilir
+
+
+"""
+
+
 import sys
 import os
 import platform

@@ -197,7 +197,7 @@ class LoginUI(QWidget):
         # Create cards
         self.personel_card = LoginCard("Personel Girişi", "afad.png", main_window=self)
         self.personel_card.setObjectName("personel")
-        self.admin_card = LoginCard("Yönetici Girişi", "bakanlik.png", main_window=self)
+        self.admin_card = LoginCard("Yönetim Girişi", "bakanlik.png", main_window=self)
         self.admin_card.setObjectName("admin")
         
         login_cards.addWidget(self.personel_card)
