@@ -9,6 +9,9 @@ import {
   Dimensions,
   FlatList,
   Linking,
+  StatusBar,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -180,139 +183,146 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
-          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
-          <Ionicons name="megaphone" size={25} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
-          <Ionicons name="information-circle" size={25} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Son Depremler</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('ViewAll')}>
-            <Text style={styles.viewAll}>Tümünü Gör</Text>
+    <View style={styles.mainContainer}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#2D2D2D"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
+            <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
+            <Ionicons name="megaphone" size={25} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
+            <Ionicons name="information-circle" size={25} color="white" />
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={earthquakeData.slice(0, 10)}
-          renderItem={renderEarthquakeCard}
-          keyExtractor={(item) => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          style={styles.slider}
-        />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Son Depremler</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ViewAll')}>
+              <Text style={styles.viewAll}>Tümünü Gör</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.pagination}>
-          {earthquakeData.map((_, index) => (
-            <View key={index} style={[styles.dot, currentIndex === index && styles.activeDot]} />
-          ))}
-        </View>
+          <FlatList
+            data={earthquakeData.slice(0, 10)}
+            renderItem={renderEarthquakeCard}
+            keyExtractor={(item) => item.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            style={styles.slider}
+          />
 
-        <Animatable.View
-          animation="pulseBorder"
-          iterationCount="infinite"
-          duration={2000}
-          style={styles.bigButtonWrapper}
-        >
-          <TouchableOpacity 
-            style={styles.bigButton} 
-            onPress={() => navigation.navigate('Camera')}
+          <View style={styles.pagination}>
+            {earthquakeData.map((_, index) => (
+              <View key={index} style={[styles.dot, currentIndex === index && styles.activeDot]} />
+            ))}
+          </View>
+
+          <Animatable.View
+            animation="pulseBorder"
+            iterationCount="infinite"
+            duration={2000}
+            style={styles.bigButtonWrapper}
           >
-            <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
-            <Ionicons name="camera" size={30} color="white" style={styles.camera} />
-          </TouchableOpacity>
-        </Animatable.View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={styles.largeButton} 
-            onPress={() => navigation.navigate('UnderDebris')}
-          >
-            <View style={styles.buttonContent}>
-              <Ionicons name="warning" size={18} color="white" style={styles.buttonIcon} />
-              <Text 
-                style={styles.largeButtonText}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                ENKAZ ALTINDAYIM
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.smallButton} 
-            onPress={() => console.log('Ailene Bildir')}
-          >
-            <View style={styles.buttonContent}>
-              <Ionicons name="notifications" size={16} color="white" style={styles.buttonIcon} />
-              <Text style={styles.smallButtonText}>AİLENE BİLDİR</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        <MapView
-          style={styles.map}
-          region={region}
-          onRegionChangeComplete={handleRegionChange}
-        >
-          {earthquakeData.map((item) => (
-            <Marker
-              key={item.id}
-              coordinate={{ latitude: item.lat, longitude: item.lon }}
-              title={item.location}
-              description={`Şiddet: ${item.magnitude}`}
-              pinColor="red"
-            />
-          ))}
-          {assemblyAreas.map(area => (
-            <Marker
-              key={area.id}
-              coordinate={{ latitude: area.latitude, longitude: area.longitude }}
-              title={area.name}
-              description={`Uzaklık: ${area.distance}, Kapasite: ${area.capacity}`}
-              pinColor="green"
-            />
-          ))}
-        </MapView>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Toplanma Alanları</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>Tümünü Gör</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.assemblyButtonsContainer}>
-          {assemblyAreas.slice(0, 6).map((area) => (
-            <TouchableOpacity
-              key={area.id}
-              style={styles.assemblyButton}
-              onPress={() => handleNavigateToAssemblyArea(area.latitude, area.longitude)}
+            <TouchableOpacity 
+              style={styles.bigButton} 
+              onPress={() => navigation.navigate('Camera')}
             >
-              <View style={styles.assemblyButtonContent}>
-                <View style={styles.assemblyIconWrapper}>
-                  <Ionicons name="people" size={30} color="white" />
-                </View>
-                <View>
-                  <Text style={styles.assemblyButtonText}>{area.name}</Text>
-                  <Text style={styles.assemblyDetails}>Uzaklık: {area.distance}</Text>
-                  <Text style={styles.assemblyDetails}>Kapasite: {area.capacity}</Text>
-                </View>
+              <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
+              <Ionicons name="camera" size={30} color="white" style={styles.camera} />
+            </TouchableOpacity>
+          </Animatable.View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.largeButton} 
+              onPress={() => navigation.navigate('UnderDebris')}
+            >
+              <View style={styles.buttonContent}>
+                <Ionicons name="warning" size={18} color="white" style={styles.buttonIcon} />
+                <Text 
+                  style={styles.largeButtonText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  ENKAZ ALTINDAYIM
+                </Text>
               </View>
             </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+            <TouchableOpacity 
+              style={styles.smallButton} 
+              onPress={() => console.log('Ailene Bildir')}
+            >
+              <View style={styles.buttonContent}>
+                <Ionicons name="notifications" size={16} color="white" style={styles.buttonIcon} />
+                <Text style={styles.smallButtonText}>AİLENE BİLDİR</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <MapView
+            style={styles.map}
+            region={region}
+            onRegionChangeComplete={handleRegionChange}
+          >
+            {earthquakeData.map((item) => (
+              <Marker
+                key={item.id}
+                coordinate={{ latitude: item.lat, longitude: item.lon }}
+                title={item.location}
+                description={`Şiddet: ${item.magnitude}`}
+                pinColor="red"
+              />
+            ))}
+            {assemblyAreas.map(area => (
+              <Marker
+                key={area.id}
+                coordinate={{ latitude: area.latitude, longitude: area.longitude }}
+                title={area.name}
+                description={`Uzaklık: ${area.distance}, Kapasite: ${area.capacity}`}
+                pinColor="green"
+              />
+            ))}
+          </MapView>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Toplanma Alanları</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>Tümünü Gör</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.assemblyButtonsContainer}>
+            {assemblyAreas.slice(0, 6).map((area) => (
+              <TouchableOpacity
+                key={area.id}
+                style={styles.assemblyButton}
+                onPress={() => handleNavigateToAssemblyArea(area.latitude, area.longitude)}
+              >
+                <View style={styles.assemblyButtonContent}>
+                  <View style={styles.assemblyIconWrapper}>
+                    <Ionicons name="people" size={30} color="white" />
+                  </View>
+                  <View>
+                    <Text style={styles.assemblyButtonText}>{area.name}</Text>
+                    <Text style={styles.assemblyDetails}>Uzaklık: {area.distance}</Text>
+                    <Text style={styles.assemblyDetails}>Kapasite: {area.capacity}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
@@ -432,6 +442,15 @@ const HomePage = ({ navigation }) => {
 export default HomePage;
 
 export const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#2D2D2D',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -444,35 +463,35 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#2D2D2D',
-    paddingVertical: 50,
+    paddingVertical: 25,
     borderTopWidth: 2,
     borderTopColor: '#444',
     elevation: 5,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     zIndex: 10,
+    position: 'relative',
+    minHeight: 100,
   },
   logoImage: {
     width: 50,
     height: 50,
     position: 'absolute',
     left: width / 2 - 25,
+    top: -20,
   },
   whistleButton: {
     position: 'absolute',
     left: 20,
-    top: 70,
+    top: 35,
   },
   info: {
-    right: 40,
-    top: 20,
+    position: 'absolute',
+    right: 20,
+    top: 35,
   },
   scrollContent: {
-    paddingTop: 80,
+    paddingTop: 20,
     paddingBottom: 20,
   },
   sectionHeader: {

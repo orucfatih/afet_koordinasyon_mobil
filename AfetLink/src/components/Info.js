@@ -1,58 +1,78 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image, StatusBar, SafeAreaView, Platform } from 'react-native'
 import React from 'react'
 import Ionicons from 'react-native-vector-icons/Ionicons' // İkon kütüphanesini içe aktar
 
 const Info = ({ setInfo }) => {
   return (
-    <ScrollView style={styles.container}>
-      
-      <View style={styles.topBar}>
-        <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
-        <TouchableOpacity style={styles.backButton} onPress={() => setInfo(false)}>
-          <Ionicons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.mainContainer}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#2D2D2D"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.topBar}>
+          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+          <TouchableOpacity style={styles.backButton} onPress={() => setInfo(false)}>
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.content}>
-        <Text>İçerik Eklenecek</Text>
-      </View>
-
-    </ScrollView>
+        <ScrollView style={styles.container}>
+          <View style={styles.content}>
+            <Text>İçerik Eklenecek</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   )
 }
 
 export default Info
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#2D2D2D',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  content:{
-    alignItems:"center",
-    justifyContent:"center",
-    height:500,
+  content: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 500,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#2D2D2D', // Koyu arka plan
-    paddingVertical: 15,
+    alignItems: 'center',
+    backgroundColor: '#2D2D2D',
+    paddingVertical: 25,
     borderTopWidth: 2,
     borderTopColor: '#444',
-    marginHorizontal: 0,
-    elevation: 5,  // Gölgeleme efekti
-    borderBottomLeftRadius: 20, // Üst sol köşe radius
-    borderBottomRightRadius: 20, // Üst sağ köşe radius
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    zIndex: 10,
+    position: 'relative',
+    minHeight: 100,
   },
   backButton: {
-    top: 20,
-    right: 40,
+    position: 'absolute',
+    right: 20,
+    top: 35,
   },
   logoImage: {
     width: 50,
-    top: 5,
-    left: 30,
     height: 50,
+    position: 'absolute',
+    left: 30,
   },
 })
