@@ -7,33 +7,23 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials, firestore, storage
+
+# database.py'den Firebase fonksiyonlarını içe aktar
+from database import initialize_firebase, get_database_ref, get_storage_bucket
 
 # Ortam değişkenlerini yükle
 load_dotenv()
 
-# Firebase kimlik bilgileri (sabit JSON)
-FIREBASE_CREDENTIALS = {
-  "type": "service_account",
-  "project_id": "afad-proje",
-  "private_key_id": "04ee79448796d76585d2eef07a22808fbdc56fdc",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDkvdvOZoWPydvo\nFTptAv0dMUFiotm+24vqN+A5YIayfMw9jSauFnZmQQKPFuevedL8siF1QOhs9dJb\nnNB+0kWbESUPDI2Aky6pz5rYAXm2sYtoNCFOdPrcH8+GXwSGq6X/gLtk3k8Ryc5E\nNL3XmmO5ftyaF9TTcSIeLmG6QAGH0Jh9bXJilTMX09SyNI1p3TpmjD+MnAjyoWY2\nAfqGN5GDlzQKqkWaIoJHpb//KBCccL/BYJPP5iXEfTHSIoy6XQhCt6WPs4kMnftF\naJ1JnisfRlfkwD4x4IYlcG3enODzdgsqzdYmwnxwUTOe0LZUs9PJh8MWzl8UCWvw\n7GaENnXHAgMBAAECggEAUeTVdtqGs/mhxUAgaFn7FAIH9k/2pFnHCIaTvQcdgnai\nyuCnugkpv6dDysX5Ef6MNtNxniCsdiI2e30zukv/BqsHORGV8bQAL2S3++DfWjTL\ng/Wx/PxtufSboHCRVsPKjSTiMpVS+rvlIM8/LptEW+ubAIJKvJ7TB7o0W/HBeoVb\nYv+egzGwzu1juK2eKrp491+mZmdcZNhhXnvHx/pK2EJWHi2yEHehQ7X7g9J3SLTq\nDYgb5Ow7rWS0Zm0LlAQxZnAQXhDXjIkG3vQX/FR8xZrW1kuTKxCEMumJdAk4IsLX\nDaJXSoY+STZh4iGFikV2xEPmmSYcLK1cscZT++IUxQKBgQD0FWZdp2p5jbm8oLKP\nkH2n3TCKadlwmhQ9+xr65RdeEiPAYdTecOseiCVZom5tVuspNTkuf4Mol68ZJySC\nrl/iQf1oZqS1LjhWttWUby4Am4YiSEaqCcWkyiD40e1CO28IGWXuue1oK8oO+iMX\nXnHP+yeLz/yGBH+p0pgHZ+Hi3QKBgQDv6LZU77W/RCbzU4pOoIyyRYgM8YMwyTos\nrXj31Ltg3P/4ZE0KREW+02IkdCDmT0SsP8oB8hoGAt27w1hmhir34IOy+gf2r4kM\ncSu3uSDk7nilzZb7rLAqqmBss8HxQepUhAAsMiTgKi65Dzy9BzwS2tKuHSv8yMFk\ng+gbz9+28wKBgQDM/DfnCVW7VdIZ3x92wFM3KeS9KZ4KGexMDVmgQct5HmTWCZNb\naJudHZu4hliVDP0bs24dZctByPmtdxkLguRVwTPPfPxwiKuZ75y5NxH8QqDIo8hs\nvx40gehk7vCBwiZCOApKDe2aocPlBh94XcHZeETC/15FMvwAJDO3bH/hJQKBgGOo\nb9Vonj8NuIBru5Bd8RQ8/f8idDTX4mqcxRtuK0hZhZtRTw9svOxAMwyhkOkbFJPZ\nC7kzMMw+dI2C4D32jfLaONsoMhavZGbevCJdrORsi4GUnZt+aM/QZq3BHldx4j2p\nd8jkK51S6IXHZpu/XZ0XeV0KkTM40d1HTiv/dhcxAoGAHhaIKIV5lyWaVrpgBaO4\nK1A1jBrSVM5S6w0ZSVRy4WkNC1UNp7/L8Uxg9OTGuJ8qAfQwjV8PhSVLVGwgVhOb\ncnPgqXc8BNpJ4U4sUhxDPG4mVhaJhvOC5pA/gbnPS1rI9U09FbzwNTOrvsM6MalP\n+1ubmDFyy3y+n6NIbegWSrE=\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-asriu@afad-proje.iam.gserviceaccount.com",
-  "client_id": "101664159944164540965",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-asriu%40afad-proje.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-
 # Firebase başlatma
 try:
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS)
-    firebase_admin.initialize_app(cred, {"storageBucket": "your-firebase-app.appspot.com"})
-    db = firestore.client()
-    bucket = storage.bucket()
+    # database.py'deki initialize_firebase fonksiyonunu kullanarak Firebase'i başlat
+    app = initialize_firebase()
+    
+    # Firestore veritabanı ve Storage referansları
+    db = get_database_ref('/harita')  # Harita için realtime database referansı
+    bucket = get_storage_bucket()  # Storage bucket referansı
+    
+    print("Firebase başarıyla başlatıldı.")
 except Exception as e:
     print(f"\033[91mHATA: Firebase başlatılamadı: {e}\033[0m")
     sys.exit(1)
@@ -462,15 +452,16 @@ class GoogleMapsWindow(QMainWindow):
 
             // Firebase yapılandırması
             const firebaseConfig = {{
-                apiKey: "your-firebase-api-key",
-                authDomain: "your-firebase-app.firebaseapp.com",
-                projectId: "your-firebase-app",
-                storageBucket: "your-firebase-app.appspot.com",
-                messagingSenderId: "your-messaging-sender-id",
-                appId: "your-app-id"
+                apiKey: "{os.getenv('FIREBASE_API_KEY')}",
+                
+                projectId: "{os.getenv('FIREBASE_PROJECT_ID')}",
+                storageBucket: "{os.getenv('FIREBASE_STORAGE_BUCKET')}",
+                messagingSenderId: "",
+                appId: "",
+                databaseURL: "{os.getenv('FIREBASE_DATABASE_URL')}"
             }};
             firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
+            const rtdb = firebase.database(); // Realtime Database
             const storage = firebase.storage();
 
             function initMap() {{
