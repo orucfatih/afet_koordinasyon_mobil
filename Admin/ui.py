@@ -2,6 +2,12 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, QMes
                             QToolButton, QHBoxLayout)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize, Qt
+import os
+import sys
+
+# Ana dizini sys.path'e ekleyerek modülleri bulmasını sağlıyoruz
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from stk_yonetim import STKYonetimTab
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from report.rapor import RaporYonetimTab
@@ -16,7 +22,7 @@ from equipment_management.equipment_management import EquipmentManagementTab
 from citizen_death_report.citizen_report import CitizenReportTab
 from simulations.simulation_tabs import SimulationTab
 from mass_sms.mass_sms_tab import MassSMSTab
-import os
+from Admin.gecici_iskan_planlama import GeciciIskanPlanlamaTab
 
 class AfetYonetimAdmin(QMainWindow):
     """Ana Uygulama Penceresi"""
@@ -112,7 +118,7 @@ class AfetYonetimAdmin(QMainWindow):
             ("Gönüllü Yönetimi", CitizenReportTab()),
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
-            ("Geçici İskan Planlama", CitizenReportTab()),
+            ("Geçici İskan Planlama", GeciciIskanPlanlamaTab()),
             ("Kitlesel SMS/Bildirim Sistemi", MassSMSTab()),
             ("Senaryo Simülasyonu", SimulationTab()),
             ("Finansal Yönetim", CitizenReportTab()),
