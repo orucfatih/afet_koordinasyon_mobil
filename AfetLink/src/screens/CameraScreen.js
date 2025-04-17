@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -17,12 +17,19 @@ import { getAuth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import app from '../../firebaseConfig';
+import { savePhoto } from '../localDB/sqliteHelper';
+import { startSyncListener } from '../localDB/syncService';
 
 const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
   const auth = getAuth(app);
   const storage = getStorage(app);
   const db = getFirestore(app);
+
+  useEffect(() => {
+    // Uygulama başladığında senkronizasyon servisini başlat
+    startSyncListener();
+  }, []);
 
   const getCurrentLocation = () => {
     return new Promise((resolve) => {
@@ -38,7 +45,7 @@ const CameraScreen = ({ navigation }) => {
             console.log('Konum hatası:', error);
             resolve({ latitude: null, longitude: null });
           },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
         );
       } else {
         resolve({ latitude: null, longitude: null });
@@ -46,38 +53,6 @@ const CameraScreen = ({ navigation }) => {
     });
   };
 
-  const uploadImageToFirebase = async (uri, coordinates) => {
-    try {
-      // URL formatını kontrol et
-      const correctUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
-      
-      const response = await fetch(correctUri);
-      const blob = await response.blob();
-  
-      const fileName = `${auth.currentUser.uid}_${Date.now()}.jpg`;
-      const storageRef = ref(storage, `afet-bildirimleri/${auth.currentUser.uid}/${fileName}`);
-  
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-  
-      await setDoc(doc(db, `afet-bildirimleri/${auth.currentUser.uid}/images`, fileName), {
-        imageUrl: downloadURL,
-        timestamp: new Date(),
-        fileName: fileName,
-        status: "yeni",
-        location: coordinates || { latitude: null, longitude: null },
-        description: "",
-        severity: "normal",
-        type: "genel"
-      });
-  
-      return downloadURL;
-    } catch (error) {
-      console.error('Fotoğraf yüklenirken hata oluştu:', error);
-      throw error;
-    }
-  };
-  
   const takePicture = async () => {
     // İzinleri kontrol et
     if (Platform.OS === 'android') {
@@ -91,10 +66,14 @@ const CameraScreen = ({ navigation }) => {
           return;
         }
         
-        // Konum izni iste
-        await PermissionsAndroid.request(
+        const locationPermission = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
         );
+
+        if (locationPermission !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('İzin Gerekli', 'Konum izni olmadan fotoğraf kaydedilemez.');
+          return;
+        }
       } catch (err) {
         console.error("İzin hatası:", err);
         return;
@@ -137,28 +116,21 @@ const CameraScreen = ({ navigation }) => {
           const { uri } = response.assets[0];
           console.log("Fotoğraf URI:", uri);
           
-          // Konum almaya çalış
-          let locationCoordinates;
-          try {
-            locationCoordinates = await getCurrentLocation();
-            console.log("Konum alındı:", locationCoordinates);
-          } catch (locationError) {
-            console.log("Konum alınamadı:", locationError);
-            locationCoordinates = { latitude: null, longitude: null };
-          }
+          // Konum bilgisini al
+          let locationCoordinates = await getCurrentLocation();
+          console.log("Konum alındı:", locationCoordinates);
           
-          // Firebase'e yükle (konumla birlikte)
-          await uploadImageToFirebase(uri, locationCoordinates);
+          // Fotoğrafı yerel veritabanına kaydet
+          await savePhoto(uri, locationCoordinates.latitude, locationCoordinates.longitude);
           
-          // Başarılı mesajı göster
           Alert.alert(
             'Başarılı',
-            'Fotoğraf başarıyla yüklendi.',
+            'Fotoğraf kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
             [{ text: 'Tamam', onPress: () => navigation.goBack() }]
           );
         } catch (error) {
-          console.error('Yükleme hatası:', error);
-          Alert.alert('Hata', 'Fotoğraf yüklenirken bir hata oluştu.');
+          console.error('Kaydetme hatası:', error);
+          Alert.alert('Hata', 'Fotoğraf kaydedilirken bir hata oluştu.');
         } finally {
           setUploading(false);
         }
