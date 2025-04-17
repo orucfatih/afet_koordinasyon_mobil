@@ -14,8 +14,8 @@ import json
 
 work_dir=os.getcwd()
 # Veri tabanı klasörleri
-YETISKIN_VERI_TABANI = os.path.join(work_dir,"Admin","yuzTanima","yetiskinVeriTabani")
-COCUK_VERI_TABANI = os.path.join(work_dir,"Admin","yuzTanima","cocukVeriTabani")
+YETISKIN_VERI_TABANI = os.path.join(work_dir,"afet_koordinasyon","Admin","yuzTanima","yetiskinVeriTabani")
+COCUK_VERI_TABANI = os.path.join(work_dir,"afet_koordinasyon","Admin","yuzTanima","cocukVeriTabani")
 
 
 # Yetişkin klasörleri
