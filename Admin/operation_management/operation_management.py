@@ -58,9 +58,12 @@ class OperationManagementTab(QWidget):
         left_layout = QVBoxLayout(left_panel)
         
         # Harita Bölümü
-        self.map_module = GoogleMapsWindow()
-        self.map_widget = self.map_module.web_view
-        self.map_widget.setMinimumHeight(300)  # Harita için minimum yükseklik
+        map_group = QGroupBox("Harita")
+        map_layout = QVBoxLayout()
+        self.map_module = GoogleMapsWindow(self)
+        map_layout.addWidget(self.map_module)
+        map_group.setLayout(map_layout)
+        map_group.setMinimumHeight(400)  # Harita için minimum yükseklik
         
         # Ekip Listesi
         team_list_group = QGroupBox("Mevcut Ekipler")
@@ -74,7 +77,7 @@ class OperationManagementTab(QWidget):
         team_list_group.setMaximumHeight(500)  # Ekip listesi maksimum yükseklik
         
         # Sol panel bileşenlerini ekle
-        left_layout.addWidget(self.map_widget, stretch=4)
+        left_layout.addWidget(map_group, stretch=4)
         left_layout.addWidget(team_list_group, stretch=3)
         
         # Sağ Panel - Aktif Görevler ve Görevlendirme

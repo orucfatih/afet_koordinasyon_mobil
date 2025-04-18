@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFAD Afet Yönetim Haritası</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- CSS_PLACEHOLDER -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.min.css">
+    <style>
+        .marker-btn {
+            display: flex;
+            align-items: center;
+            padding: 6px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+        .marker-btn i {
+            margin-right: 8px;
+            font-size: 20px;
+            color: white;
+        }
+        .marker-btn:hover i {
+            color: black;
+        }
+        .control-panel button i {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+    </style>
+    <script>
+        window.AFAD = window.AFAD || {};
+        try {
+            window.AFAD.earthquakes = JSON.parse('{{EARTHQUAKES}}');
+        } catch (e) {
+            console.error('Error parsing earthquakes JSON:', e);
+            window.AFAD.earthquakes = [];
+        }
+        window.AFAD.latitude = parseFloat('{{LATITUDE}}');
+        window.AFAD.longitude = parseFloat('{{LONGITUDE}}');
+        if (isNaN(window.AFAD.latitude) || isNaN(window.AFAD.longitude)) {
+            console.error('Invalid latitude or longitude');
+            window.AFAD.latitude = 39.9334;
+            window.AFAD.longitude = 32.8597;
+        }
+        window.AFAD.googleMapsApiKey = '{{GOOGLE_MAPS_API_KEY}}';
+        window.AFAD.openweatherApiKey = 'bd5e378503939ddaee76f12ad7a97608';
+        console.log("window.AFAD.openweatherApiKey:", window.AFAD.openweatherApiKey);
+    </script>
+    <!-- JS_PLACEHOLDER -->
+</head>
+
+<body>
+    <div id="map"></div>
+    <button id="toggle-btn">☰</button>
+    <div id="marker-toolbar">
+        <button class="marker-btn" data-type="Ambulans">
+            <i class="fas fa-ambulance"></i> Ambulans
+        </button>
+        <button class="marker-btn" data-type="Polis">
+            <i class="fas fa-shield-alt"></i> Polis
+        </button>
+        <button class="marker-btn" data-type="Sağlıkçı">
+            <i class="fas fa-user-doctor"></i> Sağlıkçı
+        </button>
+        <button class="marker-btn" data-type="Jandarma">
+            <i class="fas fa-user-shield"></i> Jandarma
+        </button>
+        <button class="marker-btn" data-type="team">
+            <i class="fas fa-users"></i> Ekip Ekle
+        </button>
+    </div>
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <h2>Afet Kontrol Paneli</h2>
+        </div>
+        <div class="control-panel">
+            <h3>Sürükle ve Bırak İşaretçi</h3>
+            <div id="drag-markers">
+                <img class="drag-icon" data-type="default" src="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                    alt="Default Marker" draggable="true">
+            </div>
+        </div>
+        <div class="control-panel">
+            <div class="search-container">
+                <input id="search-input" type="text" placeholder="Şehir ara...">
+            </div>
+            <ul id="search-results"></ul>
+            <button onclick="clearMarkers()"><i class="fas fa-trash"></i> Tüm İşaretçileri Temizle</button>
+            <button onclick="zoomToFit()"><i class="fas fa-search-plus"></i> İşaretçilere Yakınlaştır</button>
+            <button onclick="findShortestRoute()"><i class="fas fa-route"></i> En Kısa Yolu Bul</button>
+            <button onclick="getCurrentLocation()"><i class="fas fa-location-arrow"></i> Mevcut Konum</button>
+            <button id="traffic-btn" onclick="toggleTraffic()"><i class="fas fa-traffic-light"></i> Trafik
+                Göster</button>
+            <button id="toggle-heatmap"><i class="fas fa-fire"></i> Heatmap Göster</button>
+            <button id="toggle-3d"><i class="fas fa-cube"></i> 3D Görünüm</button>
+            <button id="capture-btn"><i class="fas fa-camera"></i> Ekran Görüntüsü Al</button>
+            <button id="safe-route-btn" onclick="findSafeRoute()"><i class="fas fa-shield-alt"></i> Güvenli Yol
+                Göster</button>
+            <select id="travel-mode-selector" onchange="updateRouteWithTravelMode()">
+                <option value="DRIVING">Araç (Ekip)</option>
+                <option value="WALKING">Yaya (İnsanlar)</option>
+                <option value="DRONE">Drone</option>
+                <option value="HELICOPTER">Helikopter</option>
+            </select>
+            <select id="layer-selector" onchange="toggleLayer(this.value)">
+                <option value="none">Katman Seç</option>
+                <option value="earthquakes">Son Depremler</option>
+                <option value="weather">Hava Durumu</option>
+                <option value="teams">Ekip Konumları</option>
+            </select>
+            <select id="map-type-selector" onchange="map.setMapTypeId(this.value)">
+                <option value="roadmap">Yol Haritası</option>
+                <option value="satellite">Uydu</option>
+                <option value="hybrid">Hibrit</option>
+                <option value="terrain">Arazi</option>
+            </select>
+            <label><input type="checkbox" id="avoid-highways"> Otoyollardan Kaçın</label>
+        </div>
+        <div class="control-panel">
+            <h3>Afet Noktaları</h3>
+            <div id="marker-list"></div>
+        </div>
+        <div class="control-panel">
+            <h3>Hava Kalitesi</h3>
+            <div id="air-quality-info">Hava kalitesi yükleniyor...</div>
+        </div>
+        <div class="control-panel">
+            <h3>Hava Durumu</h3>
+            <div id="weather-info">Hava durumu yükleniyor...</div>
+        </div>
+        <div class="control-panel">
+            <h3>Yol Bilgisi</h3>
+            <div id="route-info">Yol bilgisi bekleniyor...</div>
+        </div>
+        <div id="info-panel">Afet Yönetim Bilgi Paneli</div>
+    </div>
+    <div id="note-modal" class="modal">
+        <div class="modal-content">
+            <h3>Not Ekle</h3>
+            <form id="note-form">
+                <div class="form-group">
+                    <label for="marker-note">Not:</label>
+                    <textarea id="marker-note" name="note" rows="4" placeholder="Marker için not ekleyin..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn-custom btn-save">Kaydet</button>
+                    <button type="button" id="skip-note-btn" class="btn-custom btn-skip">Not Eklemeden Devam Et</button>
+                    <button type="button" id="cancel-note-btn" class="btn-custom btn-cancel">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="team-modal" class="modal">
+        <div class="modal-content">
+            <h3>Ekip Bilgileri</h3>
+            <form id="team-form">
+                <div class="form-group">
+                    <label for="team-name">Ekip Adı:</label>
+                    <input id="team-name" type="text" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="team-type">Ekip Türü:</label>
+                    <select id="team-type" class="form-select">
+                        <option value="">Seçiniz</option>
+                        <option value="Ambulans">Ambulans</option>
+                        <option value="Polis">Polis</option>
+                        <option value="Sağlıkçı">Sağlıkçı</option>
+                        <option value="Jandarma">Jandarma</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="team-size">Ekip Büyüklüğü:</label>
+                    <input id="team-size" type="number" class="form-input" min="1">
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn-custom btn-save">Ekip Ekle</button>
+                    <button type="button" id="cancel-team-btn" class="btn-custom btn-cancel">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="photo-modal" class="modal">
+        <div class="modal-content">
+            <h3>Fotoğraf Önizleme</h3>
+            <div class="photo-container">
+                <img id="photo-image" src="" alt="Fotoğraf">
+            </div>
+            <div class="button-group">
+                <button id="approve-photo-btn" class="btn-custom btn-approve">Onayla</button>
+                <button id="reject-photo-btn" class="btn-custom btn-reject">Reddet</button>
+                <button type="button" onclick="closePhotoModal()" class="btn-custom btn-cancel">Kapat</button>
+            </div>
+        </div>
+    </div>
+    <div id="marker-note-modal" class="modal">
+        <div class="modal-content">
+            <h3>Marker Notu Ekle</h3>
+            <form id="marker-note-form">
+                <div class="form-group">
+                    <label for="marker-note-input">Not:</label>
+                    <textarea id="marker-note-input" rows="4" placeholder="Marker için not giriniz..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn-custom btn-save">Kaydet</button>
+                    <button type="button" id="close-note-modal" class="btn-custom btn-cancel">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key={{GOOGLE_MAPS_API_KEY}}&libraries=places,directions,visualization,geometry&callback=initMap';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        })();
+    </script>
+</body>
+
+</html>
