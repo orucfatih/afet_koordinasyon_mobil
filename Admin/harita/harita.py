@@ -8,40 +8,40 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl, Qt
 from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import credentials, firestore, storage
+from firebase_admin import firestore
+from pathlib import Path
 
-load_dotenv()
+# Proje kökünü içeren klasörü sys.path'e ekle
+root_dir = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(root_dir))
+
+# Config modülünden Firebase fonksiyonlarını içe aktar
+from Admin.config import (
+    initialize_firebase, 
+    get_firestore_client,
+    init_config,
+    get_env_file_path
+)
+
+# Konfigürasyon ayarlarını başlat
+init_config()
+
+# Dotenv dosyasını yükle
+dotenv_path = get_env_file_path()
+load_dotenv(dotenv_path)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-firebase_credentials_json = {
-    'type': os.getenv('FIREBASE_ADMIN_TYPE'),
-    'project_id': os.getenv('FIREBASE_ADMIN_PROJECT_ID'),
-    'private_key_id': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY_ID'),
-    'private_key': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY'),
-    'client_email': os.getenv('FIREBASE_ADMIN_CLIENT_EMAIL'),
-    'client_id': os.getenv('FIREBASE_ADMIN_CLIENT_ID'),
-    'auth_uri': os.getenv('FIREBASE_ADMIN_AUTH_URI'),
-    'token_uri': os.getenv('FIREBASE_ADMIN_TOKEN_URI'),
-    'auth_provider_x509_cert_url': os.getenv('FIREBASE_ADMIN_AUTH_PROVIDER_CERT_URL'),
-    'client_x509_cert_url': os.getenv('FIREBASE_ADMIN_CLIENT_CERT_URL'),
-    'universe_domain': os.getenv('FIREBASE_ADMIN_UNIVERSE_DOMAIN', 'googleapis.com')
-}
+try:
+    # Firebase'i başlat
+    initialize_firebase()
+    # Firestore istemcisini al
+    db = get_firestore_client()
+    print("Firebase başarıyla başlatıldı!")
+except Exception as e:
+    print(f"\033[91mHATA: Firebase başlatılamadı: {e}\033[0m")
+    sys.exit(1)
 
-# Zorunlu değişkenlerin kontrolü
-required_keys = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email']
-for key in required_keys:
-    if not firebase_credentials_json[key]:
-        print(f"\033[91mHATA: {key} ortam değişkeni eksik!\033[0m")
-        sys.exit(1)
-
-firebase_credentials_json['private_key'] = firebase_credentials_json['private_key'].replace('\\n', '\n')
-
-if not firebase_admin._apps:
-    cred = credentials.Certificate(firebase_credentials_json)
-    firebase_admin.initialize_app(cred)
-db = firestore.client()
-print("Firebase başarıyla başlatıldı!")
 class GoogleMapsWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)

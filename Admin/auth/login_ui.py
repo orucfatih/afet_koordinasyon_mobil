@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QLabel, QLineEdit, QPushButton, 
                            QVBoxLayout, QHBoxLayout, QCheckBox, QFrame, QGridLayout,
-                           QStackedWidget)
+                           QStackedWidget, QApplication, QDesktopWidget)
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, pyqtProperty, QSize
 from PyQt5.QtGui import QFont, QPainter, QColor, QPen, QBrush, QIcon, QPixmap, QCursor
 from styles.styles_dark import LOGIN_DARK_STYLES
@@ -137,7 +137,28 @@ class LoginUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Afet Yönetim Sistemi - Giriş")
-        self.setMinimumSize(1920, 1080)
+        
+        # Ekran boyutlarına göre uygun pencere boyutunu ayarla
+        desktop = QApplication.desktop()
+        screen_rect = desktop.availableGeometry()
+        screen_width = screen_rect.width()
+        screen_height = screen_rect.height()
+        
+        # Ekranın %75'ini kaplayan boyut hesapla (giriş ekranı ana uygulamadan biraz daha küçük)
+        window_width = min(int(screen_width * 0.75), 1400)
+        window_height = min(int(screen_height * 0.75), 900)
+        
+        # Pencere boyutunu ayarla
+        self.setGeometry(
+            (screen_width - window_width) // 2,  # Ekranın ortasına hizalamak için X konumu
+            (screen_height - window_height) // 2,  # Ekranın ortasına hizalamak için Y konumu
+            window_width,
+            window_height
+        )
+        
+        # Minimum pencere boyutu ayarla (çok küçük ekranlarda bile içerik görünür olsun)
+        self.setMinimumSize(800, 600)
+        
         self.setStyleSheet(LOGIN_DARK_STYLES)
         
         main_layout = QVBoxLayout()
@@ -421,3 +442,29 @@ class LoginUI(QWidget):
             self.setStyleSheet(LOGIN_DARK_STYLES)
         else:
             self.setStyleSheet(LOGIN_LIGHT_STYLES) 
+
+def adjust_window_to_screen(window):
+    """Pencereyi ekrana sığdırmak için boyutları ayarlar"""
+    screen = QDesktopWidget().availableGeometry()
+    
+    # Ekran boyutlarını al
+    screen_width = screen.width()
+    screen_height = screen.height()
+    
+    # Pencerenin mevcut boyutlarını al
+    window_width = window.width()
+    window_height = window.height()
+    
+    # Ekrana sığacak şekilde ayarla (ekranın %90'ı kadar)
+    if window_width > screen_width * 0.9:
+        window_width = int(screen_width * 0.9)
+    
+    if window_height > screen_height * 0.9:
+        window_height = int(screen_height * 0.9)
+    
+    # Pencere boyutunu güncelle
+    window.resize(window_width, window_height)
+    
+    # Ekranın ortasına yerleştir
+    window.move((screen_width - window_width) // 2, 
+                (screen_height - window_height) // 2) 

@@ -8,9 +8,16 @@ from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from operation_management.operation_management import OperationManagementTab
 
 if platform.system() == "Linux":
-    os.environ["QT_QPA_PLATFORM"] = "xcb"
-    os.environ["QT_QUICK_BACKEND"] = "software"
-    os.environ["QT_XCB_GL_INTEGRATION"] = "none"
+    session_type = os.environ.get("XDG_SESSION_TYPE")
+
+    if session_type == "wayland":
+        os.environ["QT_QPA_PLATFORM"] = "wayland"
+        os.environ["QT_QUICK_BACKEND"] = "software"
+        os.environ["QT_XCB_GL_INTEGRATION"] = "none"
+    elif session_type == "x11":
+        os.environ["QT_QPA_PLATFORM"] = "xcb"
+        os.environ["QT_XCB_GL_INTEGRATION"] = "xcb_glx"  # veya "xcb_egl" (deneme yapılabilir)
+
 elif platform.system() == "Windows":
     os.environ["QT_QPA_PLATFORM"] = "windows"
 elif platform.system() == "Darwin":  # macOS için fakat test edilmedi

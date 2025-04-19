@@ -4,6 +4,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize, Qt
 import os
 import sys
+from PyQt5.QtWidgets import QApplication
 
 # Ana dizini sys.path'e ekleyerek modülleri bulmasını sağlıyoruz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,6 +25,9 @@ from simulations.simulation_tabs import SimulationTab
 from mass_sms.mass_sms_tab import MassSMSTab
 from Admin.gecici_iskan_planlama import GeciciIskanPlanlamaTab
 
+# Ana dizini sys.path'e ekleyerek modülleri bulmasını sağlıyoruz
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 class AfetYonetimAdmin(QMainWindow):
     """Ana Uygulama Penceresi"""
     def __init__(self, initial_theme='dark'):
@@ -35,8 +39,28 @@ class AfetYonetimAdmin(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Afet Yönetim Sistemi - Admin Paneli")
-        self.setGeometry(100, 100, 1400, 800)
+        self.setWindowTitle("Afet Yönetim Sistemi - Afet-Link")
+        
+        # Ekran boyutlarına göre uygun pencere boyutunu ayarla
+        desktop = QApplication.desktop()
+        screen_rect = desktop.availableGeometry()
+        screen_width = screen_rect.width()
+        screen_height = screen_rect.height()
+        
+        # Ekranın %85'ini kaplayan boyut hesapla
+        window_width = int(screen_width * 0.65)
+        window_height = int(screen_height * 0.65)
+        
+        # Pencere boyutunu ayarla
+        self.setGeometry(
+            (screen_width - window_width) // 2,  # Ekranın ortasına hizalamak için X konumu
+            (screen_height - window_height) // 2,  # Ekranın ortasına hizalamak için Y konumu
+            window_width,
+            window_height
+        )
+        
+        # Minimum pencere boyutu ayarla (çok küçük ekranlarda bile içerik görünür olsun)
+        self.setMinimumSize(800, 600)
         
         # Ana widget ve layout
         central_widget = QWidget()
@@ -118,7 +142,7 @@ class AfetYonetimAdmin(QMainWindow):
             ("Gönüllü Yönetimi", CitizenReportTab()),
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
-            ("Geçici İskan Planlama", GeciciIskanPlanlamaTab()),
+            ("Geçici İskan Planlama", CitizenReportTab()),
             ("Kitlesel SMS/Bildirim Sistemi", MassSMSTab()),
             ("Senaryo Simülasyonu", SimulationTab()),
             ("Finansal Yönetim", CitizenReportTab()),

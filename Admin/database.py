@@ -1,72 +1,58 @@
-import firebase_admin
-from firebase_admin import credentials, db, storage
+"""
+Firebase veritabanı ve depolama işlemleri için yardımcı fonksiyonlar.
+Bu modül, config.py'den Firebase yapılandırmasını alır ve bağlantıları yönetir.
+"""
 import os
-
-import json
-from dotenv import load_dotenv
 from pathlib import Path
+import firebase_admin
+from firebase_admin import db as firebase_db
 
-# .env dosyasını yükle
-# .env dosyasını projenin kök dizininde ara
-root_dir = Path(__file__).resolve().parent.parent
-dotenv_path = root_dir / '.env'
+# Proje kökünü içeren klasörü sys.path'e ekle
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
 
-from config import init_config, get_env_file_path
-from dotenv import load_dotenv
+# Config modülünden Firebase fonksiyonlarını içe aktar
+from config import (
+    initialize_firebase, 
+    get_database_ref, 
+    get_storage_bucket,
+    get_firestore_client,
+    init_config
+)
 
-# Konfigurasyon ayarlarını başlat
+# Konfigürasyon ayarlarını başlat
 init_config()
 
-# .env dosyasını yükle
-dotenv_path = get_env_file_path()
-
-load_dotenv(dotenv_path)
-
-def initialize_firebase():
-    """Firebase bağlantısını başlatır."""
-    
-    # .env dosyasından değerleri oku
-    database_url = os.getenv('FIREBASE_DATABASE_URL')
-    storage_bucket = os.getenv('FIREBASE_STORAGE_BUCKET')
-    
-    # Admin SDK yapılandırma bilgilerini .env'den al
-    admin_config = {
-        'type': os.getenv('FIREBASE_ADMIN_TYPE'),
-        'project_id': os.getenv('FIREBASE_ADMIN_PROJECT_ID'),
-        'private_key_id': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY_ID'),
-        'private_key': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY').replace('\\n', '\n'),
-        'client_email': os.getenv('FIREBASE_ADMIN_CLIENT_EMAIL'),
-        'client_id': os.getenv('FIREBASE_ADMIN_CLIENT_ID'),
-        'auth_uri': os.getenv('FIREBASE_ADMIN_AUTH_URI'),
-        'token_uri': os.getenv('FIREBASE_ADMIN_TOKEN_URI'),
-        'auth_provider_x509_cert_url': os.getenv('FIREBASE_ADMIN_AUTH_PROVIDER_CERT_URL'),
-        'client_x509_cert_url': os.getenv('FIREBASE_ADMIN_CLIENT_CERT_URL'),
-        'universe_domain': os.getenv('FIREBASE_ADMIN_UNIVERSE_DOMAIN', 'googleapis.com')
-    }
-    
-    # Firebase Admin SDK kimlik bilgilerini oluştur
-    cred = credentials.Certificate(admin_config)
-    
-    # Uygulama zaten başlatılmışsa, yeni bir uygulama oluşturma
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': database_url,
-            'storageBucket': storage_bucket
-        })
-    
-    return firebase_admin.get_app()
-
-# Firebase bağlantısını başlat
+# Firebase'i başlat
 app = initialize_firebase()
 
-# Veritabanı ve depolama referansları
-database = db.reference('/')
-bucket = storage.bucket()
+# Geriye dönük uyumluluk için doğrudan değişkenler
+database = get_database_ref('/')
+bucket = get_storage_bucket()
+db = firebase_db
 
-def get_database_ref(path=''):
-    """Belirtilen yoldaki veritabanı referansını döndürür."""
-    return db.reference(path)
+def get_firebase_app():
+    """
+    Firebase uygulama örneğini döndürür.
+    """
+    return app
 
-def get_storage_bucket():
-    """Firebase Storage bucket referansını döndürür."""
-    return bucket
+# Geriye dönük uyumluluk için eski fonksiyonları koruyoruz
+def get_database_reference(path='/'):
+    """
+    Belirtilen yoldaki veritabanı referansını döndürür.
+    """
+    return get_database_ref(path)
+
+def get_storage():
+    """
+    Firebase Storage bucket'ını döndürür.
+    """
+    return get_storage_bucket()
+
+def get_firestore():
+    """
+    Firestore veritabanı istemcisini döndürür.
+    """
+    return get_firestore_client()
