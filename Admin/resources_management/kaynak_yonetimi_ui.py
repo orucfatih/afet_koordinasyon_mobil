@@ -63,7 +63,7 @@ class KaynakYonetimUI:
         
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Kaynak ara...")
-        self.search_input.setStyleSheet(RESOURCE_INPUT_STYLE)
+        self.search_input.setStyleSheet(INPUT_STYLE)
         
         self.filter_combo = QComboBox()
         self.filter_combo.addItems(["Tümü", "Su", "Gıda", "İlaç", "Çadır", "Battaniye", "Diğer"])
@@ -80,7 +80,7 @@ class KaynakYonetimUI:
         buttons_layout = QHBoxLayout()
         
         self.export_excel_btn = QPushButton("Excel'e Aktar")
-        self.export_excel_btn.setStyleSheet(RESOURCE_BUTTON_STYLE)
+        self.export_excel_btn.setStyleSheet(BUTTON_STYLE)
         self.export_excel_btn.setIcon(QIcon(get_icon_path('excel.png')))
         
         buttons_layout.addWidget(self.export_excel_btn)
@@ -90,7 +90,7 @@ class KaynakYonetimUI:
     def setup_resource_table(self):
         """Kaynak tablosunu oluşturur"""
         self.resource_table = QTableWidget()
-        self.resource_table.setStyleSheet(RESOURCE_TABLE_STYLE)
+        self.resource_table.setStyleSheet(TABLE_STYLE)
         
         # Tablo ayarları
         self.resource_table.setColumnCount(5)
@@ -113,7 +113,7 @@ class KaynakYonetimUI:
     def setup_add_resource_form(self):
         """Kaynak ekleme formunu oluşturur"""
         add_group = QGroupBox("Yeni Kaynak Ekle")
-        add_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        add_group.setStyleSheet(GROUP_STYLE)
         
         form_layout = QFormLayout()
         form_layout.setSpacing(10)
@@ -138,7 +138,7 @@ class KaynakYonetimUI:
         
         # Form alanları stilleri
         for widget in [self.resource_name, self.resource_amount]:
-            widget.setStyleSheet(RESOURCE_INPUT_STYLE)
+            widget.setStyleSheet(INPUT_STYLE)
         
         for widget in [self.resource_type, self.resource_location]:
             widget.setStyleSheet(COMBO_BOX_STYLE)
@@ -151,7 +151,7 @@ class KaynakYonetimUI:
         
         # Ekle butonu
         self.add_button = QPushButton("Kaynak Ekle")
-        self.add_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.add_button.setStyleSheet(ADD_BUTTON_STYLE)
         form_layout.addRow(self.add_button)
         
         add_group.setLayout(form_layout)
@@ -167,19 +167,19 @@ class KaynakYonetimUI:
         # Kaynak Detayları
         details_group = QGroupBox("Kaynak Detayları")
         details_group.setMinimumHeight(300)  # Yüksekliği azalttık
-        details_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        details_group.setStyleSheet(GROUP_STYLE)
         
         details_layout = QVBoxLayout()
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
-        self.details_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.details_text.setStyleSheet(TEXT_EDIT_STYLE)
         
         details_layout.addWidget(self.details_text)
         details_group.setLayout(details_layout)
         
         # Kaynak Takibi
         resource_tracking_group = QGroupBox("Kaynak ve Malzeme Takibi")
-        resource_tracking_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        resource_tracking_group.setStyleSheet(GROUP_STYLE)
         resource_tracking_layout = QVBoxLayout()
         
         # Kritik malzeme seviyeleri
@@ -222,7 +222,7 @@ class KaynakYonetimUI:
         
         # Dağıtım Paneli
         distribution_group = QGroupBox("Kaynak Dağıtımı")
-        distribution_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        distribution_group.setStyleSheet(GROUP_STYLE)
         
         dist_layout = QFormLayout()
         dist_layout.setSpacing(10)
@@ -242,7 +242,7 @@ class KaynakYonetimUI:
         self.dist_priority.addItems(["Düşük", "Orta", "Yüksek", "Acil"])
         
         for widget in [self.dist_amount, self.dist_location]:
-            widget.setStyleSheet(RESOURCE_INPUT_STYLE)
+            widget.setStyleSheet(INPUT_STYLE)
         
         self.dist_priority.setStyleSheet(COMBO_BOX_STYLE)
         
@@ -251,7 +251,7 @@ class KaynakYonetimUI:
         dist_layout.addRow("Öncelik:", self.dist_priority)
         
         self.distribute_button = QPushButton("Dağıtımı Başlat")
-        self.distribute_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.distribute_button.setStyleSheet(ADD_BUTTON_STYLE)
         dist_layout.addRow(self.distribute_button)
         
         distribution_group.setLayout(dist_layout)

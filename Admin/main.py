@@ -16,7 +16,6 @@ if platform.system() == "Linux":
         os.environ["QT_XCB_GL_INTEGRATION"] = "none"
     elif session_type == "x11":
         os.environ["QT_QPA_PLATFORM"] = "xcb"
-        os.environ["QT_XCB_GL_INTEGRATION"] = "xcb_glx"  # veya "xcb_egl" (deneme yapılabilir)
 
 elif platform.system() == "Windows":
     os.environ["QT_QPA_PLATFORM"] = "windows"

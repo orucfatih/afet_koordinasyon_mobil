@@ -29,7 +29,7 @@ class STKYonetimTab(QWidget):
         
         # STK Ekleme Formu
         add_ngo_group = QGroupBox("STK Ekle")
-        add_ngo_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        add_ngo_group.setStyleSheet(GROUP_STYLE)
         form_layout = QFormLayout()
         form_layout.setSpacing(10)
         form_layout.setContentsMargins(20, 20, 20, 20)
@@ -43,7 +43,7 @@ class STKYonetimTab(QWidget):
         
         # Form alanları stilleri
         for widget in [self.ngo_name, self.ngo_contact, self.ngo_capacity, self.ngo_region]:
-            widget.setStyleSheet(RESOURCE_INPUT_STYLE)
+            widget.setStyleSheet(INPUT_STYLE)
         
         self.ngo_type.setStyleSheet(COMBO_BOX_STYLE)
         
@@ -54,7 +54,7 @@ class STKYonetimTab(QWidget):
         form_layout.addRow("Faaliyet Bölgesi:", self.ngo_region)
         
         add_button = QPushButton("STK Ekle")
-        add_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        add_button.setStyleSheet(ADD_BUTTON_STYLE)
         add_button.setIcon(QIcon(get_icon_path('add1.png')))
         add_button.clicked.connect(self.add_ngo)
         form_layout.addRow(add_button)
@@ -63,11 +63,11 @@ class STKYonetimTab(QWidget):
         
         # STK Listesi
         ngo_list_group = QGroupBox("STK Listesi")
-        ngo_list_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        ngo_list_group.setStyleSheet(GROUP_STYLE)
         list_layout = QVBoxLayout()
         
         self.ngo_table = QTableWidget()
-        self.ngo_table.setStyleSheet(RESOURCE_TABLE_STYLE)
+        self.ngo_table.setStyleSheet(TABLE_STYLE)
         self.ngo_table.setColumnCount(6)
         self.ngo_table.setHorizontalHeaderLabels(["STK Adı", "Tür", "İletişim", "Kapasite", "Bölge", "Durum"])
         self.ngo_table.itemClicked.connect(self.show_ngo_details)
@@ -87,27 +87,27 @@ class STKYonetimTab(QWidget):
         
         # STK Detayları
         details_group = QGroupBox("STK Detayları")
-        details_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        details_group.setStyleSheet(GROUP_STYLE)
         details_layout = QVBoxLayout()
         
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
-        self.details_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.details_text.setStyleSheet(TEXT_EDIT_STYLE)
         
         details_layout.addWidget(self.details_text)
         details_group.setLayout(details_layout)
         
         # İletişim Paneli
         communication_group = QGroupBox("İletişim Paneli")
-        communication_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        communication_group.setStyleSheet(GROUP_STYLE)
         comm_layout = QVBoxLayout()
         
         self.message_text = QTextEdit()
         self.message_text.setPlaceholderText("Mesajınızı yazın...")
-        self.message_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.message_text.setStyleSheet(TEXT_EDIT_STYLE)
         
         send_button = QPushButton("Mesaj Gönder")
-        send_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        send_button.setStyleSheet(ADD_BUTTON_STYLE)
         send_button.setIcon(QIcon(get_icon_path('paper-plane.png')))
         send_button.clicked.connect(self.send_message)
         

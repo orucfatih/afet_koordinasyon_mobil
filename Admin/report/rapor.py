@@ -1,12 +1,12 @@
 """
-burası Firebase veritabanına bağlanacak 
+burası veritabanına bağlanacak 
 """
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                            QPushButton, QTextEdit, QComboBox,
                            QGroupBox, QLineEdit, QFormLayout, 
                            QTableWidget, QTableWidgetItem, QDateTimeEdit,
-                           QMessageBox)
+                           QMessageBox, QRadioButton, QDialog, QButtonGroup)
 from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon
 import json
@@ -16,36 +16,80 @@ from styles.styles_light import *
 from datetime import datetime   
 import subprocess
 from utils import get_icon_path
-# Firebase bağlantıları için gerekli importlar
-from database import get_database_ref, get_storage_bucket, initialize_firebase
-import uuid
 
-# Silme butonu için özel stil tanımı
-RESOURCE_DELETE_BUTTON_STYLE = """
-QPushButton {
-    background-color: #e74c3c;
-    color: white;
-    border: 1px solid #c0392b;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-weight: bold;
-}
-QPushButton:hover {
-    background-color: #c0392b;
-}
-QPushButton:pressed {
-    background-color: #a93226;
-}
-"""
+
+
+
+class FormatSecimDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Dosya Formatı Seçimi")
+        self.format = None
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Radio butonları oluştur
+        self.json_radio = QRadioButton("JSON")
+        self.txt_radio = QRadioButton("TXT")
+        
+        # Radio butonları için stil
+        for radio in [self.json_radio, self.txt_radio]:
+            radio.setStyleSheet("""
+                QRadioButton {
+                    color: white;
+                    padding: 5px;
+                }
+                QRadioButton::indicator {
+                    width: 15px;
+                    height: 15px;
+                }
+            """)
+        
+        # Button group oluştur
+        self.button_group = QButtonGroup()
+        self.button_group.addButton(self.json_radio)
+        self.button_group.addButton(self.txt_radio)
+        
+        # Default seçim
+        self.json_radio.setChecked(True)
+        
+        layout.addWidget(self.json_radio)
+        layout.addWidget(self.txt_radio)
+        
+        # Tamam ve İptal butonları
+        btn_layout = QHBoxLayout()
+        tamam_btn = QPushButton("✓ Tamam")
+        iptal_btn = QPushButton("✕ İptal")
+        
+        for btn in [tamam_btn, iptal_btn]:
+            btn.setStyleSheet(ADD_BUTTON_STYLE)
+        
+        tamam_btn.clicked.connect(self.accept)
+        iptal_btn.clicked.connect(self.reject)
+        
+        btn_layout.addWidget(tamam_btn)
+        btn_layout.addWidget(iptal_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        self.setLayout(layout)
+    
+    def accept(self):
+        # Seçilen formatı kaydet
+        if self.json_radio.isChecked():
+            self.format = "JSON"
+        else:
+            self.format = "TXT"
+        super().accept()
+
+
 
 class RaporYonetimTab(QWidget):
     """Rapor Yönetim Sekmesi"""
     def __init__(self):
         super().__init__()
-        # Firebase referanslarını oluştur
-        self.reports_ref = get_database_ref('/reports')  # Raporlar için Firebase referansı
-        self.report_details_ref = get_database_ref('/report_details')  # Rapor detayları için referans
-        
         self.initUI()
         
     def initUI(self):
@@ -60,7 +104,7 @@ class RaporYonetimTab(QWidget):
         
         # Rapor Bilgileri Grubu
         report_info_group = QGroupBox("Rapor Bilgileri")
-        report_info_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        report_info_group.setStyleSheet(GROUP_STYLE)
         form_layout = QFormLayout()
         form_layout.setSpacing(10)
         form_layout.setContentsMargins(20, 20, 20, 20)
@@ -69,12 +113,12 @@ class RaporYonetimTab(QWidget):
         self.date_time_edit = QDateTimeEdit()
         self.date_time_edit.setDateTime(QDateTime.currentDateTime())
         self.date_time_edit.setCalendarPopup(True)
-        self.date_time_edit.setStyleSheet(RESOURCE_INPUT_STYLE)
+        self.date_time_edit.setStyleSheet(INPUT_STYLE)
         form_layout.addRow("Tarih ve Saat:", self.date_time_edit)
         
         # Afet Bölgesi Seçimi
         self.location_input = QLineEdit()
-        self.location_input.setStyleSheet(RESOURCE_INPUT_STYLE)
+        self.location_input.setStyleSheet(INPUT_STYLE)
         form_layout.addRow("Afet Bölgesi:", self.location_input)
         
         # Rapor Türü Seçimi
@@ -94,28 +138,28 @@ class RaporYonetimTab(QWidget):
         
         # Rapor İçeriği Grubu
         content_group = QGroupBox("Rapor İçeriği")
-        content_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        content_group.setStyleSheet(GROUP_STYLE)
         content_layout = QVBoxLayout()
         content_layout.setSpacing(10)
         
         # Durum Özeti
         self.summary_text = QTextEdit()
         self.summary_text.setPlaceholderText("Genel durum özeti...")
-        self.summary_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.summary_text.setStyleSheet(TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("Durum Özeti:"))
         content_layout.addWidget(self.summary_text)
         
         # Detaylı Bilgiler
         self.details_text = QTextEdit()
         self.details_text.setPlaceholderText("Detaylı bilgiler ve gözlemler...")
-        self.details_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.details_text.setStyleSheet(TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("Detaylı Bilgiler:"))
         content_layout.addWidget(self.details_text)
         
         # İhtiyaçlar ve Öneriler
         self.needs_text = QTextEdit()
         self.needs_text.setPlaceholderText("Tespit edilen ihtiyaçlar ve öneriler...")
-        self.needs_text.setStyleSheet(RESOURCE_TEXT_EDIT_STYLE)
+        self.needs_text.setStyleSheet(TEXT_EDIT_STYLE)
         content_layout.addWidget(QLabel("İhtiyaçlar ve Öneriler:"))
         content_layout.addWidget(self.needs_text)
         
@@ -125,12 +169,12 @@ class RaporYonetimTab(QWidget):
         # Butonlar
         buttons_layout = QHBoxLayout()
         self.save_button = QPushButton("Raporu Kaydet")
-        self.save_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.save_button.setStyleSheet(ADD_BUTTON_STYLE)
         self.save_button.setIcon(QIcon(get_icon_path('save.png')))
         self.save_button.clicked.connect(self.save_report)
         
         self.clear_button = QPushButton("Formu Temizle")
-        self.clear_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
+        self.clear_button.setStyleSheet(ADD_BUTTON_STYLE)
         self.clear_button.setIcon(QIcon(get_icon_path('broom.png')))
         self.clear_button.clicked.connect(self.clear_form)
         
@@ -145,7 +189,7 @@ class RaporYonetimTab(QWidget):
         
         # Rapor Listesi
         list_group = QGroupBox("Kaydedilen Raporlar")
-        list_group.setStyleSheet(RESOURCE_GROUP_STYLE)
+        list_group.setStyleSheet(GROUP_STYLE)
         list_layout = QVBoxLayout()
         list_layout.setSpacing(10)
         
@@ -153,7 +197,7 @@ class RaporYonetimTab(QWidget):
         filter_layout = QHBoxLayout()
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Rapor ara...")
-        self.search_input.setStyleSheet(RESOURCE_INPUT_STYLE)
+        self.search_input.setStyleSheet(INPUT_STYLE)
         self.search_input.textChanged.connect(self.filter_reports)
         
         self.filter_type = QComboBox()
@@ -170,37 +214,24 @@ class RaporYonetimTab(QWidget):
         
         # Rapor Tablosu
         self.reports_table = QTableWidget()
-        self.reports_table.setStyleSheet(RESOURCE_TABLE_STYLE)
-        self.reports_table.setColumnCount(4)
+        self.reports_table.setStyleSheet(TABLE_STYLE)
+        self.reports_table.setColumnCount(5)
         self.reports_table.setHorizontalHeaderLabels([
-            "Tarih", "Bölge", "Tür", "Özet"  # ID sütununu gizli tutalım
+            "Tarih", "Bölge", "Tür", "Özet", "Format"  
         ])
-        self.reports_table.itemDoubleClicked.connect(self.view_report_details)
+        self.reports_table.itemDoubleClicked.connect(self.open_report_file)
         self.reports_table.itemClicked.connect(self.show_report_details)
         list_layout.addWidget(self.reports_table)
         
         list_group.setLayout(list_layout)
         right_layout.addWidget(list_group)
         
-        # Butonlar için layout
-        actions_layout = QHBoxLayout()
-        
-        # Silme Butonu (küçültülmüş)
-        self.delete_button = QPushButton("Sil")
-        self.delete_button.setStyleSheet(RESOURCE_DELETE_BUTTON_STYLE)
+        # Silme Butonu
+        self.delete_button = QPushButton("Seçili Raporu Sil")
+        self.delete_button.setStyleSheet(ADD_BUTTON_STYLE)
         self.delete_button.setIcon(QIcon(get_icon_path('bin.png')))
-        self.delete_button.setMaximumWidth(100)
         self.delete_button.clicked.connect(self.delete_selected_report)
-        
-        # PDF'e Aktar Butonu
-        self.export_pdf_button = QPushButton("PDF'e Aktar")
-        self.export_pdf_button.setStyleSheet(RESOURCE_ADD_BUTTON_STYLE)
-        self.export_pdf_button.setIcon(QIcon(get_icon_path('pdf.png')))
-        self.export_pdf_button.clicked.connect(self.export_to_pdf)
-        
-        actions_layout.addWidget(self.delete_button)
-        actions_layout.addWidget(self.export_pdf_button)
-        right_layout.addLayout(actions_layout)
+        right_layout.addWidget(self.delete_button)
         
         # Panel genişliklerini ayarla
         left_panel.setMinimumWidth(600)  # Sol panel minimum genişlik
@@ -215,53 +246,58 @@ class RaporYonetimTab(QWidget):
         # Raporları yükle
         self.load_reports()
 
+
+
     def create_report_file(self):
-        """Rapor klasör oluştur - Firebase kullanıldığı için artık gerekli değil"""
-        pass
+        """Rapor klasör oluştur"""
+        if not os.path.exists('reports'):
+            os.makedirs('reports')
+
 
     def save_report(self):
-        """Raporu Firebase veritabanına kaydeder"""
-        # Rapor verilerini topla
-        rapor_verileri = {
-            "tarih": self.date_time_edit.dateTime().toString(Qt.ISODate),
-            "bolge": self.location_input.text(),
-            "tur": self.report_type.currentText(),
-            "ozet": self.summary_text.toPlainText(),
-            "detaylar": self.details_text.toPlainText(),
-            "ihtiyaclar": self.needs_text.toPlainText(),
-            "created_at": datetime.now().timestamp(),
-            "updated_at": datetime.now().timestamp()
-        }
-        
-        # Zorunlu alanları kontrol et
-        if not rapor_verileri["bolge"]:
-            QMessageBox.warning(self, "Uyarı", "Lütfen Bölge bilgilerini doldurun.")
-            return
-        
-        try:
-            # Benzersiz ID oluştur
-            report_id = str(uuid.uuid4())
+        # Format seçim dialogunu aç
+        format_dialog = FormatSecimDialog(self)
+        if format_dialog.exec_() == QDialog.Accepted:
+            secilen_format = format_dialog.format
             
-            # Firebase'e kaydet
-            self.reports_ref.child(report_id).set(rapor_verileri)
-            
-            # Rapor detayları için ayrı bir referans kullan
-            detail_data = {
-                "id": report_id,
-                "tarih": rapor_verileri["tarih"],
-                "bolge": rapor_verileri["bolge"],
-                "tur": rapor_verileri["tur"],
-                "detaylar": rapor_verileri["detaylar"],
-                "created_at": rapor_verileri["created_at"]
+            # Rapor verilerini topla
+            rapor_verileri = {
+                "tarih": self.date_time_edit.dateTime().toString(Qt.ISODate),
+                "bolge": self.location_input.text(),
+                "tur": self.report_type.currentText(),
+                "ozet": self.summary_text.toPlainText(),
+                "detaylar": self.details_text.toPlainText(),
+                "ihtiyaclar": self.needs_text.toPlainText()
             }
-            self.report_details_ref.child(report_id).set(detail_data)
             
-            QMessageBox.information(self, "Başarılı", f"Rapor Firebase veritabanına kaydedildi!")
-            self.clear_form()
-            self.load_reports()
+            # Zorunlu alanları kontrol et
+            if not all([rapor_verileri["bolge"]]):
+                QMessageBox.warning(self, "Uyarı", "Lütfen Bölge bilgilerini doldurun.")
+                return
             
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Rapor kaydedilemedi: {str(e)}")
+            # Raporlar klasörünü oluştur
+            self.create_report_file()
+            
+            try:
+                # Dosya adını oluştur
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                
+                if secilen_format == "JSON":
+                    dosya_yolu = os.path.join('reports', f"rapor_{timestamp}.json")
+                    with open(dosya_yolu, 'w', encoding='utf-8') as f:
+                        json.dump(rapor_verileri, f, ensure_ascii=False, indent=4)
+                else:
+                    dosya_yolu = os.path.join('reports', f"rapor_{timestamp}.txt")
+                    with open(dosya_yolu, 'w', encoding='utf-8') as f:
+                        for anahtar, deger in rapor_verileri.items():
+                            f.write(f"{anahtar.capitalize()}: {deger}\n")
+                
+                QMessageBox.information(self, "Başarılı", f"Rapor {secilen_format} formatında kaydedildi: {os.path.basename(dosya_yolu)}")
+                self.clear_form()
+                self.load_reports()
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Rapor kaydedilemedi: {str(e)}")
     
     def clear_form(self):
         """Form alanlarını temizler"""
@@ -272,44 +308,42 @@ class RaporYonetimTab(QWidget):
         self.details_text.clear()
         self.needs_text.clear()
 
+    
     def load_reports(self):
-        """Firebase'den raporları yükler"""
+        """Kaydedilmiş raporları yükler"""
         self.reports_table.setRowCount(0)
         
-        try:
-            # Firebase'den rapor verilerini al
-            reports_data = self.reports_ref.get()
+        if not os.path.exists("reports"):
+            return
+        
+        for dosya_adi in os.listdir("reports"):
+            dosya_yolu = os.path.join("reports", dosya_adi)
+            format_adi = "JSON" if dosya_adi.endswith(".json") else "TXT"
             
-            if reports_data:
-                for report_id, report_info in reports_data.items():
-                    row_position = self.reports_table.rowCount()
-                    self.reports_table.insertRow(row_position)
-                    
-                    # Tarih formatını düzenle
-                    tarih_str = report_info.get('tarih', '')
-                    tarih = QDateTime.fromString(tarih_str, Qt.ISODate)
-                    
-                    self.reports_table.setItem(row_position, 0, QTableWidgetItem(tarih.toString("dd.MM.yyyy HH:mm")))
-                    self.reports_table.setItem(row_position, 1, QTableWidgetItem(report_info.get('bolge', '')))
-                    self.reports_table.setItem(row_position, 2, QTableWidgetItem(report_info.get('tur', '')))
-                    
-                    # Özeti kısaltarak göster
-                    ozet = report_info.get('ozet', '')
-                    if len(ozet) > 50:
-                        ozet = ozet[:50] + "..."
-                    self.reports_table.setItem(row_position, 3, QTableWidgetItem(ozet))
-                    
-                    # ID'yi gizli veri olarak sakla
-                    for i in range(4):
-                        item = self.reports_table.item(row_position, i)
-                        if item:
-                            item.setData(Qt.UserRole, report_id)  # Her hücreye ID bilgisini ekle
-            else:
-                # Firebase'de veri yoksa bilgi mesajı göster
-                QMessageBox.information(self, "Bilgi", "Kayıtlı rapor bulunamadı.")
+            try:
+                # Ortak yükleme mantığı
+                with open(dosya_yolu, 'r', encoding='utf-8') as f:
+                    rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
                 
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Raporlar yüklenirken hata oluştu: {str(e)}")
+                # Tabloya ekle
+                satir = self.reports_table.rowCount()
+                self.reports_table.insertRow(satir)
+                
+                # Tarih formatını düzenle
+                tarih = QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate)
+                
+                self.reports_table.setItem(satir, 0, QTableWidgetItem(tarih.toString("dd.MM.yyyy HH:mm")))
+                self.reports_table.setItem(satir, 1, QTableWidgetItem(rapor_verileri["bolge"]))
+                self.reports_table.setItem(satir, 2, QTableWidgetItem(rapor_verileri["tur"]))
+                self.reports_table.setItem(satir, 3, QTableWidgetItem(
+                    rapor_verileri["ozet"][:50] + "..." if len(rapor_verileri["ozet"]) > 50 
+                    else rapor_verileri["ozet"]
+                ))
+                self.reports_table.setItem(satir, 4, QTableWidgetItem(format_adi))
+                
+            except Exception as e:
+                print(f"Rapor yüklenemedi: {str(e)}")
+
 
     def filter_reports(self):
         """Raporları arama metni ve türe göre filtreler"""
@@ -338,305 +372,133 @@ class RaporYonetimTab(QWidget):
             self.reports_table.setRowHidden(row, not show_row)
     
     def show_report_details(self, item):
-        """Seçilen raporun detaylarını form alanlarında gösterir"""
-        # ID bilgisini hücreden al
-        report_id = item.data(Qt.UserRole)
+        """Seçilen raporun detaylarını gösterir"""
+        row = item.row()
+        date_item = self.reports_table.item(row, 0).text()
+        location_item = self.reports_table.item(row, 1).text()
         
-        if not report_id:
-            return
-        
-        try:
-            # Firebase'den rapor verilerini al
-            report_data = self.reports_ref.child(report_id).get()
-            
-            if report_data:
-                # Form alanlarını doldur
-                self.date_time_edit.setDateTime(
-                    QDateTime.fromString(report_data.get('tarih', ''), Qt.ISODate)
-                )
-                self.location_input.setText(report_data.get('bolge', ''))
-                self.report_type.setCurrentText(report_data.get('tur', ''))
-                self.summary_text.setText(report_data.get('ozet', ''))
-                self.details_text.setText(report_data.get('detaylar', ''))
-                self.needs_text.setText(report_data.get('ihtiyaclar', ''))
-            else:
-                QMessageBox.warning(self, "Uyarı", "Rapor detayları bulunamadı.")
-                
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Rapor detayları yüklenirken hata oluştu: {str(e)}")
+        # İlgili rapor dosyasını bul ve yükle
+        for filename in os.listdir("reports"):
+            full_path = os.path.join("reports", filename)
+            try:
+                if filename.endswith(".json"):
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        report_data = json.load(f)
+                    
+                    # Tarih formatını düzelt
+                    report_date = QDateTime.fromString(
+                        report_data["tarih"], 
+                        Qt.ISODate
+                    ).toString("dd.MM.yyyy HH:mm")
+                    
+                    if (report_date == date_item and 
+                        report_data["bolge"] == location_item):
+                        # Form alanlarını doldur
+                        self.date_time_edit.setDateTime(
+                            QDateTime.fromString(report_data["tarih"], Qt.ISODate)
+                        )
+                        self.location_input.setText(report_data["bolge"])
+                        self.report_type.setCurrentText(report_data["tur"])
+                        self.summary_text.setText(report_data["ozet"])
+                        self.details_text.setText(report_data["detaylar"])
+                        self.needs_text.setText(report_data["ihtiyaclar"])
+                        break
+            except Exception as e:
+                print(f"Rapor yüklenirken hata: {e}")
+
+
+
+    def read_txt_file(self, dosya):
+        """TXT dosyasını okur ve sözlük formatına çevirir"""
+        rapor_verileri = {}
+        for satir in dosya:
+            anahtar, deger = satir.split(": ", 1)
+            rapor_verileri[anahtar.lower()] = deger.strip()
+        return rapor_verileri
+
+
 
     def delete_selected_report(self):
-        """Seçili raporu Firebase veritabanından siler"""
+        """Seçili raporu siler"""
         secili_satirlar = self.reports_table.selectedItems()
         
         if not secili_satirlar:
             QMessageBox.warning(self, "Uyarı", "Silinecek raporu seçin.")
             return
         
-        # Seçili hücreden ID bilgisini al
-        report_id = secili_satirlar[0].data(Qt.UserRole)
+        # Silme işlemi için gerekli bilgileri al
+        secili_satir = secili_satirlar[0].row()
+        tarih = self.reports_table.item(secili_satir, 0).text()
+        bolge = self.reports_table.item(secili_satir, 1).text()
+        format_adi = self.reports_table.item(secili_satir, 4).text()
         
-        if not report_id:
-            return
+        # Dosya uzantısını belirle
+        dosya_uzantisi = ".json" if format_adi == "JSON" else ".txt"
         
-        # Silme onayı
-        onay = QMessageBox.question(
-            self, "Onay", f"Bu raporu silmek istediğinizden emin misiniz?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        
-        if onay == QMessageBox.Yes:
-            try:
-                # Firebase'den sil
-                self.reports_ref.child(report_id).delete()
-                self.report_details_ref.child(report_id).delete()
+        # Tüm dosyaları tara ve sil
+        for dosya_adi in os.listdir("reports"):
+            if dosya_adi.endswith(dosya_uzantisi):
+                dosya_yolu = os.path.join("reports", dosya_adi)
                 
-                # Tablodan kaldır
-                for row in range(self.reports_table.rowCount()):
-                    if self.reports_table.item(row, 0).data(Qt.UserRole) == report_id:
-                        self.reports_table.removeRow(row)
-                        break
-                
-                QMessageBox.information(self, "Başarılı", "Rapor silindi.")
-            except Exception as e:
-                QMessageBox.critical(self, "Hata", f"Rapor silinemedi: {str(e)}")
-
-    def view_report_details(self, item):
-        """Seçilen raporun detaylarını bir diyalog penceresinde görüntüler"""
-        # ID bilgisini hücreden al 
-        report_id = item.data(Qt.UserRole)
-        
-        if not report_id:
-            return
-            
-        try:
-            # Firebase'den rapor verilerini al
-            report_data = self.reports_ref.child(report_id).get()
-            
-            if report_data:
-                # Tarih bilgisini formatla
-                tarih_str = report_data.get('tarih', '')
-                tarih = QDateTime.fromString(tarih_str, Qt.ISODate).toString("dd.MM.yyyy HH:mm")
-                
-                # Rapor içeriğini daha güzel formatlı bir şekilde göster
-                rapor_icerik = f"""
-                <h2>Rapor Detayları</h2>
-                <p><b>Tarih:</b> {tarih}</p>
-                <p><b>Bölge:</b> {report_data.get('bolge', '')}</p>
-                <p><b>Tür:</b> {report_data.get('tur', '')}</p>
-                <hr>
-                <h3>Durum Özeti</h3>
-                <p>{report_data.get('ozet', '')}</p>
-                <hr>
-                <h3>Detaylı Bilgiler</h3>
-                <p>{report_data.get('detaylar', '')}</p>
-                <hr>
-                <h3>İhtiyaçlar ve Öneriler</h3>
-                <p>{report_data.get('ihtiyaclar', '')}</p>
-                """
-                
-                # Bilgiyi göster
-                msg_box = QMessageBox(self)
-                msg_box.setWindowTitle("Rapor Detayları")
-                msg_box.setText(rapor_icerik)
-                msg_box.setTextFormat(Qt.RichText)
-                msg_box.setStandardButtons(QMessageBox.Ok)
-                msg_box.setDefaultButton(QMessageBox.Ok)
-                msg_box.setStyleSheet("QLabel{min-width: 600px;}")
-                msg_box.exec_()
-            else:
-                QMessageBox.warning(self, "Uyarı", "Rapor detayları bulunamadı.")
-                
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Rapor detayları yüklenirken hata oluştu: {str(e)}")
-
-    def export_to_pdf(self):
-        """Seçili raporu PDF olarak dışa aktarır"""
-        try:
-            # Reportlab kütüphanesini import et
-            from reportlab.lib.pagesizes import letter
-            from reportlab.lib import colors
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch
-            from reportlab.pdfbase import pdfmetrics
-            from reportlab.pdfbase.ttfonts import TTFont
-            
-            # Türkçe karakterler için font desteği ekle
-            try:
-                # Arial veya DejaVuSans gibi Türkçe destekleyen fontlar
-                # Önce DejaVuSans'ı deneyelim, yaygın olarak bulunur
-                pdfmetrics.registerFont(TTFont('DejaVuSans', 'fonts/DejaVuSans.ttf'))
-                pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'fonts/DejaVuSans-Bold.ttf'))
-                
-                # Ana font olarak DejaVuSans kullan
-                main_font = 'DejaVuSans'
-                bold_font = 'DejaVuSans-Bold'
-            except:
-                # Font yoksa sistem fontlarını dene
+                # Dosyayı oku ve kontrol et
                 try:
-                    # Windows'ta Arial fontunu dene
-                    pdfmetrics.registerFont(TTFont('Arial', 'C:/Windows/Fonts/arial.ttf'))
-                    pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+                    with open(dosya_yolu, 'r', encoding='utf-8') as f:
+                        rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
                     
-                    main_font = 'Arial'
-                    bold_font = 'Arial-Bold'
-                except:
-                    # Hiçbir Türkçe destekli font bulunamazsa Helvetica kullan (Türkçe karakterler tam görünmeyebilir)
-                    main_font = 'Helvetica'
-                    bold_font = 'Helvetica-Bold'
-                    QMessageBox.warning(self, "Uyarı", "Türkçe karakter desteği için uygun font bulunamadı.\nTürkçe karakterler düzgün görüntülenmeyebilir.")
-            
-            # Seçili raporun ID'sini al
-            secili_satirlar = self.reports_table.selectedItems()
-            if not secili_satirlar:
-                QMessageBox.warning(self, "Uyarı", "Lütfen PDF'e aktarılacak bir rapor seçin.")
-                return
+                    # Tarih ve bölge kontrolü
+                    if (QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate).toString("dd.MM.yyyy HH:mm") == tarih and 
+                        rapor_verileri["bolge"] == bolge):
+                        
+                        # Silme onayı
+                        onay = QMessageBox.question(
+                            self, "Onay", f"{dosya_adi} dosyasını silmek istediğinizden emin misiniz?",
+                            QMessageBox.Yes | QMessageBox.No
+                        )
+                        
+                        if onay == QMessageBox.Yes:
+                            os.remove(dosya_yolu)
+                            QMessageBox.information(self, "Başarılı", "Rapor silindi.")
+                            self.load_reports()
+                        return
                 
-            report_id = secili_satirlar[0].data(Qt.UserRole)
-            if not report_id:
-                QMessageBox.warning(self, "Uyarı", "Rapor ID'si bulunamadı.")
-                return
+                except Exception as e:
+                    QMessageBox.critical(self, "Hata", f"Rapor silinemedi: {str(e)}")
+
+
+    def open_report_file(self, item):
+        """Seçilen raporu açar"""
+        row = item.row()
+        
+        # Dosya formatını ve adını al
+        format_item = self.reports_table.item(row, 4)
+        tarih_item = self.reports_table.item(row, 0)
+        bolge_item = self.reports_table.item(row, 1)
+        
+        if not (format_item and tarih_item and bolge_item):
+            return
+        
+        # Dosya adını bul
+        format_adi = format_item.text()
+        dosya_uzantisi = ".json" if format_adi == "JSON" else ".txt"
+        
+        for dosya_adi in os.listdir("reports"):
+            if dosya_adi.endswith(dosya_uzantisi):
+                try:
+                    with open(os.path.join("reports", dosya_adi), 'r', encoding='utf-8') as f:
+                        rapor_verileri = json.load(f) if format_adi == "JSON" else self.read_txt_file(f)
+                    
+                    # Tarih ve bölge kontrolü
+                    if (QDateTime.fromString(rapor_verileri["tarih"], Qt.ISODate).toString("dd.MM.yyyy HH:mm") == tarih_item.text() and 
+                        rapor_verileri["bolge"] == bolge_item.text()):
+                        
+                        # Dosyayı sistem varsayılan uygulamasıyla aç
+                        dosya_yolu = os.path.join("reports", dosya_adi)
+                        if os.name == 'nt':  # Windows
+                            os.startfile(dosya_yolu)
+                        elif os.name == 'posix':  # macOS ve Linux
+                            subprocess.run(['xdg-open' if os.uname().sysname == 'Linux' else 'open', dosya_yolu])
+                        
+                        return
                 
-            # Firebase'den rapor verilerini al
-            report_data = self.reports_ref.child(report_id).get()
-            if not report_data:
-                QMessageBox.warning(self, "Uyarı", "Rapor verileri bulunamadı.")
-                return
-                
-            # Dosya adı için rapor bilgilerini al
-            bolge = report_data.get('bolge', 'Bilinmeyen_Bolge')
-            tur = report_data.get('tur', 'Rapor').replace(' ', '_')
-            tarih_str = report_data.get('tarih', '')
-            tarih = QDateTime.fromString(tarih_str, Qt.ISODate).toString("yyyyMMdd_HHmm")
-            
-            # Kullanıcıdan kaydetme konumu al
-            from PyQt5.QtWidgets import QFileDialog
-            dosya_adi = f"Rapor_{bolge}_{tur}_{tarih}.pdf"
-            dosya_yolu, _ = QFileDialog.getSaveFileName(
-                self, "PDF Kaydet", dosya_adi, "PDF Dosyası (*.pdf)"
-            )
-            
-            if not dosya_yolu:
-                return  # Kullanıcı iptal etti
-            
-            # PDF oluştur
-            doc = SimpleDocTemplate(
-                dosya_yolu,
-                pagesize=letter,
-                rightMargin=72, leftMargin=72,
-                topMargin=72, bottomMargin=18,
-                encoding='utf-8'  # UTF-8 kodlaması kullan
-            )
-            
-            # Türkçe karakterleri destekleyen stiller
-            styles = getSampleStyleSheet()
-            styles.add(ParagraphStyle(
-                name='TurkishHeading1',
-                fontName=bold_font,
-                fontSize=18,
-                spaceAfter=12,
-                encoding='utf-8'
-            ))
-            styles.add(ParagraphStyle(
-                name='TurkishHeading2',
-                fontName=bold_font,
-                fontSize=14,
-                spaceAfter=10,
-                encoding='utf-8'
-            ))
-            styles.add(ParagraphStyle(
-                name='TurkishNormal',
-                fontName=main_font,
-                fontSize=12,
-                spaceAfter=8,
-                encoding='utf-8'
-            ))
-            
-            # İçerik elemanları
-            elements = []
-            
-            # AFAD Logosu (varsa)
-            try:
-                from reportlab.platypus import Image
-                logo_path = 'icons/afad_logo.png'
-                if os.path.exists(logo_path):
-                    logo = Image(logo_path, width=1.5*inch, height=1*inch)
-                    elements.append(logo)
-                    elements.append(Spacer(1, 0.2 * inch))
-            except:
-                pass
-            
-            # Rapor başlığı
-            elements.append(Paragraph(f"{tur}", styles['TurkishHeading1']))
-            elements.append(Spacer(1, 0.2 * inch))
-            
-            # Temel bilgiler tablosu
-            tarih_format = QDateTime.fromString(tarih_str, Qt.ISODate).toString("dd.MM.yyyy HH:mm")
-            basic_info = [
-                ["Rapor Tarihi:", tarih_format],
-                ["Bölge:", report_data.get('bolge', '')],
-                ["Rapor Türü:", report_data.get('tur', '')]
-            ]
-            
-            t = Table(basic_info, colWidths=[1.5*inch, 4*inch])
-            t.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (0, -1), colors.black),
-                ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-                ('FONTNAME', (0, 0), (0, -1), bold_font),
-                ('FONTNAME', (1, 0), (1, -1), main_font),
-                ('FONTSIZE', (0, 0), (-1, -1), 12),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                ('BACKGROUND', (1, 0), (-1, -1), colors.white),
-                ('BOX', (0, 0), (-1, -1), 1, colors.black),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ]))
-            elements.append(t)
-            elements.append(Spacer(1, 0.2 * inch))
-            
-            # Özet
-            elements.append(Paragraph("Durum Özeti", styles['TurkishHeading2']))
-            ozet_text = report_data.get('ozet', '')
-            if ozet_text:
-                elements.append(Paragraph(ozet_text, styles['TurkishNormal']))
-            else:
-                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
-            elements.append(Spacer(1, 0.2 * inch))
-            
-            # Detaylı bilgiler
-            elements.append(Paragraph("Detaylı Bilgiler", styles['TurkishHeading2']))
-            detay_text = report_data.get('detaylar', '')
-            if detay_text:
-                elements.append(Paragraph(detay_text, styles['TurkishNormal']))
-            else:
-                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
-            elements.append(Spacer(1, 0.2 * inch))
-            
-            # İhtiyaçlar ve öneriler
-            elements.append(Paragraph("İhtiyaçlar ve Öneriler", styles['TurkishHeading2']))
-            ihtiyac_text = report_data.get('ihtiyaclar', '')
-            if ihtiyac_text:
-                elements.append(Paragraph(ihtiyac_text, styles['TurkishNormal']))
-            else:
-                elements.append(Paragraph("Bilgi girilmemiş", styles['TurkishNormal']))
-                
-            # Altbilgi - Footer
-            footer_text = f"Bu rapor {QDateTime.currentDateTime().toString('dd.MM.yyyy HH:mm')} tarihinde oluşturulmuştur."
-            elements.append(Spacer(1, 0.5 * inch))
-            elements.append(Paragraph(footer_text, styles['TurkishNormal']))
-            
-            # PDF oluştur
-            doc.build(elements)
-            
-            QMessageBox.information(self, "Başarılı", f"Rapor PDF olarak kaydedildi: {dosya_yolu}")
-            
-        except ModuleNotFoundError:
-            QMessageBox.warning(self, "Uyarı", 
-                               "PDF oluşturmak için reportlab kütüphanesi gereklidir.\n"
-                               "Lütfen şu komutu çalıştırın: pip install reportlab")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"PDF oluşturulurken hata oluştu: {str(e)}")
-            import traceback
-            traceback.print_exc()
+                except Exception as e:
+                    QMessageBox.critical(self, "Hata", f"Dosya açılamadı: {str(e)}")

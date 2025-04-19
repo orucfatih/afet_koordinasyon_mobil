@@ -174,12 +174,30 @@ DARK_BLUE_BUTTON_STYLE = """
         font-size: 14px;
     }
     QPushButton:hover {
-        background-color: #4c66d4;
+        background-color: #2980b9;
     }
     QPushButton:pressed {
         background-color: #4055c2;
     }
 """
+
+# Turuncu buton stili
+ORANGE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #e67e22;
+        color: white;
+        border-radius: 5px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #d35400;
+    }
+    QPushButton:pressed {
+        background-color: #a04000;
+    }
+"""
+
 
 REFRESH_BUTTON_STYLE = """
     QPushButton {
@@ -497,7 +515,7 @@ SEARCH_WIDGET_STYLE = """
 """
 
 # Kaynak Yönetimi Input Stili
-RESOURCE_INPUT_STYLE = """
+INPUT_STYLE = """
     QLineEdit {
         padding: 8px;
         border-radius: 4px;
@@ -511,7 +529,7 @@ RESOURCE_INPUT_STYLE = """
 """
 
 # Kaynak Yönetimi Buton Stili
-RESOURCE_BUTTON_STYLE = """
+BUTTON_STYLE = """
     QPushButton {
         padding: 10px;
         border-radius: 5px;
@@ -525,7 +543,7 @@ RESOURCE_BUTTON_STYLE = """
 """
 
 # Kaynak Yönetimi Tablo Stili
-RESOURCE_TABLE_STYLE = """
+TABLE_STYLE = """
     QTableWidget {
         background-color: #13111b;
         border-radius: 8px;
@@ -542,7 +560,7 @@ RESOURCE_TABLE_STYLE = """
         background-color: #191622;
     }
     QHeaderView::section {
-        background-color: #0d00a6;
+        background-color: #252b40;
         padding: 8px;
         border: none;
         font-weight: bold;
@@ -551,16 +569,16 @@ RESOURCE_TABLE_STYLE = """
 """
 
 # Kaynak Yönetimi GroupBox Stili
-RESOURCE_GROUP_STYLE = """
+GROUP_STYLE = """
     QGroupBox {
-        background-color: #201c2b;
+        background-color: #21172e;
         border-radius: 8px;
         padding: 15px;
         margin-top: 20px;
     }
     QGroupBox::title {
         color: white;
-        background-color: #0d00a6;
+        background-color: #341f4f;
         padding: 5px 10px;
         border-radius: 4px;
         subcontrol-position: top center;
@@ -568,23 +586,23 @@ RESOURCE_GROUP_STYLE = """
     }
 """
 
-# Kaynak Yönetimi Ekle Buton Stili
-RESOURCE_ADD_BUTTON_STYLE = """
+# Kaynak Yönetimi Ekle Buton Stili (değişti artık birçok arayüz dosyasında kullanılıyor)
+ADD_BUTTON_STYLE = """
     QPushButton {
         padding: 10px;
         border-radius: 5px;
-        background: #1dc925;
+        background: #652d69;
         color: white;
         border: none;
         font-weight: bold;
     }
     QPushButton:hover {
-        background: #5260da;
+        background: #2980b9;
     }
 """
 
 # Kaynak Yönetimi TextEdit Stili
-RESOURCE_TEXT_EDIT_STYLE = """
+TEXT_EDIT_STYLE = """
     QTextEdit {
         background-color: #191622;
         border-radius: 4px;

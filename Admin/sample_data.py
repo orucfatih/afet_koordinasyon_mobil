@@ -143,16 +143,21 @@ RESOURCE_DATA = [
 ]
 
 EQUIPMENT_DATA = [
-    ["EKPMN001", "Hidrolik Kesici", "Kurtarma Ekipmanı", "Aktif", "15.03.2024", "Ahmet Yılmaz"],
-    ["EKPMN002", "Termal Kamera", "Arama Ekipmanı", "Bakımda", "10.03.2024", "Mehmet Demir"],
-    ["EKPMN003", "Jeneratör", "Güç Ekipmanı", "Aktif", "12.03.2024", "Ali Öztürk"],
-    ["EKPMN004", "Sedye", "Sağlık Ekipmanı", "Aktif", "14.03.2024", "Fatma Şahin"],
-    ["EKPMN005", "Yangın Hortumu", "Yangın Ekipmanı", "Aktif", "11.03.2024", "Hüseyin Çelik"],
-    ["EKPMN006", "Merdiven", "Kurtarma Ekipmanı", "Onarımda", "13.03.2024", "Zeynep Yıldız"],
-    ["EKPMN007", "Telsiz Seti", "İletişim Ekipmanı", "Aktif", "16.03.2024", "Emine Arslan"],
-    ["EKPMN008", "Su Pompası", "Su Tahliye", "Aktif", "17.03.2024", "Osman Kılıç"],
-    ["EKPMN009", "İlk Yardım Çantası", "Sağlık Ekipmanı", "Aktif", "18.03.2024", "Ayşe Kaya"],
-    ["EKPMN010", "Halat Seti", "Kurtarma Ekipmanı", "Bakımda", "19.03.2024", "Mustafa Aydın"]
+    ["EKPMN001", "Hidrolik Kesici", "Kurtarma Ekipmanı", "Aktif", "15.03.2024", "25.04.2024", "Ahmet Yılmaz", "Ana Depo", "Düzenli bakım yapıldı"],
+    ["EKPMN002", "Termal Kamera", "Arama Ekipmanı", "Bakımda", "10.03.2024", "10.04.2024", "Mehmet Demir", "Ana Depo", "Kalibrasyon gerekiyor"],
+    ["EKPMN003", "Jeneratör", "Güç Ekipmanı", "Aktif", "12.03.2024", "12.05.2024", "Ali Öztürk", "Mobil Depo 1", "Yakıt dolu, hazır"],
+    ["EKPMN004", "Sedye", "Sağlık Ekipmanı", "Aktif", "14.03.2024", "14.06.2024", "Fatma Şahin", "Saha", "Temizlik yapıldı"],
+    ["EKPMN005", "Yangın Hortumu", "Yangın Ekipmanı", "Aktif", "11.03.2024", "11.05.2024", "Hüseyin Çelik", "Ana Depo", "Test edildi"],
+    ["EKPMN006", "Merdiven", "Kurtarma Ekipmanı", "Onarımda", "13.03.2024", "30.04.2024", "Zeynep Yıldız", "Mobil Depo 2", "Basamak tamiri gerekiyor"],
+    ["EKPMN007", "Telsiz Seti", "İletişim Ekipmanı", "Aktif", "16.03.2024", "16.06.2024", "Emine Arslan", "Saha", "Piller değiştirildi"],
+    ["EKPMN008", "Su Pompası", "Su Tahliye", "Aktif", "17.03.2024", "17.04.2024", "Osman Kılıç", "Mobil Depo 1", "Hazır durumda"],
+    ["EKPMN009", "İlk Yardım Çantası", "Sağlık Ekipmanı", "Aktif", "18.03.2024", "18.06.2024", "Ayşe Kaya", "Saha", "Malzemeler tamamlandı"],
+    ["EKPMN010", "Halat Seti", "Kurtarma Ekipmanı", "Bakımda", "19.03.2024", "19.04.2024", "Mustafa Aydın", "Ana Depo", "Aşınma kontrolü"],
+    ["EKPMN011", "Dizel Jeneratör", "Güç Ekipmanı - Jeneratörler", "Aktif", "20.03.2024", "20.05.2024", "Mehmet Demir", "Ana Depo", "Yakıt dolu, hazır"],
+    ["EKPMN012", "Benzinli Jeneratör", "Güç Ekipmanı - Jeneratörler", "Aktif", "21.03.2024", "21.05.2024", "Ali Öztürk", "Mobil Depo 2", "Yakıt dolu, hazır"],
+    ["EKPMN013", "Solar Jeneratör", "Güç Ekipmanı - Jeneratörler", "Aktif", "22.03.2024", "22.05.2024", "Hüseyin Çelik", "Saha", "Paneller temizlendi"],
+    ["EKPMN014", "Akustik Dinleme Cihazı", "Arama Ekipmanı", "Aktif", "23.03.2024", "23.05.2024", "Ayşe Kaya", "Ana Depo", "Kalibre edildi"],
+    ["EKPMN015", "Dalgıç Pompa", "Su Tahliye", "Aktif", "24.03.2024", "24.05.2024", "Osman Kılıç", "Mobil Depo 1", "Test edildi"]
 ]
 
 TASK_HISTORY_DATA = [
