@@ -14,27 +14,34 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-try:
-    firebase_credentials_json = os.getenv("FIREBASE_CREDENTIALS") or ""
-    if not firebase_credentials_json:
-        print("\033[91mHATA: FIREBASE_CREDENTIALS ortam değişkeni bulunamadı!\033[0m")
-        sys.exit(1)
-    
-    try:
-        firebase_credentials = json.loads(firebase_credentials_json)
-    except json.JSONDecodeError as e:
-        print(f"\033[91mHATA: FIREBASE_CREDENTIALS JSON formatı geçersiz: {e}\033[0m")
-        sys.exit(1)
-    
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(firebase_credentials)
-        firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    print("Firebase başarıyla başlatıldı!")
-except Exception as e:
-    print(f"\033[91mHATA: Firebase başlatılamadı: {e}\033[0m")
-    sys.exit(1)
+firebase_credentials_json = {
+    'type': os.getenv('FIREBASE_ADMIN_TYPE'),
+    'project_id': os.getenv('FIREBASE_ADMIN_PROJECT_ID'),
+    'private_key_id': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY_ID'),
+    'private_key': os.getenv('FIREBASE_ADMIN_PRIVATE_KEY'),
+    'client_email': os.getenv('FIREBASE_ADMIN_CLIENT_EMAIL'),
+    'client_id': os.getenv('FIREBASE_ADMIN_CLIENT_ID'),
+    'auth_uri': os.getenv('FIREBASE_ADMIN_AUTH_URI'),
+    'token_uri': os.getenv('FIREBASE_ADMIN_TOKEN_URI'),
+    'auth_provider_x509_cert_url': os.getenv('FIREBASE_ADMIN_AUTH_PROVIDER_CERT_URL'),
+    'client_x509_cert_url': os.getenv('FIREBASE_ADMIN_CLIENT_CERT_URL'),
+    'universe_domain': os.getenv('FIREBASE_ADMIN_UNIVERSE_DOMAIN', 'googleapis.com')
+}
 
+# Zorunlu değişkenlerin kontrolü
+required_keys = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email']
+for key in required_keys:
+    if not firebase_credentials_json[key]:
+        print(f"\033[91mHATA: {key} ortam değişkeni eksik!\033[0m")
+        sys.exit(1)
+
+firebase_credentials_json['private_key'] = firebase_credentials_json['private_key'].replace('\\n', '\n')
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(firebase_credentials_json)
+    firebase_admin.initialize_app(cred)
+db = firestore.client()
+print("Firebase başarıyla başlatıldı!")
 class GoogleMapsWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
