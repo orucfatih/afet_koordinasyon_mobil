@@ -41,6 +41,7 @@ export const getUnsentPhotos = () => {
         [],
         (_, result) => {
           resolve(result.rows.raw());
+          (_, error) => reject(error);
         }
       );
     });

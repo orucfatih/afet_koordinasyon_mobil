@@ -12,14 +12,17 @@ import {
   StatusBar,
   Platform,
   SafeAreaView,
+  Alert,
+  PermissionsAndroid
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProfileScreen, SettingsScreen, Info, Horn } from '../components/index';
+import { ProfileScreen, SettingsScreen, Info } from '../components/index';
 import * as Animatable from 'react-native-animatable';
+
 
 const { width } = Dimensions.get('window');
 
@@ -41,10 +44,54 @@ Animatable.initializeRegistryWithDefinitions({
   }
 });
 
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Dünya'nın yarıçapı (km)
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Kilometre cinsinden mesafe
+};
+
+const getCurrentLocation = () => {
+  return new Promise((resolve) => {
+    if (navigator && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Konum hatası:', error);
+          resolve({ latitude: null, longitude: null });
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+    } else {
+      resolve({ latitude: null, longitude: null });
+    }
+  });
+};
+
 const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [earthquakeData, setEarthquakeData] = useState([]);
   const [info, setInfo] = useState(false);
+  const [assemblyAreas, setAssemblyAreas] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+ 
+   const [region, setRegion] = useState({
+     latitude: 38.4192, // İzmir merkez
+     longitude: 27.1287,
+     latitudeDelta: 0.5,
+     longitudeDelta: 0.5,
+   });
 
   const TURKEY_BOUNDS = {
     minLatitude: 32.0,
@@ -53,18 +100,103 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     maxLongitude: 48.0,
   };
 
-  const [region, setRegion] = useState({
-    latitude: 38.9637,
-    longitude: 35.2433,
-    latitudeDelta: 5,
-    longitudeDelta: 5,
-  });
+  const handleRegionChange = (newRegion) => {
+    const limitedRegion = {
+      latitude: Math.max(Math.min(newRegion.latitude, TURKEY_BOUNDS.maxLatitude), TURKEY_BOUNDS.minLatitude),
+      longitude: Math.max(Math.min(newRegion.longitude, TURKEY_BOUNDS.maxLongitude), TURKEY_BOUNDS.minLongitude),
+      latitudeDelta: Math.max(Math.min(newRegion.latitudeDelta, 15), 0.1),
+      longitudeDelta: Math.max(Math.min(newRegion.longitudeDelta, 15), 0.1),
+    };
+    setRegion(limitedRegion);
+  };
 
-  const [assemblyAreas, setAssemblyAreas] = useState([
-    { id: 1, name: 'Toplanma Alanı 1', distance: '1.2 km', capacity: '500 kişi', latitude: 39.9637, longitude: 35.2433 },
-    { id: 2, name: 'Toplanma Alanı 2', distance: '2.5 km', capacity: '300 kişi', latitude: 38.9737, longitude: 35.2533 },
-    { id: 3, name: 'Toplanma Alanı 3', distance: '4.0 km', capacity: '1000 kişi', latitude: 37.9537, longitude: 35.2333 },
-  ]);
+  useEffect(() => {
+    const getUserLocationAndSortAreas = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Android için konum izni kontrolü
+        if (Platform.OS === 'android') {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            throw new Error('Konum izni reddedildi');
+          }
+        }
+
+        // Konum alma
+        const userLoc = await getCurrentLocation();
+        if (userLoc.latitude && userLoc.longitude) {
+          setUserLocation(userLoc);
+          console.log('Kullanıcı konumu alındı:', userLoc);
+
+          // JSON dosyasından toplanma alanlarını al ve mesafeye göre sırala
+          const areasWithDistance = toplanmaAlanlari
+            .filter(area => {
+              const hasValidCoords = area.ENLEM && area.BOYLAM && 
+                !isNaN(parseFloat(area.ENLEM)) && !isNaN(parseFloat(area.BOYLAM));
+              if (!hasValidCoords) {
+                console.log('Geçersiz koordinat:', area);
+              }
+              return hasValidCoords;
+            })
+            .map(area => ({
+              id: area.ACIKLAMA || Math.random().toString(),
+              name: area.ADI || 'İsimsiz Toplanma Alanı',
+              district: area.ILCE || '',
+              neighborhood: area.MAHALLE || '',
+              street: area.YOL || '',
+              latitude: parseFloat(area.ENLEM),
+              longitude: parseFloat(area.BOYLAM),
+              distance: calculateDistance(
+                userLoc.latitude,
+                userLoc.longitude,
+                parseFloat(area.ENLEM),
+                parseFloat(area.BOYLAM)
+              )
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 4);
+
+          console.log('En yakın 4 toplanma alanı:', areasWithDistance);
+          setAssemblyAreas(areasWithDistance);
+          
+          setRegion({
+            latitude: userLoc.latitude,
+            longitude: userLoc.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          });
+        } else {
+          console.log('Konum alınamadı');
+          Alert.alert('Hata', 'Konum alınamadı');
+          // Varsayılan toplanma alanlarını göster
+          const defaultAreas = toplanmaAlanlari
+            .filter(area => area.ENLEM && area.BOYLAM)
+            .slice(0, 4)
+            .map(area => ({
+              id: area.ACIKLAMA || Math.random().toString(),
+              name: area.ADI || 'İsimsiz Toplanma Alanı',
+              district: area.ILCE || '',
+              neighborhood: area.MAHALLE || '',
+              street: area.YOL || '',
+              latitude: parseFloat(area.ENLEM),
+              longitude: parseFloat(area.BOYLAM),
+              distance: null
+            }));
+          setAssemblyAreas(defaultAreas);
+        }
+      } catch (error) {
+        console.error('Konum veya toplanma alanları yüklenirken hata:', error);
+        Alert.alert('Hata', 'Toplanma alanları yüklenirken bir hata oluştu.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getUserLocationAndSortAreas();
+  }, []);
 
   useEffect(() => {
     const fetchEarthquakeData = async () => {
@@ -126,16 +258,6 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     setCurrentIndex(activeIndex);
   };
 
-  const handleRegionChange = (newRegion) => {
-    const limitedRegion = {
-      latitude: Math.max(Math.min(newRegion.latitude, TURKEY_BOUNDS.maxLatitude), TURKEY_BOUNDS.minLatitude),
-      longitude: Math.max(Math.min(newRegion.longitude, TURKEY_BOUNDS.maxLongitude), TURKEY_BOUNDS.minLongitude),
-      latitudeDelta: Math.max(Math.min(newRegion.latitudeDelta, 15), 0.1),
-      longitudeDelta: Math.max(Math.min(newRegion.longitudeDelta, 15), 0.1),
-    };
-    setRegion(limitedRegion);
-  };
-
   const renderEarthquakeCard = ({ item }) => {
     const getMagnitudeColor = (magnitude) => {
       if (magnitude < 4) return '#4CAF50';
@@ -178,6 +300,45 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     );
   };
 
+  const handleFamilyNotification = async () => {
+    try {
+      const familyMessage = await AsyncStorage.getItem('familyMessage');
+      const selectedContacts = JSON.parse(await AsyncStorage.getItem('selectedContacts') || '[]');
+      
+      if (!familyMessage || selectedContacts.length === 0) {
+        Alert.alert(
+          'Uyarı',
+          'Lütfen önce ayarlar kısmından bildirim mesajınızı ve kişilerinizi ekleyin.'
+        );
+        navigation.navigate('Settings');
+        return;
+      }
+
+      // Her bir kişi için SMS gönderme
+      selectedContacts.forEach(contact => {
+        const phoneNumber = contact.phoneNumber.replace(/\D/g, ''); // Sadece rakamları al
+        const encodedMessage = encodeURIComponent(familyMessage);
+        const url = Platform.select({
+          ios: `sms:${phoneNumber}&body=${encodedMessage}`,
+          android: `sms:${phoneNumber}?body=${encodedMessage}`
+        });
+
+        Linking.openURL(url).catch(err => {
+          console.error('SMS gönderme hatası:', err);
+          Alert.alert('Hata', 'SMS gönderilemedi. Lütfen tekrar deneyin.');
+        });
+      });
+
+      Alert.alert('Başarılı', 'SMS gönderme işlemi başlatıldı');
+    } catch (error) {
+      console.error('SMS gönderme hatası:', error);
+      Alert.alert(
+        'Hata',
+        'SMS gönderilemedi. Lütfen tekrar deneyin.'
+      );
+    }
+  };
+
   if (info) {
     return <Info setInfo={setInfo} />;
   }
@@ -202,7 +363,9 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+         style={styles.container}
+         contentContainerStyle={styles.scrollContent}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Son Depremler</Text>
             <TouchableOpacity onPress={() => navigation.navigate('ViewAll')}>
@@ -238,34 +401,31 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
               onPress={() => navigation.navigate('Camera')}
             >
               <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
-              <Ionicons name="camera" size={30} color="white" style={styles.camera} />
+              <Ionicons name="warning" size={30} color="white" style={styles.camera} />
             </TouchableOpacity>
           </Animatable.View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={styles.largeButton} 
-              onPress={() => navigation.navigate('UnderDebris')}
+              style={styles.smallButton}
+              onPress={handleFamilyNotification}
             >
-              <View style={styles.buttonContent}>
-                <Ionicons name="warning" size={18} color="white" style={styles.buttonIcon} />
-                <Text 
-                  style={styles.largeButtonText}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  ENKAZ ALTINDAYIM
-                </Text>
-              </View>
+              <Ionicons name="notifications" size={24} color="#fff" />
+              <Text style={styles.smallButtonText}>Ailene Bildir</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+             style={styles.smallButton}
+             onPress={() => navigation.navigate('Missing')}>
+             <Ionicons name="person" size={24} color="#fff" />
+             <Text style={styles.smallButtonText}>Kayıp İhbar</Text>
+           </TouchableOpacity>
+
             <TouchableOpacity 
               style={styles.smallButton} 
-              onPress={() => console.log('Ailene Bildir')}
-            >
-              <View style={styles.buttonContent}>
-                <Ionicons name="notifications" size={16} color="white" style={styles.buttonIcon} />
-                <Text style={styles.smallButtonText}>AİLENE BİLDİR</Text>
-              </View>
+              onPress={() => navigation.navigate('Missing')}>
+                <Ionicons name="information-circle" size={24} color="#fff" />
+                <Text style={styles.smallButtonText}>Deprem Bilgilendirme</Text>
             </TouchableOpacity>
           </View>
 
@@ -273,36 +433,52 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             style={styles.map}
             region={region}
             onRegionChangeComplete={handleRegionChange}
+            zoomEnabled={true}
+            zoomControlEnabled={true}
+            showsUserLocation={true}
           >
-            {earthquakeData.map((item) => (
+            {assemblyAreas.map((area, index) => (
               <Marker
-                key={item.id}
-                coordinate={{ latitude: item.lat, longitude: item.lon }}
-                title={item.location}
-                description={`Şiddet: ${item.magnitude}`}
-                pinColor="red"
-              />
-            ))}
-            {assemblyAreas.map(area => (
-              <Marker
-                key={area.id}
-                coordinate={{ latitude: area.latitude, longitude: area.longitude }}
+                key={index}
+                coordinate={{
+                  latitude: parseFloat(area.latitude),
+                  longitude: parseFloat(area.longitude),
+                }}
                 title={area.name}
-                description={`Uzaklık: ${area.distance}, Kapasite: ${area.capacity}`}
-                pinColor="green"
+                description={`${area.district} - ${area.neighborhood}\nUzaklık: ${area.distance.toFixed(2)} km`}
+                onPress={() => {
+                  const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+                  const latLng = `${area.latitude},${area.longitude}`;
+                  const label = area.name;
+                  const url = Platform.select({
+                    ios: `${scheme}${label}@${latLng}`,
+                    android: `${scheme}${latLng}(${label})`
+                  });
+                  Linking.openURL(url);
+                }}
               />
             ))}
+            {userLocation && (
+              <Marker
+                coordinate={userLocation}
+                title="Konumunuz"
+                pinColor="blue"
+              />
+            )}
           </MapView>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Toplanma Alanları</Text>
-            <TouchableOpacity>
+            <Text style={styles.sectionTitle}>En Yakın Toplanma Alanları</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ViewAll2')}> 
               <Text style={styles.viewAll}>Tümünü Gör</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.assemblyButtonsContainer}>
-            {assemblyAreas.slice(0, 6).map((area) => (
+            {isLoading ? (
+              <Text style={styles.loadingText}>Toplanma alanları yükleniyor...</Text>
+            ) : (
+             assemblyAreas.map((area) => (
               <TouchableOpacity
                 key={area.id}
                 style={styles.assemblyButton}
@@ -312,14 +488,20 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
                   <View style={styles.assemblyIconWrapper}>
                     <Ionicons name="people" size={30} color="white" />
                   </View>
-                  <View>
+                  <View style={styles.assemblyInfo}>
                     <Text style={styles.assemblyButtonText}>{area.name}</Text>
-                    <Text style={styles.assemblyDetails}>Uzaklık: {area.distance}</Text>
-                    <Text style={styles.assemblyDetails}>Kapasite: {area.capacity}</Text>
+                    <Text style={styles.assemblyDetails}>{area.district} - {area.neighborhood}</Text>
+                    <Text style={styles.assemblyDetails}>{area.street}</Text>
+                      {area.distance && (
+                        <Text style={styles.assemblyDetails}>
+                          Mesafe: {area.distance.toFixed(2)} km
+                        </Text>
+                      )}
                   </View>
                 </View>
               </TouchableOpacity>
-            ))}
+            ))
+          )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -428,7 +610,7 @@ const HomePage = ({ navigation }) => {
             </TouchableOpacity>
           </Animatable.View>
           <TouchableOpacity 
-            style={styles.emergencyButton} 
+            style={styles.emergencyCallButton} 
             onPress={handleEmergencyCall}
           >
             <Ionicons name="call" size={30} color="white" />
@@ -471,7 +653,7 @@ export const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     zIndex: 10,
     position: 'relative',
-    minHeight: 100,
+    minHeight: 75,
   },
   logoImage: {
     width: 50,
@@ -483,16 +665,16 @@ export const styles = StyleSheet.create({
   whistleButton: {
     position: 'absolute',
     left: 20,
-    top: 35,
+    top: 20,
   },
   info: {
     position: 'absolute',
     right: 20,
-    top: 35,
+    top: 20,
   },
   scrollContent: {
     paddingTop: 20,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -630,7 +812,7 @@ export const styles = StyleSheet.create({
   },
   bigButtonWrapper: {
     alignSelf: 'center',
-    marginVertical: 30,
+    marginVertical: 20,
     height: 155,
     width: 155,
     borderRadius: 100,
@@ -654,54 +836,39 @@ export const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   bigButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 20,
-  },
-  smallButton: {
-    width: 150,
-    height: 50,
-    backgroundColor: '#D32F2F',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
-    marginHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#fff',
-  },
-  largeButton: {
-    width: 190, // Increased width for emphasis
-    height: 50,
-    backgroundColor: '#D32F2F',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
-    marginHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#fff',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  smallButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
+    marginBottom: 5,
   },
-  largeButtonText: {
-    fontSize: 14, // Slightly larger text for emphasis
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  smallButton: {
+    backgroundColor: '#2196F3',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+     width: 0,
+     height: 2,
+    },
+     shadowOpacity: 0.25,
+     shadowRadius: 3.84,
+     elevation: 5,
+  },
+  smallButtonText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
-    color: 'white',
+    marginTop: 5,
     textAlign: 'center',
   },
   tabBar: {
@@ -718,6 +885,10 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   tab: {
     alignItems: 'center',
@@ -739,9 +910,9 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  emergencyButton: {
+  emergencyCallButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 90,
     right: 20,
     width: 60,
     height: 60,
@@ -754,5 +925,52 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    zIndex: 1000,
+  },
+  loadingText: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+  },
+  assemblyInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  areaListContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 10,
+    padding: 15,
+    maxHeight: '30%',
+  },
+  areaListTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  areaItem: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingBottom: 5,
+  },
+  areaName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  areaDetails: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  areaDistance: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
   },
 });
