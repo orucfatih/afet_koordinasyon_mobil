@@ -328,19 +328,22 @@ const SettingsScreen = ({ navigation }) => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[
         styles.mainContainer,
-        isEmergencyModeEnabled && styles.emergencyContainer
-      ]}>
+        isEmergencyModeEnabled && styles.emergencyContainer]}>
+
         <StatusBar
           backgroundColor="#2D2D2D"
           barStyle="light-content"
-          translucent={true}
-        />
+          translucent={true}/>
+
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.topBar}>
             <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
           </View>
 
-          <ScrollView style={styles.settingsContainer}>
+          <ScrollView 
+            style={styles.container}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
             <View style={styles.settingItem}>
               <View style={styles.settingLabel}>
                 <Ionicons name="notifications" size={20} color="#555" style={styles.icon} />
@@ -404,6 +407,13 @@ const SettingsScreen = ({ navigation }) => {
               />
             </View>
 
+            <Text style={[
+              styles.emergencyNote,
+              isEmergencyModeEnabled && styles.emergencyNoteActive
+            ]}>
+              *** Bu mod enkaz altında ya da enerji gereksiniminde kullanılmalıdır ***
+            </Text>
+
             <View style={styles.familyNotificationSection}>
               <Text style={styles.sectionTitle}>Ailene Bildir</Text>
               
@@ -447,12 +457,6 @@ const SettingsScreen = ({ navigation }) => {
               <Text style={styles.saveButtonText}>Ayarları Kaydet</Text>
             </TouchableOpacity>
             
-            <Text style={[
-              styles.emergencyNote,
-              isEmergencyModeEnabled && styles.emergencyNoteActive
-            ]}>
-              *** Bu mod enkaz altında ya da enerji gereksiniminde kullanılmalıdır ***
-            </Text>
           </ScrollView>
 
           {renderContactPicker()}
@@ -474,6 +478,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: 20,
+    paddingBottom: 140,
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -492,17 +506,14 @@ const styles = StyleSheet.create({
     left: width / 2 - 25,
     marginTop: 10,
   },
-  settingsContainer: {
-    flex: 1,
-    marginTop: 10, // topBar yüksekliği kadar boşluk bırakır
-    paddingHorizontal: 15,
-    marginBottom: 20,
-  },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 15,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 10,
     borderBottomWidth: 1,
     borderColor: '#ccc',
     backgroundColor: '#fff',
@@ -570,7 +581,8 @@ const styles = StyleSheet.create({
   },
   familyNotificationSection: {
     marginTop: 20,
-    padding: 15,
+    marginHorizontal: 0,
+    padding: 20,
     backgroundColor: '#fff',
     borderRadius: 10,
     shadowColor: '#000',

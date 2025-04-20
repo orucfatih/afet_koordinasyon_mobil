@@ -93,8 +93,8 @@ const ProfileScreen = () => {
       <StatusBar
         backgroundColor="#2D2D2D"
         barStyle="light-content"
-        translucent={true}
-      />
+        translucent={true}/>
+
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
           <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
@@ -103,13 +103,13 @@ const ProfileScreen = () => {
         <ScrollView 
           style={styles.container}
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
+
           <TouchableOpacity 
             style={styles.dismissKeyboard} 
             activeOpacity={1} 
-            onPress={() => Keyboard.dismiss()}
-          >
+            onPress={() => Keyboard.dismiss()}>
+
             <View style={styles.profileHeader}>
               <Image source={require('../../assets/images/user.png')} style={styles.profileImage} />
               <View style={styles.profileInfo}>
@@ -163,8 +163,8 @@ const ProfileScreen = () => {
                   </View>
                 }
                 onPress={handleLogout}
-                style={styles.logoutButton}
-              />
+                style={styles.logoutButton}/>
+
             </View>
           </TouchableOpacity>
         </ScrollView>
@@ -246,6 +246,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
     marginBottom: 15,
+    width: '90%',
   },
   infoRow: {
     flexDirection: 'row',
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 15,
     alignSelf: 'center',
-    width: '60%',
+    width: '70%',
   },
   editButtonText: {
     color: '#fff',
@@ -356,6 +357,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 15,
+    alignItems:"center",
   },
 });
 

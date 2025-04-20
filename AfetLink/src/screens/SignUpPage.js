@@ -60,7 +60,9 @@ const SignUpPage = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Kaydol</Text>
-        <Image style={styles.image} source={require('../../assets/images/login.png')} />
+        <View style={styles.iconContainer}>
+          <Ionicons name="person-add-outline" size={100} color="#1976D2" />
+        </View>
 
         <View style={styles.inputContainer}>
           <View style={styles.nameInputContainer}>
@@ -192,15 +194,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 20,
   },
-  image: {
+  iconContainer: {
     width: 100,
     height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
-    borderRadius: 50,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
   inputContainer: {
     width: '100%',

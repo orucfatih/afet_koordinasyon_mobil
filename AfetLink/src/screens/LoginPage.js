@@ -74,7 +74,9 @@ const LoginPage = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={styles.title}>Hoş Geldiniz</Text>
-        <Image style={styles.image} source={require('../../assets/images/login.png')} />
+        <View style={styles.iconContainer}>
+          <Ionicons name="log-in-outline" size={100} color="#007BFF" />
+        </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
@@ -84,8 +86,7 @@ const LoginPage = ({ navigation }) => {
             onChangeText={(email) => setEmail(email)}
             value={email}
             style={styles.textInput}
-            keyboardType="email-address"
-          />
+            keyboardType="email-address"/>
 
           <Text style={styles.label}>Şifre</Text>
           <View style={styles.passwordInputContainer}>
@@ -94,13 +95,13 @@ const LoginPage = ({ navigation }) => {
               placeholder="Şifre Girin"
               onChangeText={(password) => setPassword(password)}
               value={password}
-              style={styles.textInput}
-            />
+              style={styles.textInput}/>
+
             <TouchableOpacity
               onPress={() => setSecureText(!secureText)}
               style={styles.eyeIcon}
-              accessibilityLabel={secureText ? 'Şifreyi Göster' : 'Şifreyi Gizle'}
-            >
+              accessibilityLabel={secureText ? 'Şifreyi Göster' : 'Şifreyi Gizle'}>
+
               <Ionicons name={secureText ? 'eye-off' : 'eye'} size={24} color="#555" />
             </TouchableOpacity>
           </View>
@@ -118,8 +119,8 @@ const LoginPage = ({ navigation }) => {
               setCaptchaCode(generateCaptcha());
               setCaptchaAngle(Math.random() * 20 - 10);
             }}
-            style={styles.refreshCaptcha}
-          >
+            style={styles.refreshCaptcha}>
+
             <Ionicons name="refresh-circle" size={32} color="#007BFF" />
           </TouchableOpacity>
         </View>
@@ -130,8 +131,7 @@ const LoginPage = ({ navigation }) => {
           placeholder="Captcha Kodunu Girin"
           onChangeText={(text) => setCaptchaInput(text)}
           value={captchaInput}
-          textAlign="center"
-        />
+          textAlign="center"/>
 
         <CustomButton onPress={handleLogin} title="Giriş Yap" style={styles.primaryButton} />
 
@@ -178,15 +178,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  image: {
-    width: 80,
-    height: 80,
+  iconContainer: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 30,
-    borderRadius: 40,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
   },
   inputContainer: {
     width: '100%',

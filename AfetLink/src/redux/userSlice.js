@@ -6,6 +6,8 @@ import { getAuth, createUserWithEmailAndPassword,
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+//!!İki kere giriş yapma engellenecek.
+
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
 export const login = createAsyncThunk('user/login', async({email,password}, {rejectWithValue})=> {
     try {

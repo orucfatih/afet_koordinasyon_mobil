@@ -13,8 +13,8 @@ const AnaMenu = ({ navigation }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('AraMenu')}
-        >
+          onPress={() => navigation.navigate('AraMenu')}>
+
           <View style={styles.buttonContent}>
             <MaterialCommunityIcons name="account" size={24} color="white" />
             <Text style={styles.buttonText}>Vatandaş Giriş</Text>
@@ -22,8 +22,8 @@ const AnaMenu = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('AraMenu2')}
-        >
+          onPress={() => navigation.navigate('AraMenu2')}>
+            
           <View style={styles.buttonContent}>
             <MaterialCommunityIcons name="account-tie" size={24} color="white" />
             <Text style={styles.buttonText}>Personel Giriş</Text>

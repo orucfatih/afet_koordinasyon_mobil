@@ -25,10 +25,9 @@ const LoginPage2 = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaCode, setCaptchaCode] = useState(generateCaptcha());
+  const [captchaAngle, setCaptchaAngle] = useState(Math.random() * 20 - 10);
   const [attempts, setAttempts] = useState(0);
   const [secureText, setSecureText] = useState(true);
-  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
-  const [isTermsModalVisible, setIsTermsModalVisible] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -36,12 +35,6 @@ const LoginPage2 = ({ navigation }) => {
     dispatch(staffAutoLogin());
   }, []);
 
-  useEffect(() => {
-    if (isTermsAccepted) {
-      setIsTermsModalVisible(false);
-    }
-  }, [isTermsAccepted]);
-  
 
   const { isLoading } = useSelector((state) => state.user);
 
@@ -51,15 +44,10 @@ const LoginPage2 = ({ navigation }) => {
       return;
     }
 
-    if (!isTermsAccepted) {
-      Alert.alert('Hata', 'Devam etmek için kullanıcı sözleşmesini kabul etmelisiniz.');
-      return;
-    }
-        
-
     if (captchaInput.toUpperCase() !== captchaCode) {
       Alert.alert('Hata', 'Captcha doğrulaması başarısız. Tekrar deneyin.');
-      setCaptchaCode(generateCaptcha()); // Yeni Captcha oluştur
+      setCaptchaCode(generateCaptcha());
+      setCaptchaAngle(Math.random() * 20 - 10);
       setCaptchaInput('');
       return;
     }
@@ -84,10 +72,9 @@ const LoginPage2 = ({ navigation }) => {
       </TouchableOpacity>
       <Text style={styles.title}>Hoşgeldiniz</Text>
 
-      <Image
-        style={styles.image}
-        source={require('../../assets/images/login.png')}
-      />
+      <View style={styles.iconContainer}>
+          <Ionicons name="log-in-outline" size={100} color="#007BFF" />
+        </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Email</Text>
@@ -95,8 +82,7 @@ const LoginPage2 = ({ navigation }) => {
           secureTextEntry={false}
           placeholder="Email Adresinizi Girin"
           onChangeText={(email) => setEmail(email)}
-          value={email}
-        />
+          value={email}/>
 
         <Text style={styles.label}>Şifre</Text>
         <View style={styles.passwordInputContainer}>
@@ -109,8 +95,8 @@ const LoginPage2 = ({ navigation }) => {
           <TouchableOpacity
             onPress={() => setSecureText(!secureText)}
             style={styles.eyeIcon}
-            accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}
-          >
+            accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}>
+
             <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
           </TouchableOpacity>
         </View>
@@ -118,47 +104,33 @@ const LoginPage2 = ({ navigation }) => {
 
       {/* Captcha Gösterimi */}
       <View style={styles.captchaContainer}>
-        <Text style={styles.captchaCode}>{captchaCode}</Text>
-        <TouchableOpacity onPress={() => setCaptchaCode(generateCaptcha())} style={styles.refreshCaptcha}>
-    <Ionicons name="refresh-circle" size={30} color="#007BFF" />
-  </TouchableOpacity>
-      </View>
-      
-      {/* Captcha Girişi */}
-      <TextInput
-        style={styles.captchaInput}
-        placeholder="Captcha Girin"
-        onChangeText={(text) => setCaptchaInput(text)}
-        value={captchaInput}
-      />
-      <View style={styles.termsContainer}>
-  {/* Checkbox */}
-  <TouchableOpacity onPress={() => setIsTermsAccepted(!isTermsAccepted)}>
-    <Ionicons
-      name={isTermsAccepted ? 'checkbox-outline' : 'square-outline'}
-      size={24}
-      color="#007BFF"
-    />
-  </TouchableOpacity>
+          <View style={styles.captchaWrapper}>
+            <Text style={styles.captchaCode}>{captchaCode}</Text>
+            <View style={[styles.captchaStrike, { transform: [{ rotate: `${captchaAngle}deg` }] }]} />
+            <View style={[styles.captchaStrikeSecondary, { transform: [{ rotate: `${-captchaAngle}deg` }] }]} />
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              setCaptchaCode(generateCaptcha());
+              setCaptchaAngle(Math.random() * 20 - 10);
+            }}
+            style={styles.refreshCaptcha}>
+            <Ionicons name="refresh-circle" size={32} color="#007BFF" />
+          </TouchableOpacity>
+        </View>
 
-  {/* Kullanıcı Sözleşmesi Metni */}
-  <TouchableOpacity onPress={() => setIsTermsModalVisible(true)}>
-    <Text style={styles.termsText}>Kullanıcı Sözleşmesini Okudum ve Kabul Ediyorum</Text>
-  </TouchableOpacity>
-</View>
-
-  {/* Kullanıcı Sözleşmesi Modalı */}
-  <Agreement setIsTermsModalVisible={setIsTermsModalVisible} isTermsModalVisible={isTermsModalVisible} setIsTermsAccepted={setIsTermsAccepted}/>
+        {/* Captcha Girişi */}
+        <TextInput
+          style={styles.captchaInput}
+          placeholder="Captcha Kodunu Girin"
+          onChangeText={(text) => setCaptchaInput(text)}
+          value={captchaInput}
+          textAlign="center"/>
 
       <CustomButton
         onPress={handleLogin}
         title="Giriş Yap"
-        style={styles.primaryButton}
-      />
-
-      <TouchableOpacity onPress={() => navigation.navigate('SignUpPage')}>
-        <Text style={styles.linkText}>Hesabınız yok mu? Kaydolun</Text>
-      </TouchableOpacity>
+        style={styles.primaryButton}/>
 
       {isLoading ? (
         <Loading changeIsLoading={() => dispatch(setIsLoading(false))} />
@@ -189,9 +161,11 @@ const styles = StyleSheet.create({
     color: '#343A40',
     marginBottom: 20,
   },
-  image: {
-    width: 75,
-    height: 75,
+  iconContainer: { 
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 30,
   },
   inputContainer: {
@@ -221,56 +195,67 @@ const styles = StyleSheet.create({
   captchaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  captchaWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   captchaCode: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    backgroundColor: '#ddd',
-    padding: 10,
-    borderRadius: 5,
-    letterSpacing: 3,
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    letterSpacing: 4,
+    paddingHorizontal: 10,
+  },
+  captchaStrike: {
+    position: 'absolute',
+    width: '100%',
+    height: 2,
+    backgroundColor: '#888',
+    opacity: 0.7,
+  },
+  captchaStrikeSecondary: {
+    position: 'absolute',
+    width: '80%',
+    height: 1.5,
+    backgroundColor: '#666',
+    opacity: 0.6,
+    top: -5,
   },
   refreshCaptcha: {
-    marginLeft: 10,
+    marginLeft: 15,
     padding: 5,
-    borderRadius: 50, // Optional: to give the icon a circular background
-    backgroundColor: '#f0f0f0', // Optional: background color for the button
-  },  
+    borderRadius: 50,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
   captchaInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
     width: '80%',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  termsText: {
-    fontSize: 14,
-    color: '#007BFF',
-    textDecorationLine: 'underline',
-    marginLeft: 5,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Saydam arka plan
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "85%",
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 20,
-    maxHeight: "80%", // Modalın çok büyük olmaması için
-    flexGrow: 1, // İçeriğin büyümesine izin verir
-    justifyContent: "space-between", // İçeriği dağıtır
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    textAlign: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   closeButton: {
     position: "absolute",
