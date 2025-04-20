@@ -16,13 +16,45 @@ let currentLayer = 'none';
 
 // Büyük şehirlerin koordinatları (örnek olarak Türkiye şehirleri)
 const majorCities = [
-    { name: "İstanbul", lat: 41.0082, lng: 28.9784 },
-    { name: "Ankara", lat: 39.9334, lng: 32.8597 },
-    { name: "İzmir", lat: 38.4237, lng: 27.1428 },
-    { name: "Bursa", lat: 40.1828, lng: 29.0670 },
     { name: "Adana", lat: 37.0000, lng: 35.3213 },
+    { name: "Adıyaman", lat: 37.7648, lng: 38.2786 },
+    { name: "Afyonkarahisar", lat: 38.7638, lng: 30.5403 },
+    { name: "Aksaray", lat: 38.3687, lng: 34.0360 },
+    { name: "Ankara", lat: 39.9334, lng: 32.8597 },
     { name: "Antalya", lat: 36.8969, lng: 30.7133 },
-    { name: "Konya", lat: 37.8746, lng: 32.4932 }
+    { name: "Aydın", lat: 37.8450, lng: 27.8396 },
+    { name: "Balıkesir", lat: 39.6484, lng: 27.8826 },
+    { name: "Batman", lat: 37.8812, lng: 41.1351 },
+    { name: "Bursa", lat: 40.1828, lng: 29.0670 },
+    { name: "Denizli", lat: 37.7765, lng: 29.0864 },
+    { name: "Diyarbakır", lat: 37.9144, lng: 40.2306 },
+    { name: "Erzurum", lat: 39.9043, lng: 41.2679 },
+    { name: "Eskişehir", lat: 39.7767, lng: 30.5206 },
+    { name: "Gaziantep", lat: 37.0662, lng: 37.3833 },
+    { name: "Hatay", lat: 36.2028, lng: 36.1600 },
+    { name: "Isparta", lat: 37.7648, lng: 30.5566 },
+    { name: "İstanbul", lat: 41.0082, lng: 28.9784 },
+    { name: "İzmir", lat: 38.4237, lng: 27.1428 },
+    { name: "Kahramanmaraş", lat: 37.5736, lng: 36.9371 },
+    { name: "Karaman", lat: 37.1759, lng: 33.2287 },
+    { name: "Kayseri", lat: 38.7225, lng: 35.4875 },
+    { name: "Kilis", lat: 36.7184, lng: 37.1212 },
+    { name: "Kocaeli", lat: 40.8533, lng: 29.8815 },
+    { name: "Konya", lat: 37.8746, lng: 32.4932 },
+    { name: "Malatya", lat: 38.3552, lng: 38.3095 },
+    { name: "Manisa", lat: 38.6191, lng: 27.4289 },
+    { name: "Mardin", lat: 37.3212, lng: 40.7245 },
+    { name: "Mersin", lat: 36.8121, lng: 34.6415 },
+    { name: "Muğla", lat: 37.2154, lng: 28.3636 },
+    { name: "Ordu", lat: 40.9848, lng: 37.8780 },
+    { name: "Sakarya", lat: 40.7561, lng: 30.3782 },
+    { name: "Samsun", lat: 41.2867, lng: 36.33 },
+    { name: "Şanlıurfa", lat: 37.1674, lng: 38.7955 },
+    { name: "Tekirdağ", lat: 40.9780, lng: 27.5110 },
+    { name: "Trabzon", lat: 41.0015, lng: 39.7178 },
+    { name: "Şırnak", lat: 37.5220, lng: 42.4572 },
+    { name: "Van", lat: 38.4942, lng: 43.3832 },
+    { name: "Yalova", lat: 40.6500, lng: 29.2667 }
 ];
 
 const markerIcons = {
@@ -37,8 +69,30 @@ function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: window.AFAD.latitude, lng: window.AFAD.longitude },
         zoom: 6,
+        streetViewControl: true,
+        fullscreenControl: true,
         mapTypeId: 'roadmap',
-        tilt: is3D ? 45 : 0
+        tilt: is3D ? 45 : 0,
+        mapTypeControl: false
+    });
+
+    // Street View Panorama oluşturma
+    const panorama = new google.maps.StreetViewPanorama(
+        document.getElementById('street-view'),
+        {
+            position: { lat: window.AFAD.latitude, lng: window.AFAD.longitude },
+            pov: { heading: 165, pitch: 0 },
+            zoom: 1,
+            visible: false // İlk başta görünmez
+        }
+    );
+
+    // Street View paneli kontrolü
+    const streetViewPane = document.getElementById('street-view-pane');
+    const closeStreetViewButton = document.getElementById('close-street-view');
+    closeStreetViewButton.addEventListener('click', () => {
+        streetViewPane.style.display = 'none';
+        panorama.setVisible(false);
     });
 
     directionsService = new google.maps.DirectionsService();
@@ -46,6 +100,95 @@ function initMap() {
         map: map,
         suppressMarkers: true
     });
+
+    function initSearch() {
+        const input = document.getElementById('search-input');
+        const searchBox = new google.maps.places.SearchBox(input, {
+            types: ['(cities)']
+        });
+        const searchContainer = input.parentElement;
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchContainer);
+    
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-btn');
+        toggleBtn.addEventListener('click', () => {
+            setTimeout(() => {
+                if (sidebar.classList.contains('open')) {
+                    searchContainer.style.marginLeft = '400px'; // Sidebar açıkken arama kutusunu sağa kaydır
+                } else {
+                    searchContainer.style.marginLeft = '100px'; // Sidebar kapalıyken çok sola gitmesin
+                }
+            }, 400);
+        });
+    
+        searchBox.addListener('places_changed', () => {
+            const places = searchBox.getPlaces();
+            if (!places.length) return;
+    
+            const bounds = new google.maps.LatLngBounds();
+            places.forEach(place => {
+                if (!place.geometry) return;
+                const marker = new google.maps.Marker({
+                    map: map,
+                    title: place.name,
+                    position: place.geometry.location
+                });
+                markers.push(marker);
+                bounds.extend(place.geometry.location);
+    
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
+                const cityName = place.name || 'Bilinmeyen Şehir';
+    
+                // Hava durumu ve hava kalitesi verilerini al ve modalda göster
+                Promise.all([
+                    new Promise((resolve, reject) => {
+                        fetchWeatherData(lat, lng, cityName, false, (data) => {
+                            if (data) resolve(data);
+                            else reject(new Error('Hava durumu verisi alınamadı'));
+                        });
+                    }),
+                    new Promise((resolve, reject) => {
+                        fetchAirQualityData(lat, lng, cityName, (data) => {
+                            if (data) resolve(data);
+                            else reject(new Error('Hava kalitesi verisi alınamadı'));
+                        });
+                    })
+                ])
+                    .then(([weatherData, airQualityData]) => {
+                        showWeatherAirModal(cityName, weatherData, airQualityData);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching weather or air quality:', error);
+                        showWeatherAirModal(cityName, null, null);
+                    });
+    
+                // Mevcut fetch çağrıları
+                fetchAirQualityData(lat, lng, cityName);
+                fetchWeatherData(lat, lng, cityName, false);
+    
+                findShortestRoute();
+    
+                // Street View kontrolü
+                const streetViewService = new google.maps.StreetViewService();
+                streetViewService.getPanorama(
+                    { location: place.geometry.location, radius: 50 },
+                    (data, status) => {
+                        if (status === google.maps.StreetViewStatus.OK) {
+                            panorama.setPosition(place.geometry.location);
+                            panorama.setPov({ heading: 165, pitch: 0 });
+                            panorama.setVisible(true);
+                            streetViewPane.style.display = 'block';
+                        } else {
+                            console.warn(`${place.name} için Street View mevcut değil.`);
+                            streetViewPane.style.display = 'none';
+                        }
+                    }
+                );
+            });
+            map.fitBounds(bounds);
+        });
+    }
 
     google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
         addEarthquakeMarkers();
@@ -87,50 +230,195 @@ function addEarthquakeMarkers() {
 }
 
 function fetchWeatherForMajorCities() {
+    console.log('Fetching weather for major cities:', majorCities);
     majorCities.forEach(city => {
+        console.log(`Calling fetchWeatherData for ${city.name}`);
         fetchWeatherData(city.lat, city.lng, city.name, true);
     });
 }
 
-function initSearch() {
-    const input = document.getElementById('search-input');
-    const searchBox = new google.maps.places.SearchBox(input, {
-        types: ['(cities)']
-    });
-    const searchContainer = input.parentElement;
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchContainer);
+function showWeatherAirModal(cityName, weatherData, airQualityData) {
+    console.log('Showing weather and air quality modal for:', cityName);
+    const modal = document.getElementById('weather-air-modal');
+    if (!modal) {
+        console.error('Weather and air quality modal not found');
+        return;
+    }
 
-    const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.getElementById('toggle-btn');
-    toggleBtn.addEventListener('click', () => {
-        setTimeout(() => {
-            searchContainer.style.marginLeft = sidebar.classList.contains('open') ? '300px' : '0';
-        }, 400);
-    });
+    const cityNameEl = document.getElementById('modal-city-name');
+    const weatherDescEl = document.getElementById('modal-weather-desc');
+    const weatherIconEl = document.getElementById('modal-weather-icon');
+    const weatherTempEl = document.getElementById('modal-weather-temp');
+    const weatherHumidityEl = document.getElementById('modal-weather-humidity');
+    const weatherWindEl = document.getElementById('modal-weather-wind');
+    const airAqiEl = document.getElementById('modal-air-quality-aqi');
+    const airPm25El = document.getElementById('modal-air-pm25');
+    const airPm10El = document.getElementById('modal-air-pm10');
+    const airCoEl = document.getElementById('modal-air-co');
+    const closeBtn = document.getElementById('close-weather-air-modal');
 
-    searchBox.addListener('places_changed', () => {
-        const places = searchBox.getPlaces();
-        if (!places.length) return;
+    if (!cityNameEl || !weatherDescEl || !weatherIconEl || !weatherTempEl || !weatherHumidityEl || !weatherWindEl || !airAqiEl || !airPm25El || !airPm10El || !airCoEl || !closeBtn) {
+        console.error('Modal elements not found');
+        return;
+    }
 
-        const bounds = new google.maps.LatLngBounds();
-        places.forEach(place => {
-            if (!place.geometry) return;
-            const marker = new google.maps.Marker({
-                map: map,
-                title: place.name,
-                position: place.geometry.location
-            });
-            markers.push(marker);
-            bounds.extend(place.geometry.location);
-            fetchAirQualityData(place.geometry.location.lat(), place.geometry.location.lng(), place.name);
-            fetchWeatherData(place.geometry.location.lat(), place.geometry.location.lng(), place.name, false);
-            findShortestRoute();
-        });
-        map.fitBounds(bounds);
-    });
+    if (weatherData) {
+        weatherDescEl.textContent = weatherData.description || 'Bilinmiyor';
+        weatherIconEl.src = weatherData.icon ? `http://openweathermap.org/img/wn/${weatherData.icon}.png` : 'https://via.placeholder.com/50?text=İkon+Yok';
+        weatherTempEl.textContent = weatherData.temp ? `${weatherData.temp}°C` : 'Bilinmiyor';
+        weatherHumidityEl.textContent = weatherData.humidity ? `${weatherData.humidity}%` : 'Bilinmiyor';
+        weatherWindEl.textContent = weatherData.windSpeed ? `${weatherData.windSpeed} m/s` : 'Bilinmiyor';
+    } else {
+        weatherDescEl.textContent = 'Veri alınamadı';
+        weatherIconEl.src = 'https://via.placeholder.com/50?text=Hata';
+        weatherTempEl.textContent = 'N/A';
+        weatherHumidityEl.textContent = 'N/A';
+        weatherWindEl.textContent = 'N/A';
+    }
+
+    const aqiDescription = {
+        1: 'İyi',
+        2: 'Orta',
+        3: 'Hassas Gruplar İçin Sağlıksız',
+        4: 'Sağlıksız',
+        5: 'Çok Sağlıksız'
+    };
+    if (airQualityData) {
+        airAqiEl.textContent = airQualityData.aqi ? `${aqiDescription[airQualityData.aqi]} (AQI: ${airQualityData.aqi})` : 'Bilinmiyor';
+        airPm25El.textContent = airQualityData.pm25 ? `${airQualityData.pm25} µg/m³` : 'Bilinmiyor';
+        airPm10El.textContent = airQualityData.pm10 ? `${airQualityData.pm10} µg/m³` : 'Bilinmiyor';
+        airCoEl.textContent = airQualityData.co ? `${airQualityData.co} µg/m³` : 'Bilinmiyor';
+    } else {
+        airAqiEl.textContent = 'Veri alınamadı';
+        airPm25El.textContent = 'N/A';
+        airPm10El.textContent = 'N/A';
+        airCoEl.textContent = 'N/A';
+    }
+
+    cityNameEl.textContent = cityName || 'Bilinmeyen Şehir';
+    modal.style.display = 'block';
+
+    closeBtn.onclick = () => {
+        modal.style.display = 'none';
+        console.log('Weather and air quality modal closed');
+    };
+
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            console.log('Weather and air quality modal closed by clicking outside');
+        }
+    };
 }
 
-function fetchAirQualityData(lat, lng, cityName) {
+function fetchWeatherData(lat, lng, cityName, isMajorCity = false, callback) {
+    console.log(`Fetching weather for ${cityName} at lat: ${lat}, lng: ${lng}`);
+    const apiKey = window.AFAD.openweatherApiKey;
+
+    if (!apiKey) {
+        console.warn('OpenWeather API anahtarı bulunamadı, hava durumu verisi alınamıyor.');
+        const weatherDiv = document.getElementById('weather-info');
+        if (weatherDiv) {
+            weatherDiv.innerHTML = 'Hava durumu verisi alınamadı: API anahtarı eksik.';
+        }
+        if (callback) callback(null);
+        return;
+    }
+
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric&lang=tr`;
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error(`Hava durumu API'sinden yanıt alınamadı: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data.weather || !data.main) {
+                throw new Error('API yanıtında beklenen veri yapısı bulunamadı.');
+            }
+            const weather = data.weather[0];
+            const temp = data.main.temp;
+            const humidity = data.main.humidity;
+            const windSpeed = data.wind.speed;
+            const icon = weather.icon;
+
+            const weatherData = {
+                description: weather.description,
+                icon: icon,
+                temp: temp,
+                humidity: humidity,
+                windSpeed: windSpeed
+            };
+
+            if (!isMajorCity) {
+                const weatherDiv = document.getElementById('weather-info');
+                if (weatherDiv) {
+                    weatherDiv.innerHTML = `
+                        <p><strong>${cityName}</strong></p>
+                        <p>Hava: ${weather.description} <img src="http://openweathermap.org/img/wn/${icon}.png" alt="Hava durumu ikonu" style="width: 30px;"></p>
+                        <p>Sıcaklık: ${temp}°C</p>
+                        <p>Nem: ${humidity}%</p>
+                        <p>Rüzgar Hızı: ${windSpeed} m/s</p>
+                    `;
+                }
+            }
+
+            if (map && google.maps) {
+                const marker = new google.maps.Marker({
+                    position: { lat: lat, lng: lng },
+                    map: isMajorCity && currentLayer === 'weather' ? map : null,
+                    title: cityName,
+                    icon: {
+                        url: `http://openweathermap.org/img/wn/${icon}@2x.png`,
+                        scaledSize: new google.maps.Size(60, 60),
+                        anchor: new google.maps.Point(30, 30)
+                    },
+                    animation: google.maps.Animation.DROP
+                });
+                marker.addListener('click', () => {
+                    new google.maps.InfoWindow({
+                        content: `
+                            <div style="padding: 10px;">
+                                <h3>${cityName}</h3>
+                                <p>Hava: ${weather.description} <img src="http://openweathermap.org/img/wn/${icon}.png" alt="Hava durumu ikonu" style="width: 30px;"></p>
+                                <p>Sıcaklık: ${temp}°C</p>
+                                <p>Nem: ${humidity}%</p>
+                                <p>Rüzgar Hızı: ${windSpeed} m/s</p>
+                            </div>
+                        `
+                    }).open(map, marker);
+                });
+                weatherMarkers.push(marker);
+                console.log(`Weather marker added for ${cityName} with icon: ${icon}, animation: DROP`);
+            }
+
+            const list = document.getElementById('marker-list');
+            if (list && !isMajorCity) {
+                const li = document.createElement('li');
+                li.className = 'marker-item';
+                li.innerHTML = `
+                    <div class="marker-item-content">
+                        <img src="http://openweathermap.org/img/wn/${icon}.png" alt="Hava durumu ikonu" style="width: 32px; vertical-align: middle; margin-right: 8px;">
+                        <strong>${cityName}</strong>
+                        <p>${weather.description}</p>
+                        <p>Sıcaklık: ${temp}°C | Nem: ${humidity}% | Rüzgar: ${windSpeed} m/s</p>
+                    </div>
+                `;
+                list.appendChild(li);
+            }
+
+            if (callback) callback(weatherData);
+        })
+        .catch(error => {
+            console.error(`Hava durumu verisi alınamadı (${cityName}):`, error);
+            const weatherDiv = document.getElementById('weather-info');
+            if (weatherDiv) {
+                weatherDiv.innerHTML = `Hava durumu verisi alınamadı: ${error.message}`;
+            }
+            if (callback) callback(null);
+        });
+}
+
+function fetchAirQualityData(lat, lng, cityName, callback) {
     console.log(`Fetching air quality for ${cityName} at lat: ${lat}, lng: ${lng}`);
     const apiKey = window.AFAD.openweatherApiKey;
     console.log('OpenWeather API Key:', apiKey);
@@ -138,12 +426,21 @@ function fetchAirQualityData(lat, lng, cityName) {
     if (!apiKey) {
         console.warn('OpenWeather API anahtarı bulunamadı, hava kalitesi verisi alınamıyor.');
         const airQualityDiv = document.getElementById('air-quality-info');
-        airQualityDiv.innerHTML = 'Hava kalitesi verisi alınamadı: API anahtarı eksik.';
+        if (airQualityDiv) {
+            airQualityDiv.innerHTML = 'Hava kalitesi verisi alınamadı: API anahtarı eksik.';
+        } else {
+            console.error('air-quality-info div not found');
+        }
         const list = document.getElementById('marker-list');
-        const li = document.createElement('li');
-        li.className = 'marker-item';
-        li.innerHTML = `<strong>${cityName}</strong><p>Hava kalitesi verisi alınamadı: API anahtarı eksik.</p>`;
-        list.appendChild(li);
+        if (list) {
+            const li = document.createElement('li');
+            li.className = 'marker-item';
+            li.innerHTML = `<strong>${cityName}</strong><p>Hava kalitesi verisi alınamadı: API anahtarı eksik.</p>`;
+            list.appendChild(li);
+        } else {
+            console.error('marker-list div not found');
+        }
+        if (callback) callback(null);
         return;
     }
 
@@ -157,12 +454,20 @@ function fetchAirQualityData(lat, lng, cityName) {
             return response.json();
         })
         .then(data => {
-            console.log('OpenWeather API Response:', data);
+            console.log('Air Quality API Response:', data);
             if (!data.list || !data.list[0]) {
                 throw new Error('API yanıtında beklenen veri yapısı bulunamadı.');
             }
             const aqi = data.list[0].main.aqi;
             const components = data.list[0].components;
+
+            const airQualityData = {
+                aqi: aqi,
+                pm25: components.pm2_5,
+                pm10: components.pm10,
+                co: components.co
+            };
+
             const aqiDescription = {
                 1: 'İyi',
                 2: 'Orta',
@@ -172,108 +477,164 @@ function fetchAirQualityData(lat, lng, cityName) {
             };
 
             const list = document.getElementById('marker-list');
-            const li = document.createElement('li');
-            li.className = 'marker-item';
-            li.innerHTML = `
-                <strong>${cityName}</strong>
-                <p>Hava Kalitesi: ${aqiDescription[aqi] || 'Bilinmiyor'} (AQI: ${aqi})</p>
-                <p>PM2.5: ${components.pm2_5} µg/m³</p>
-                <p>PM10: ${components.pm10} µg/m³</p>
-                <p>CO: ${components.co} µg/m³</p>
-            `;
-            list.appendChild(li);
+            if (list) {
+                const li = document.createElement('li');
+                li.className = 'marker-item';
+                li.innerHTML = `
+                    <strong>${cityName}</strong>
+                    <p>Hava Kalitesi: ${aqiDescription[aqi] || 'Bilinmiyor'} (AQI: ${aqi})</p>
+                    <p>PM2.5: ${components.pm2_5} µg/m³</p>
+                    <p>PM10: ${components.pm10} µg/m³</p>
+                    <p>CO: ${components.co} µg/m³</p>
+                `;
+                list.appendChild(li);
+            } else {
+                console.error('marker-list div not found');
+            }
 
             const airQualityDiv = document.getElementById('air-quality-info');
-            airQualityDiv.innerHTML = `
-                <p><strong>${cityName}</strong></p>
-                <p>Hava Kalitesi: ${aqiDescription[aqi] || 'Bilinmiyor'} (AQI: ${aqi})</p>
-                <p>PM2.5: ${components.pm2_5} µg/m³</p>
-                <p>PM10: ${components.pm10} µg/m³</p>
-                <p>CO: ${components.co} µg/m³</p>
-            `;
+            if (airQualityDiv) {
+                airQualityDiv.innerHTML = `
+                    <p><strong>${cityName}</strong></p>
+                    <p>Hava Kalitesi: ${aqiDescription[aqi] || 'Bilinmiyor'} (AQI: ${aqi})</p>
+                    <p>PM2.5: ${components.pm2_5} µg/m³</p>
+                    <p>PM10: ${components.pm10} µg/m³</p>
+                    <p>CO: ${components.co} µg/m³</p>
+                `;
+            } else {
+                console.error('air-quality-info div not found');
+            }
+
+            if (callback) callback(airQualityData);
         })
         .catch(error => {
-            console.error('Hava kalitesi verisi alınamadı:', error);
+            console.error(`Hava kalitesi verisi alınamadı (${cityName}):`, error);
             const airQualityDiv = document.getElementById('air-quality-info');
-            airQualityDiv.innerHTML = `Hava kalitesi verisi alınamadı: ${error.message}`;
+            if (airQualityDiv) {
+                airQualityDiv.innerHTML = `Hava kalitesi verisi alınamadı: ${error.message}`;
+            } else {
+                console.error('air-quality-info div not found');
+            }
             const list = document.getElementById('marker-list');
-            const li = document.createElement('li');
-            li.className = 'marker-item';
-            li.innerHTML = `<strong>${cityName}</strong><p>Hava kalitesi verisi alınamadı: ${error.message}</p>`;
-            list.appendChild(li);
+            if (list) {
+                const li = document.createElement('li');
+                li.className = 'marker-item';
+                li.innerHTML = `<strong>${cityName}</strong><p>Hava kalitesi verisi alınamadı: ${error.message}</p>`;
+                list.appendChild(li);
+            } else {
+                console.error('marker-list div not found');
+            }
+            if (callback) callback(null);
         });
 }
 
-function fetchWeatherData(lat, lng, cityName, isMajorCity = false) {
-    console.log(`Fetching weather for ${cityName} at lat: ${lat}, lng: ${lng}`);
-    const apiKey = window.AFAD.openweatherApiKey;
-    console.log('OpenWeather API Key:', apiKey);
 
-    if (!apiKey) {
-        console.warn('OpenWeather API anahtarı bulunamadı, hava durumu verisi alınamıyor.');
-        const weatherDiv = document.getElementById('weather-info');
-        weatherDiv.innerHTML = 'Hava durumu verisi alınamadı: API anahtarı eksik.';
+function addPhotoMarker(url, metadata) {
+    console.log('addPhotoMarker called with URL:', url, 'Metadata:', metadata);
+    if (!metadata.latitude || !metadata.longitude || isNaN(metadata.latitude) || isNaN(metadata.longitude)) {
+        console.error('Invalid location data for photo:', metadata);
         return;
     }
 
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric&lang=tr`;
-    console.log('Weather API URL:', url);
+    if (!map) {
+        console.error('Map object is not initialized');
+        return;
+    }
 
-    fetch(url)
-        .then(response => {
-            console.log('Weather API Response Status:', response.status);
-            if (!response.ok) throw new Error(`Hava durumu API'sinden yanıt alınamadı: ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Weather API Response:', data);
-            const weather = data.weather[0];
-            const temp = data.main.temp;
-            const humidity = data.main.humidity;
-            const windSpeed = data.wind.speed;
+    const MarkerClass = (google.maps.marker && google.maps.marker.AdvancedMarkerElement) || google.maps.Marker;
+    const markerOptions = {
+        position: { lat: metadata.latitude, lng: metadata.longitude },
+        map: map
+    };
 
-            if (!isMajorCity) {
-                const weatherDiv = document.getElementById('weather-info');
-                weatherDiv.innerHTML = `
-                    <p><strong>${cityName}</strong></p>
-                    <p>Hava: ${weather.description}</p>
-                    <p>Sıcaklık: ${temp}°C</p>
-                    <p>Nem: ${humidity}%</p>
-                    <p>Rüzgar Hızı: ${windSpeed} m/s</p>
-                `;
+    if (MarkerClass === google.maps.Marker) {
+        markerOptions.icon = {
+            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            scaledSize: new google.maps.Size(40, 40)
+        };
+    } else {
+        markerOptions.content = createMarkerIcon('https://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+    }
+
+    try {
+        const marker = new MarkerClass(markerOptions);
+        console.log('Marker created:', marker);
+
+        marker.addListener('click', () => {
+            console.log('Marker clicked for:', metadata.fileName);
+
+            const photoModal = document.getElementById('photo-modal');
+            const img = document.getElementById('photo-image');
+            const approveBtn = document.getElementById('approve-photo-btn');
+            const rejectBtn = document.getElementById('reject-photo-btn');
+            if (photoModal && img && approveBtn && rejectBtn) {
+                img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                photoModal.style.display = 'block';
+                img.src = url;
+                img.onload = () => {
+                    console.log('Photo loaded successfully:', url);
+                };
+                img.onerror = () => {
+                    console.error('Failed to load photo:', url);
+                    img.src = 'https://via.placeholder.com/400x300?text=Fotoğraf+Yüklenemedi';
+                };
+
+                approveBtn.onclick = () => {
+                    console.log('Photo approved:', metadata.fileName);
+                    photoModal.style.display = 'none';
+                };
+                rejectBtn.onclick = () => {
+                    console.log('Photo rejected:', metadata.fileName);
+                    photoModal.style.display = 'none';
+                };
+            } else {
+                console.warn('Photo modal or its elements not found');
             }
 
-            const marker = new google.maps.Marker({
-                position: { lat: lat, lng: lng },
-                map: currentLayer === 'weather' ? map : null,
-                title: cityName,
-                icon: {
-                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                    scaledSize: new google.maps.Size(32, 32)
-                }
+            Promise.all([
+                new Promise((resolve, reject) => {
+                    fetchWeatherData(metadata.latitude, metadata.longitude, metadata.fileName || 'Konum', false, (data) => {
+                        if (data) resolve(data);
+                        else reject(new Error('Hava durumu verisi alınamadı'));
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    fetchAirQualityData(metadata.latitude, metadata.longitude, metadata.fileName || 'Konum', (data) => {
+                        if (data) resolve(data);
+                        else reject(new Error('Hava kalitesi verisi alınamadı'));
+                    });
+                })
+            ])
+                .then(([weatherData, airQualityData]) => {
+                    showWeatherAirModal(metadata.fileName || 'Konum', weatherData, airQualityData);
+                })
+                .catch(error => {
+                    console.error('Error fetching weather or air quality:', error);
+                    showWeatherAirModal(metadata.fileName || 'Konum', null, null);
+                });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 15px;">
+                        <h3>Fotoğraf Bilgisi</h3>
+                        <p><strong>Dosya Adı:</strong> ${metadata.fileName}</p>
+                        <p><strong>Tarih:</strong> ${metadata.timestamp}</p>
+                        <p><strong>Konum:</strong> ${metadata.latitude}, ${metadata.longitude}</p>
+                        ${metadata.description ? `<p><strong>Açıklama:</strong> ${metadata.description}</p>` : ''}
+                        <img src="${url}" style="max-width: 200px; max-height: 200px; margin-top: 10px;">
+                    </div>
+                `
             });
-            marker.addListener('click', () => {
-                new google.maps.InfoWindow({
-                    content: `
-                        <div style="padding: 10px;">
-                            <h3>${cityName}</h3>
-                            <p>Hava: ${weather.description}</p>
-                            <p>Sıcaklık: ${temp}°C</p>
-                            <p>Nem: ${humidity}%</p>
-                            <p>Rüzgar Hızı: ${windSpeed} m/s</p>
-                        </div>
-                    `
-                }).open(map, marker);
-            });
-            weatherMarkers.push(marker);
-        })
-        .catch(error => {
-            console.error('Hava durumu verisi alınamadı:', error);
-            if (!isMajorCity) {
-                const weatherDiv = document.getElementById('weather-info');
-                weatherDiv.innerHTML = `Hava durumu verisi alınamadı: ${error.message}`;
-            }
+            console.log('Opening info window for:', metadata.fileName);
+            infoWindow.open(map, marker);
         });
+
+        markers.push(marker);
+        console.log('Marker added to markers array:', markers.length);
+        updateMarkerList();
+    } catch (error) {
+        console.error('Error creating marker:', error);
+    }
 }
 
 function initMarkerButtons() {
@@ -632,16 +993,35 @@ function updateRouteWithTravelMode() {
 function toggleLayer(layer) {
     currentLayer = layer;
 
+    // Tüm işaretçileri gizle
     earthquakeMarkers.forEach(marker => marker.setMap(null));
     weatherMarkers.forEach(marker => marker.setMap(null));
     teamMarkers.forEach(marker => marker.setMap(null));
 
+    // Seçilen katmana göre işaretçileri göster
     if (layer === 'earthquakes') {
         earthquakeMarkers.forEach(marker => marker.setMap(map));
     } else if (layer === 'weather') {
+        // Mevcut işaretçileri temizle ve yeniden getir
+        weatherMarkers.forEach(marker => marker.setMap(null));
+        weatherMarkers = []; // Eski işaretçileri temizle
+        fetchWeatherForMajorCities(); // Yeni verilerle işaretçileri ekle
         weatherMarkers.forEach(marker => marker.setMap(map));
     } else if (layer === 'teams') {
         teamMarkers.forEach(marker => marker.setMap(map));
+    }
+
+    // Marker listesini güncelle
+    const list = document.getElementById('marker-list');
+    if (list) {
+        list.innerHTML = ''; // Listeyi temizle
+        if (layer === 'weather') {
+            weatherMarkers.forEach(marker => {
+                const cityName = marker.getTitle();
+                // fetchWeatherData'dan gelen verileri kullanarak liste öğesi ekle
+                // Bu, fetchWeatherData'daki liste güncellemesiyle zaten yapılıyor
+            });
+        }
     }
 }
 

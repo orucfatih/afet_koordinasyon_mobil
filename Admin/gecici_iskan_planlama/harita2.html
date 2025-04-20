@@ -1,88 +1,20 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFAD Afet Yönetim Haritası</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <!-- CSS_PLACEHOLDER -->
+    <link rel="stylesheet" href="harita2.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.min.css">
-    <style>
-        .marker-btn {
-            display: flex;
-            align-items: center;
-            padding: 6px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin: 5px;
-            background-color: #f9f9f9;
-            cursor: pointer;
-        }
-        .marker-btn i {
-            margin-right: 8px;
-            font-size: 20px;
-            color: white;
-        }
-        .marker-btn:hover i {
-            color: black;
-        }
-        .control-panel button i {
-            margin-right: 8px;
-            font-size: 20px;
-        }
-        #street-view-pane {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 400px;
-    height: 300px;
-    background: white;
-    border: 2px solid #ccc;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    display: none; /* Varsayılan olarak gizli */
-}
-
-#street-view {
-    width: 100%;
-    height: 250px; /* Kapat düğmesi için yer bırak */
-}
-
-#close-street-view {
-    width: 100%;
-    background: #f44336;
-    color: white;
-    border: none;
-    padding: 5px;
-    cursor: pointer;
-}
-
-#close-street-view:hover {
-    background: #d32f2f;
-}
-/* Arama Konteyneri */
-.search-container {
-    position: relative;
-    z-index: 1002;
-    margin-left: 100px;
-}
-.search-container input {
-    padding: 12px;
-    font-size: 16px;
-    height: 40px;
-}
-    </style>
     <script>
         window.AFAD = window.AFAD || {};
         try {
@@ -99,17 +31,16 @@
             window.AFAD.longitude = 32.8597;
         }
         window.AFAD.googleMapsApiKey = '{{GOOGLE_MAPS_API_KEY}}';
-        window.AFAD.openweatherApiKey = 'bd5e378503939ddaee76f12ad7a97608';
+        window.AFAD.openweatherApiKey = '{{OPENWEATHER_API_KEY}}';
         console.log("window.AFAD.openweatherApiKey:", window.AFAD.openweatherApiKey);
     </script>
-    <!-- JS_PLACEHOLDER -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{GOOGLE_MAPS_API_KEY}}&libraries=places,directions,visualization,geometry&callback=initMap"></script>
+    <script src="harita2.js"></script>
 </head>
-
 <body>
-    <div id="map"></div>
-    <div id="street-view-pane">
-        <button id="close-street-view">Kapat</button>
-        <div id="street-view"></div>
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="street-view-pane"></div>
     </div>
     <button id="toggle-btn">☰</button>
     <div id="marker-toolbar">
@@ -139,6 +70,14 @@
                 <img class="drag-icon" data-type="default" src="https://maps.google.com/mapfiles/ms/icons/red-dot.png"
                     alt="Default Marker" draggable="true">
             </div>
+            <ul id="search-results"></ul>
+            <gmp-place-details id="place-details" style="display: none;"></gmp-place-details>
+            <div id="elevation-info">Yükseklik bilgisi burada görünecek.</div>
+            <gmp-aerial-view id="aerial-view" style="display: none;"></gmp-aerial-view>
+            <div class="weather-search-container">
+                <input id="weather-input" type="text" placeholder="Şehir ara (Hava Durumu)" autocomplete="off">
+                <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" class="weather-search-icon" alt="Ara">
+            </div>
         </div>
         <div class="control-panel">
             <div class="search-container">
@@ -164,7 +103,6 @@
             </select>
             <select id="layer-selector" onchange="toggleLayer(this.value)">
                 <option value="none">Katman Seç</option>
-                <option value="debris">Enkaz Bildirimleri</option>
                 <option value="earthquakes">Son Depremler</option>
                 <option value="weather">Hava Durumu</option>
                 <option value="teams">Ekip Konumları</option>
@@ -180,6 +118,14 @@
         <div class="control-panel">
             <h3>Afet Noktaları</h3>
             <div id="marker-list"></div>
+        </div>
+        <div class="control-panel">
+            <h3>Hava Kalitesi</h3>
+            <div id="air-quality-info">Hava kalitesi yükleniyor...</div>
+        </div>
+        <div class="control-panel">
+            <h3>Hava Durumu</h3>
+            <div id="weather-info">Hava durumu yükleniyor...</div>
         </div>
         <div class="control-panel">
             <h3>Yol Bilgisi</h3>
@@ -246,24 +192,6 @@
             </div>
         </div>
     </div>
-    <div id="weather-air-modal" style="display: none;">
-        <div class="modal-content">
-            <button id="close-weather-air-modal">Kapat</button>
-            <h3 id="modal-city-name">Şehir Bilgisi</h3>
-            <div id="modal-weather-info">
-                <p><strong>Hava Durumu:</strong> <span id="modal-weather-desc"></span> <img id="modal-weather-icon" src="" alt="Hava durumu ikonu" style="width: 50px;"></p>
-                <p><strong>Sıcaklık:</strong> <span id="modal-weather-temp"></span></p>
-                <p><strong>Nem:</strong> <span id="modal-weather-humidity"></span></p>
-                <p><strong>Rüzgar Hızı:</strong> <span id="modal-weather-wind"></span></p>
-            </div>
-            <div id="modal-air-quality-info">
-                <p><strong>Hava Kalitesi:</strong> <span id="modal-air-quality-aqi"></span></p>
-                <p><strong>PM2.5:</strong> <span id="modal-air-pm25"></span></p>
-                <p><strong>PM10:</strong> <span id="modal-air-pm10"></span></p>
-                <p><strong>CO:</strong> <span id="modal-air-co"></span></p>
-            </div>
-        </div>
-    </div>
     <div id="marker-note-modal" class="modal">
         <div class="modal-content">
             <h3>Marker Notu Ekle</h3>
@@ -279,15 +207,5 @@
             </form>
         </div>
     </div>
-    <script>
-        (function () {
-            const script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key={{GOOGLE_MAPS_API_KEY}}&libraries=places,directions,visualization,geometry&callback=initMap';
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        })();
-    </script>
 </body>
-
 </html>
