@@ -1,0 +1,2 @@
+Thanks to Isaac Corley for providing the `unet_siamdiff_resnet50` model.
+https://github.com/isaaccorley/a-change-detection-reality-check?tab=readme-ov-file
