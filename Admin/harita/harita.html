@@ -75,12 +75,53 @@
 .search-container {
     position: relative;
     z-index: 1002;
-    margin-left: 100px;
+    margin-left: 80px;
 }
 .search-container input {
     padding: 12px;
-    font-size: 16px;
+    font-size: 14px;
     height: 40px;
+}
+/* Marker Toolbar */
+#marker-toolbar {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1001;
+    background: linear-gradient(135deg, #fff, #f5f6f5);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+}
+.marker-btn {
+    padding: 5px 8px; /* 6px 10px → 5px 8px */
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 10px; /* 12px → 10px */
+    font-weight: 500;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    white-space: nowrap;
+}
+.marker-btn:hover, .marker-btn.active {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+}
+.marker-btn i {
+    font-size: 14px; /* 18px → 16px */
 }
     </style>
     <script>
@@ -142,7 +183,7 @@
         </div>
         <div class="control-panel">
             <div class="search-container">
-                <input id="search-input" type="text" placeholder="Şehir ara...">
+                <input id="search-input" type="text" placeholder="Yer ara...">
             </div>
             <ul id="search-results"></ul>
             <button onclick="clearMarkers()"><i class="fas fa-trash"></i> Tüm İşaretçileri Temizle</button>

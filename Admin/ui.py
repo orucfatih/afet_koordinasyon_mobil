@@ -23,7 +23,7 @@ from equipment_management.equipment_management import EquipmentManagementTab
 from citizen_death_report.citizen_report import CitizenReportTab
 from simulations.simulation_tabs import SimulationTab
 from mass_sms.mass_sms_tab import MassSMSTab
-from Admin.gecici_iskan_planlama import GeciciIskanPlanlamaTab
+from gecici_iskan_planlama.gecici_iskan_planlama import GeciciIskanPlanlamaTab
 
 # Ana dizini sys.path'e ekleyerek modülleri bulmasını sağlıyoruz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -142,7 +142,7 @@ class AfetYonetimAdmin(QMainWindow):
             ("Gönüllü Yönetimi", CitizenReportTab()),
             ("Altyapı Durumu", CitizenReportTab()),
             ("Yardım Lojistiği", CitizenReportTab()),
-            ("Geçici İskan Planlama", CitizenReportTab()),
+            ("Geçici İskan Planlama", GeciciIskanPlanlamaTab()),
             ("Kitlesel SMS/Bildirim Sistemi", MassSMSTab()),
             ("Senaryo Simülasyonu", SimulationTab()),
             ("Finansal Yönetim", CitizenReportTab()),

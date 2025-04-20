@@ -58,11 +58,11 @@ const majorCities = [
 ];
 
 const markerIcons = {
-    Ambulans: 'https://cdn-icons-png.flaticon.com/512/3097/3097378.png',
-    Polis: 'https://cdn-icons-png.flaticon.com/512/3063/3063173.png',
-    Sağlıkçı: 'https://cdn-icons-png.flaticon.com/512/2888/2888679.png',
-    Jandarma: 'https://cdn-icons-png.flaticon.com/512/2997/2997328.png',
-    team: 'https://cdn-icons-png.flaticon.com/512/992/992651.png'
+    Ambulans: 'https:maps.google.com/mapfiles/ms/icons/red-dot.png',
+    Polis: 'https:maps.google.com/mapfiles/ms/icons/blue-dot.png',
+    Sağlıkçı: 'https:maps.google.com/mapfiles/ms/icons/green-dot.png',
+    Jandarma: 'https:maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+    team: 'https:maps.google.com/mapfiles/ms/icons/orange-dot.png'
 };
 
 function initMap() {
@@ -773,7 +773,7 @@ function createMarker(latLng, type, note, teamData = null) {
         position: latLng,
         map: type === 'team' && currentLayer === 'teams' ? map : (type !== 'team' ? map : null),
         icon: {
-            url: markerIcons[type] || 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+            url: markerIcons[type] || 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
             scaledSize: new google.maps.Size(32, 32)
         }
     });

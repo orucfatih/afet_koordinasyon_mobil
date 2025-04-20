@@ -4,7 +4,7 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: 'Poppins', sans-serif;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     overflow: hidden;
     background: #eceff1;
 }
@@ -65,7 +65,7 @@ html, body {
     height: 40px;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 20px;
+    font-size: 18px; /* 20px → 18px */
     text-align: center;
     box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
     display: flex;
@@ -111,7 +111,7 @@ button {
     border: none;
     cursor: pointer;
     font-weight: 500;
-    font-size: 12px; /* Küçültüldü */
+    font-size: 10px; /* 12px → 10px */
     text-transform: uppercase;
     display: flex;
     align-items: center;
@@ -124,27 +124,27 @@ button:hover {
     box-shadow: 0 6px 10px rgba(59, 130, 246, 0.4);
 }
 button i {
-    font-size: 12px; /* Küçültüldü */
+    font-size: 10px; /* 12px → 10px */
 }
 
 /* Sidebar Butonları */
 #sidebar button {
-    padding: 10px 16px; /* Küçültüldü */
-    font-size: 14px; /* Küçültüldü */
+    padding: 8px 14px; /* 10px 16px → 8px 14px */
+    font-size: 12px; /* 14px → 12px */
     margin: 10px 0;
-    min-height: 40px; /* Küçültüldü */
+    min-height: 36px; /* 40px → 36px */
 }
 #sidebar button i {
-    font-size: 18px; /* Küçültüldü */
+    font-size: 16px; /* 18px → 16px */
     margin-right: 8px;
 }
 
 /* Kontrol Paneli Input ve Select */
 .control-panel input,
 .control-panel select {
-    padding: 12px 16px;
-    font-size: 16px;
-    height: 48px;
+    padding: 10px 14px; /* 12px 16px → 10px 14px */
+    font-size: 14px; /* 16px → 14px */
+    height: 44px; /* 48px → 44px */
     margin: 10px 0;
 }
 
@@ -158,7 +158,7 @@ button i {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     transition: all 0.3s;
 }
 .marker-item:hover {
@@ -166,10 +166,10 @@ button i {
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .marker-actions button {
-    padding: 6px 10px;
+    padding: 5px 8px; /* 6px 10px → 5px 8px */
     margin-left: 6px;
     background: #dc3545;
-    font-size: 12px; /* Küçültüldü */
+    font-size: 10px; /* 12px → 10px */
 }
 .marker-actions button:hover {
     background: #c82333;
@@ -182,7 +182,7 @@ button i {
     background: #fff;
     border-radius: 6px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     color: #333;
     line-height: 1.4;
 }
@@ -205,13 +205,13 @@ button i {
     width: auto;
 }
 .marker-btn {
-    padding: 6px 10px; /* Küçültüldü */
+    padding: 5px 8px; /* 6px 10px → 5px 8px */
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px; /* Küçültüldü */
+    font-size: 10px; /* 12px → 10px */
     font-weight: 500;
     transition: all 0.3s;
     display: flex;
@@ -226,7 +226,7 @@ button i {
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 .marker-btn i {
-    font-size: 18px; /* Küçültüldü */
+    font-size: 16px; /* 18px → 16px */
 }
 
 /* Başlıklar */
@@ -234,13 +234,13 @@ h2 {
     color: #3b82f6;
     margin: 0 0 10px 0;
     font-weight: 600;
-    font-size: 18px;
+    font-size: 16px; /* 18px → 16px */
 }
 h3 {
     color: #3b82f6;
     margin: 0 0 8px 0;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 14px; /* 16px → 14px */
 }
 
 /* Checkbox */
@@ -248,13 +248,13 @@ label {
     display: flex;
     align-items: center;
     margin: 8px 0;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     color: #444;
     font-weight: 500;
 }
 input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 14px; /* 16px → 14px */
+    height: 14px; /* 16px → 14px */
     margin-right: 6px;
     cursor: pointer;
     accent-color: #3b82f6;
@@ -267,7 +267,7 @@ input[type="checkbox"] {
     padding: 6px;
     border-radius: 4px;
     margin-top: 8px;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     text-align: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -284,7 +284,7 @@ input[type="checkbox"] {
 }
 .pac-item {
     padding: 6px 10px;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     color: #333;
     cursor: pointer;
     border-bottom: 1px solid #eee;
@@ -361,7 +361,7 @@ input[type="checkbox"] {
 .modal-content h3 {
     color: #3b82f6;
     margin: 0 0 16px;
-    font-size: 18px;
+    font-size: 16px; /* 18px → 16px */
     font-weight: 600;
     text-align: center;
 }
@@ -370,7 +370,7 @@ input[type="checkbox"] {
 }
 .modal-content label {
     display: block;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     color: #333;
     margin-bottom: 8px;
     font-weight: 500;
@@ -379,10 +379,10 @@ input[type="checkbox"] {
 .modal-content select,
 .modal-content textarea {
     width: 100%;
-    padding: 12px;
+    padding: 10px; /* 12px → 10px */
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
     background: #fafafa;
     transition: border-color 0.3s;
 }
@@ -404,11 +404,11 @@ input[type="checkbox"] {
     margin-top: 16px;
 }
 .modal-content .btn-custom {
-    padding: 8px 16px; /* Küçültüldü */
+    padding: 6px 14px; /* 8px 16px → 6px 14px */
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px; /* Küçültüldü */
+    font-size: 10px; /* 12px → 10px */
     font-weight: 500;
     transition: all 0.3s;
 }
@@ -447,7 +447,7 @@ input[type="checkbox"] {
     right: 12px;
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: 18px; /* 20px → 18px */
     color: #333;
     cursor: pointer;
     transition: color 0.3s;
@@ -486,8 +486,8 @@ input[type="checkbox"] {
     justify-content: center;
 }
 .drag-icon {
-    width: 32px; /* Küçültüldü */
-    height: 32px; /* Küçültüldü */
+    width: 28px; /* 32px → 28px */
+    height: 28px; /* 32px → 28px */
     padding: 4px;
     border: 2px solid transparent;
     border-radius: 8px;
@@ -501,6 +501,8 @@ input[type="checkbox"] {
 .drag-icon:active {
     cursor: grabbing;
 }
+
+/* Hava Durumu ve Hava Kalitesi Modal */
 #weather-air-modal {
     position: fixed;
     top: 50%;
@@ -521,120 +523,74 @@ input[type="checkbox"] {
 }
 #weather-air-modal h3 {
     margin-top: 0;
+    color: #3b82f6;
 }
 #weather-air-modal button {
-    padding: 10px;
+    padding: 8px; /* 10px → 8px */
     margin-top: 10px;
     cursor: pointer;
-    background: #007bff;
+    background: #3b82f6;
     color: white;
     border: none;
     border-radius: 5px;
 }
 #weather-air-modal button:hover {
-    background: #0056b3;
+    background: #2563eb;
 }
 #modal-weather-info, #modal-air-quality-info {
     margin-bottom: 15px;
 }
+
+/* Marker Listesi */
 #marker-list {
     list-style: none;
     padding: 0;
     max-height: 300px;
     overflow-y: auto;
 }
-
 .marker-item {
-    padding: 12px;
+    padding: 10px; /* 12px → 10px */
     border-bottom: 1px solid #eee;
     display: flex;
     align-items: center;
     transition: background 0.2s;
 }
-
 .marker-item:hover {
     background: #f5f5f5;
 }
-
 .marker-item-content {
     display: flex;
     align-items: center;
     flex-grow: 1;
 }
-
 .marker-item-content img {
-    width: 32px;
-    height: 32px;
+    width: 28px; /* 32px → 28px */
+    height: 28px; /* 32px → 28px */
     margin-right: 12px;
     object-fit: cover;
 }
-
 .marker-item-content strong {
-    font-size: 16px;
+    font-size: 14px; /* 16px → 14px */
     color: #333;
 }
-
 .marker-item-content p {
     margin: 5px 0;
     color: #666;
-    font-size: 14px;
+    font-size: 12px; /* 14px → 12px */
 }
-
 .control-panel button {
-    padding: 10px;
+    padding: 8px; /* 10px → 8px */
     margin: 5px;
     cursor: pointer;
-    background: #007bff;
+    background: #3b82f6;
     color: white;
     border: none;
     border-radius: 5px;
 }
-
 .control-panel button:hover {
-    background: #0056b3;
+    background: #2563eb;
 }
 
-#weather-air-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 2000;
-    padding: 20px;
-    border-radius: 10px;
-    display: none;
-}
-
-#weather-air-modal .modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-width: 400px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-#weather-air-modal h3 {
-    margin-top: 0;
-}
-
-#weather-air-modal button {
-    padding: 10px;
-    margin-top: 10px;
-    cursor: pointer;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-}
-
-#weather-air-modal button:hover {
-    background: #0056b3;
-}
-
-#modal-weather-info, #modal-air-quality-info {
-    margin-bottom: 15px;
-}
 /* Medya Sorguları */
 @media (max-width: 768px) {
     #sidebar {
@@ -648,11 +604,11 @@ input[type="checkbox"] {
         padding: 6px;
     }
     .marker-btn {
-        font-size: 10px; /* Küçültüldü */
-        padding: 4px 6px; /* Küçültüldü */
+        font-size: 8px; /* 10px → 8px */
+        padding: 4px 6px;
     }
     .marker-btn i {
-        font-size: 12px; /* Küçültüldü */
+        font-size: 10px; /* 12px → 10px */
     }
     .modal-content {
         width: 90%;
@@ -660,30 +616,30 @@ input[type="checkbox"] {
         padding: 16px;
     }
     .modal-content h3 {
-        font-size: 16px;
+        font-size: 14px; /* 16px → 14px */
     }
     .modal-content .btn-custom {
-        padding: 6px 12px; /* Küçültüldü */
-        font-size: 10px; /* Küçültüldü */
+        padding: 5px 10px; /* 6px 12px → 5px 10px */
+        font-size: 8px; /* 10px → 8px */
     }
     .drag-icon {
-        width: 20px; /* Küçültüldü */
-        height: 20px; /* Küçültüldü */
+        width: 18px; /* 20px → 18px */
+        height: 18px; /* 20px → 18px */
     }
     input, select, button {
-        padding: 6px;
-        font-size: 12px;
+        padding: 5px; /* 6px → 5px */
+        font-size: 10px; /* 12px → 10px */
     }
     h2 {
-        font-size: 16px;
+        font-size: 14px; /* 16px → 14px */
     }
     h3 {
-        font-size: 14px;
+        font-size: 12px; /* 14px → 12px */
     }
     #toggle-btn {
         width: 50px;
         height: 50px;
-        font-size: 24px;
+        font-size: 22px; /* 24px → 22px */
         padding: 12px;
     }
 }
