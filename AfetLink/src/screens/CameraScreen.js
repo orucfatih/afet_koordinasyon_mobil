@@ -19,6 +19,7 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import app from '../../firebaseConfig';
 import { savePhoto } from '../localDB/sqliteHelper';
 import { startSyncListener } from '../localDB/syncService';
+import Geolocation from 'react-native-geolocation-service';
 
 const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
@@ -31,25 +32,51 @@ const CameraScreen = ({ navigation }) => {
     startSyncListener();
   }, []);
 
-  const getCurrentLocation = () => {
-    return new Promise((resolve) => {
-      if (navigator && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-          },
-          (error) => {
-            console.log('Konum hatası:', error);
-            resolve({ latitude: null, longitude: null });
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Konum İzni',
+            message: 'Uygulamanın konumunuza erişmesi gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam'
+          }
         );
-      } else {
-        resolve({ latitude: null, longitude: null });
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
       }
+    } else {
+      return false;
+    }
+  };
+  
+  const getCurrentLocation = async () => {
+    const hasPermission = await requestLocationPermission();
+  
+    return new Promise((resolve, reject) => {
+      if (!hasPermission) {
+        console.log('Konum izni verilmedi');
+        return reject({ latitude: null, longitude: null });
+      }
+  
+      Geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Konum hatası:', error);
+          reject({ latitude: null, longitude: null });
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
     });
   };
 
@@ -87,7 +114,7 @@ const CameraScreen = ({ navigation }) => {
       quality: 0.7,
       maxWidth: 1000,
       maxHeight: 1000,
-      saveToPhotos: false
+      saveToPhotos: false,
     };
 
     try {
@@ -121,16 +148,22 @@ const CameraScreen = ({ navigation }) => {
           console.log("Konum alındı:", locationCoordinates);
           
           // Fotoğrafı yerel veritabanına kaydet
-          await savePhoto(uri, locationCoordinates.latitude, locationCoordinates.longitude);
-          
-          Alert.alert(
-            'Başarılı',
-            'Fotoğraf kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
-            [{ text: 'Tamam', onPress: () => navigation.goBack() }]
-          );
+          await savePhoto(uri, locationCoordinates.latitude, locationCoordinates.longitude)
+            .then(() => {
+              console.log("Kayıt başarılı.");
+              Alert.alert(
+                'Başarılı',
+                'Fotoğraf kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
+                [{ text: 'Tamam' }]
+              );
+            })
+            .catch((error) => {
+              console.log("Kayıt sırasında hata:", error);
+              Alert.alert('Hata', 'Fotoğraf kaydedilirken bir hata oluştu.');
+            });
         } catch (error) {
-          console.error('Kaydetme hatası:', error);
-          Alert.alert('Hata', 'Fotoğraf kaydedilirken bir hata oluştu.');
+          console.log('Kaydetme hatası:', error.message, error.stack);
+          Alert.alert('Hata', `Fotoğraf kaydedilirken bir hata oluştu: ${error.message}`);
         } finally {
           setUploading(false);
         }

@@ -17,12 +17,12 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProfileScreen, SettingsScreen, Info } from '../components/index';
+import { ProfileScreen, SettingsScreen, Info, CustomButton } from '../components/index';
 import * as Animatable from 'react-native-animatable';
-
+import Geolocation from 'react-native-geolocation-service';
+import toplanmaAlanlari from '../../afet_toplanma_alanlari.json';
 
 const { width } = Dimensions.get('window');
 
@@ -56,25 +56,51 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; // Kilometre cinsinden mesafe
 };
 
-const getCurrentLocation = () => {
-  return new Promise((resolve) => {
-    if (navigator && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Konum hatası:', error);
-          resolve({ latitude: null, longitude: null });
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+const requestLocationPermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Konum İzni',
+          message: 'Uygulamanın konumunuza erişmesi gerekiyor.',
+          buttonNeutral: 'Daha Sonra Sor',
+          buttonNegative: 'İptal',
+          buttonPositive: 'Tamam'
+        }
       );
-    } else {
-      resolve({ latitude: null, longitude: null });
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
     }
+  } else {
+    return false;
+  }
+};
+
+const getCurrentLocation = async () => {
+  const hasPermission = await requestLocationPermission();
+
+  return new Promise((resolve, reject) => {
+    if (!hasPermission) {
+      console.log('Konum izni verilmedi');
+      return reject({ latitude: null, longitude: null });
+    }
+
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+      },
+      (error) => {
+        console.log('Konum hatası:', error);
+        reject({ latitude: null, longitude: null });
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
   });
 };
 
@@ -188,7 +214,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
           setAssemblyAreas(defaultAreas);
         }
       } catch (error) {
-        console.error('Konum veya toplanma alanları yüklenirken hata:', error);
+        console.log('Toplanma alanları yüklenirken hata:', error);
         Alert.alert('Hata', 'Toplanma alanları yüklenirken bir hata oluştu.');
       } finally {
         setIsLoading(false);
@@ -348,8 +374,8 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
       <StatusBar
         barStyle="light-content"
         backgroundColor="#2D2D2D"
-        translucent={true}
-      />
+        translucent={true}/>
+
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
@@ -390,20 +416,28 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             ))}
           </View>
 
-          <Animatable.View
-            animation="pulseBorder"
-            iterationCount="infinite"
-            duration={2000}
-            style={styles.bigButtonWrapper}
-          >
-            <TouchableOpacity 
-              style={styles.bigButton} 
-              onPress={() => navigation.navigate('Camera')}
-            >
-              <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
-              <Ionicons name="warning" size={30} color="white" style={styles.camera} />
-            </TouchableOpacity>
-          </Animatable.View>
+          
+          <View style={styles.warning}>
+            <Animatable.View
+              animation="pulseBorder"
+              iterationCount="infinite"
+              duration={2000}
+              style={styles.bigButtonWrapper}>
+
+              <TouchableOpacity 
+                style={styles.bigButton} 
+                onPress={() => navigation.navigate('Camera')}>
+
+                <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
+                <Ionicons name="warning" size={30} color="white" style={styles.camera} />
+              </TouchableOpacity>
+            </Animatable.View>
+
+            {/* Burası iyileştirilecek */}
+            <CustomButton
+              title="ENKAZ ALTINDAYIM"
+              onPress={() => navigation.navigate('UnderDebris')}/>
+          </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
@@ -435,8 +469,8 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             onRegionChangeComplete={handleRegionChange}
             zoomEnabled={true}
             zoomControlEnabled={true}
-            showsUserLocation={true}
-          >
+            showsUserLocation={true}>
+
             {assemblyAreas.map((area, index) => (
               <Marker
                 key={index}
@@ -454,7 +488,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
                     ios: `${scheme}${label}@${latLng}`,
                     android: `${scheme}${latLng}(${label})`
                   });
-                  Linking.openURL(url);
+                  //Linking.openURL(url);
                 }}
               />
             ))}
@@ -469,7 +503,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>En Yakın Toplanma Alanları</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('ViewAll2')}> 
+            <TouchableOpacity onPress={() => {/*navigation.navigate('ViewAll2')*/}}> 
               <Text style={styles.viewAll}>Tümünü Gör</Text>
             </TouchableOpacity>
           </View>
@@ -841,6 +875,13 @@ export const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 5,
+  },
+  warning: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',

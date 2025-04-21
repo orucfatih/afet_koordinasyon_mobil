@@ -6,6 +6,7 @@ const CustomTextInput = ({secureTextEntry,placeholder,onChangeText,value}) => {
     <TextInput 
         secureTextEntry={secureTextEntry}
         placeholder={placeholder}
+        placeholderTextColor={"lightgray"}
         style={styles.textInputStyle}
         onChangeText={onChangeText}
         value={value}/>

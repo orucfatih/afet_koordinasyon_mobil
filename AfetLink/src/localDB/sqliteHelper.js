@@ -19,16 +19,17 @@ export const initDB = () => {
 
 export const savePhoto = (uri, latitude, longitude) => {
   try {const timestamp = new Date().toISOString();
-  return new Promise((resolve, reject) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        'INSERT INTO photos (uri, timestamp, latitude, longitude, sent) VALUES (?, ?, ?, ?, ?)',
-        [uri, timestamp, latitude, longitude, 0],
-        (_, result) => resolve(result),
-        (_, error) => reject(error)
-      );
-    });
-  });} catch(error){
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'INSERT INTO photos (uri, timestamp, latitude, longitude, sent) VALUES (?, ?, ?, ?, ?)',
+          [uri, timestamp, latitude, longitude, 0],
+          (_, result) => resolve(result),
+          (_, error) => reject(error)
+        );
+      });
+    });} catch(error){
+    console.log('Kayıt sırasında hata oluştu:', error);
     throw error;
   }
 };
