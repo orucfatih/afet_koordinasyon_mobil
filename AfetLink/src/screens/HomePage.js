@@ -503,7 +503,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>En Yakın Toplanma Alanları</Text>
-            <TouchableOpacity onPress={() => {/*navigation.navigate('ViewAll2')*/}}> 
+            <TouchableOpacity onPress={() => {navigation.navigate('ViewAll2')}}> 
               <Text style={styles.viewAll}>Tümünü Gör</Text>
             </TouchableOpacity>
           </View>

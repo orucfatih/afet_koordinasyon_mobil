@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { HomePage, UnderDebrisScreen, Missing } from '../screens/index.js'
-import { ViewAll,Horn } from '../components/index.js'
+import { ViewAll, Horn, ViewAll2 } from '../components/index.js'
 import CameraScreen from '../screens/CameraScreen'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -19,6 +19,7 @@ const UserStack = () => {
       <Stack.Screen name='UnderDebris' component={UnderDebrisScreen} />
       <Stack.Screen name='Horn' component={Horn} />
       <Stack.Screen name='Missing' component={Missing} />
+      <Stack.Screen name='ViewAll2' component={ViewAll2} />
 
     </Stack.Navigator>
   )

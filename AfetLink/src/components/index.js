@@ -12,6 +12,7 @@ import Info from "./Info";
 import ViewAll from "./ViewAll";
 import Agreement from "./Agreement";
 import Horn from "./Horn";
+import ViewAll2 from "./ViewAll2";
 
 export{
     Loading,
@@ -28,4 +29,5 @@ export{
     Info,
     ViewAll,
     Agreement,
+    ViewAll2,
 }
