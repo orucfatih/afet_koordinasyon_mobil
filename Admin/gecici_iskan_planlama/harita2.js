@@ -1226,7 +1226,6 @@ function startTriangleDraw() {
     });
 }
 
-
 // İşaretçi türü seçme
 function selectMarkerType(type) {
     selectedMarkerType = type;
@@ -1356,9 +1355,21 @@ function showPolygonModal(shape) {
         // Modal kapatma butonu için olay dinleyicisi
         const closeBtn = modal.querySelector('.close-btn');
         if (closeBtn) {
-            closeBtn.onclick = () => closePolygonModal();
+            closeBtn.onclick = () => {
+                console.log('Close button clicked');
+                closePolygonModal();
+            };
         } else {
-            console.warn('Modal close button not found');
+            console.warn('Modal close button not found, creating a fallback close button');
+            // Fallback: Dinamik kapatma butonu ekle
+            const fallbackCloseBtn = document.createElement('button');
+            fallbackCloseBtn.className = 'close-btn';
+            fallbackCloseBtn.innerHTML = '✕';
+            modal.appendChild(fallbackCloseBtn);
+            fallbackCloseBtn.onclick = () => {
+                console.log('Fallback close button clicked');
+                closePolygonModal();
+            };
         }
     } catch (error) {
         console.error('showPolygonModal error:', error);
@@ -1428,3 +1439,57 @@ function deletePolygon() {
         showOverlayMessage(`Poligon silinemedi: ${error.message}`, true);
     }
 }
+
+// Poligon olay dinleyicisini ekleme (overlaycomplete için)
+google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+    try {
+        const shape = event.overlay;
+        console.log('Overlay completed, shape type:', event.type);
+        shape.set('clickable', true);
+        console.log('Shape clickable set to:', shape.get('clickable'));
+        activePolygon = shape;
+        polygons.push(shape);
+        const note = prompt('Bu alan için not ekleyin:', '') || 'Not eklenmedi';
+        polygonNotes.set(shape, note);
+        console.log('Polygon note set:', polygonNotes.get(shape));
+
+        let shapeInfo = '';
+        if (event.type === 'polygon') {
+            const path = shape.getPath();
+            const area = google.maps.geometry.spherical.computeArea(path);
+            shapeInfo = `Poligon Alanı: ${(area / 1000000).toFixed(2)} km²`;
+        } else if (event.type === 'rectangle') {
+            const bounds = shape.getBounds();
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+            const width = google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(ne.lat(), sw.lng()),
+                new google.maps.LatLng(ne.lat(), ne.lng())
+            );
+            const height = google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(ne.lat(), sw.lng()),
+                new google.maps.LatLng(sw.lat(), sw.lng())
+            );
+            shapeInfo = `Kare/Dikdörtgen Alanı: ${((width * height) / 1000000).toFixed(2)} km²`;
+        } else if (event.type === 'circle') {
+            const radius = shape.getRadius();
+            const area = Math.PI * radius * radius;
+            shapeInfo = `Daire Alanı: ${(area / 1000000).toFixed(2)} km²<br>Yarıçap: ${(radius / 1000).toFixed(2)} km`;
+        }
+
+        document.getElementById('info-panel').innerHTML = `${shapeInfo}<br>Not: ${note}`;
+        showPolygonModal(shape);
+
+        // Tıklama olay dinleyicisi
+        google.maps.event.addListener(shape, 'click', function(e) {
+            console.log('Polygon clicked, shape type:', shape instanceof google.maps.Polygon ? 'Polygon' : shape instanceof google.maps.Circle ? 'Circle' : 'Rectangle');
+            console.log('Shape clickable:', shape.get('clickable'));
+            activePolygon = shape;
+            showPolygonModal(shape);
+        });
+        console.log('Click listener added for shape:', shape);
+    } catch (error) {
+        console.error('Poligon oluşturma hatası:', error);
+        showOverlayMessage(`Poligon oluşturulamadı: ${error.message}`, true);
+    }
+});
