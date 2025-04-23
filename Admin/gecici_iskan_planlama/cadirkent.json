@@ -1,0 +1,73 @@
+[
+    {
+      "name": "AFAD Çadırkent - Kahramanmaraş Merkez",
+      "latitude": 37.573611,
+      "longitude": 36.937222,
+      "city": "Kahramanmaraş",
+      "established_date": "2023-02-07"
+    },
+    {
+      "name": "Kızılay Geçici Barınma Alanı - Hatay Antakya",
+      "latitude": 36.202778,
+      "longitude": 36.160833,
+      "city": "Hatay",
+      "established_date": "2023-02-08"
+    },
+    {
+      "name": "İskenderun Sahil Çadırkent",
+      "latitude": 36.584167,
+      "longitude": 36.167778,
+      "city": "Hatay",
+      "established_date": "2023-02-09"
+    },
+    {
+      "name": "Adıyaman Merkez Spor Salonu Yanı",
+      "latitude": 37.764444,
+      "longitude": 38.276944,
+      "city": "Adıyaman",
+      "established_date": "2023-02-10"
+    },
+    {
+      "name": "Malatya Yeşilyurt Çadır Alanı",
+      "latitude": 38.347222,
+      "longitude": 38.311111,
+      "city": "Malatya",
+      "established_date": "2023-02-08"
+    },
+    {
+      "name": "Gaziantep Şahinbey Geçici Konaklama",
+      "latitude": 37.055,
+      "longitude": 37.378611,
+      "city": "Gaziantep",
+      "established_date": "2023-02-07"
+    },
+    {
+      "name": "Nurdağı AFAD Çadırkent",
+      "latitude": 37.175278,
+      "longitude": 37.193611,
+      "city": "Gaziantep",
+      "established_date": "2023-02-08"
+    },
+    {
+      "name": "Osmaniye Merkez Çadırkent",
+      "latitude": 37.073333,
+      "longitude": 36.252222,
+      "city": "Osmaniye",
+      "established_date": "2023-02-09"
+    },
+    {
+      "name": "Elbistan Geçici Barınma Alanı",
+      "latitude": 38.203056,
+      "longitude": 37.190278,
+      "city": "Kahramanmaraş",
+      "established_date": "2023-02-10"
+    },
+    {
+      "name": "Adana Çukurova Çadırkent",
+      "latitude": 37.000556,
+      "longitude": 35.321389,
+      "city": "Adana",
+      "established_date": "2023-02-11"
+    }
+  ]
+  

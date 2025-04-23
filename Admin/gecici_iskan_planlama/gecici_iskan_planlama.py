@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QDateTime
 from PyQt5.QtGui import QIcon, QFont
-from afet_koordinasyon.Admin.gecici_iskan_planlama.harita2 import GoogleMapsWindow
+from Admin.gecici_iskan_planlama.harita2 import GoogleMapsWindow
 from Admin.config import initialize_firebase, get_firestore_client
 
 class GeciciIskanPlanlamaTab(QMainWindow):
