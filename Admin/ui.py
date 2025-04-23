@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication
 # Ana dizini sys.path'e ekleyerek modülleri bulmasını sağlıyoruz
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from stk_yonetim import STKYonetimTab
+from CSO_management.stk_yonetim import STKYonetimTab
 from resources_management.kaynak_yonetimi import KaynakYonetimTab
 from report.rapor import RaporYonetimTab
 from personnel import PersonelYonetimTab

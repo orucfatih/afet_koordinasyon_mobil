@@ -1,6 +1,6 @@
 """
 bu dosya sadece sunum ve test amaçlı kullanılır.
-bu veriler veritabanından alınır.
+bu verilerin bir kısmı şimdilik veritabanına kaydedildi proje tamamen bitirildiğinde bu dosyayı kaldıracağım.
 
 """
 

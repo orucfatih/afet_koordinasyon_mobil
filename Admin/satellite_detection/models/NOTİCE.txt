@@ -1,8 +1,0 @@
-Thanks to Isaac Corley for providing the `unet_siamdiff_resnet50` model.
-https://github.com/isaaccorley/a-change-detection-reality-check?tab=readme-ov-file
-
-
-başka model eklemek için farklı dosyalar girilmelidir her modelin avantaj ve dezavantajı vardır
-özellikle bina enkazına odaklanmış drone/uydu verileri ile eğitilmiş model kullanılabilir
-
-şimdilik basit bir emülasyon olarak var önerim https://github.com/microsoft/building-damage-assessment bununla model oluşturulması
