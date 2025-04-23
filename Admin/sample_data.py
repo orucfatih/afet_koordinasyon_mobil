@@ -400,3 +400,168 @@ CITIZEN_DATA = {
         }
     }
 }
+
+
+
+
+# Vatandaş geri bildirimleri için örnek veriler
+CITIZEN_FEEDBACK_DATA = [
+    {
+        "id": 1,
+        "title": "Mobil Uygulama Çöküyor",
+        "content": "Yardım başvurusu sırasında uygulama aniden kapanıyor. Android 12 kullanıyorum.",
+        "date": "2024-04-21 14:30",
+        "email": "ahmet.yilmaz@example.com",
+        "status": "Yeni",
+        "location": "Şehitkamil, Gaziantep",
+        "priority": "Yüksek"
+    },
+    {
+        "id": 2,
+        "title": "Konum Bilgisi Yanlış Gösteriliyor",
+        "content": "Uygulama konumumu yanlış algılıyor, yardımı yanlış bölgeye yönlendirdim.",
+        "date": "2024-04-21 10:15",
+        "email": "ayse.kaya@example.com",
+        "status": "İnceleniyor",
+        "location": "Onikişubat, Kahramanmaraş",
+        "priority": "Orta"
+    },
+    {
+        "id": 3,
+        "title": "Enkaz Kaldırma Talebi",
+        "content": "Binamızın yanındaki yıkıntı hala kaldırılmadı. Güvenlik riski oluşturuyor ve çocuklar için tehlikeli.",
+        "date": "2024-04-20 16:45",
+        "email": "mehmet.demir@example.com",
+        "status": "Çözümlendi",
+        "location": "Antakya, Hatay",
+        "priority": "Yüksek",
+        "resolution_notes": "Enkaz kaldırma ekibi 22 Nisan'da bölgeye yönlendirildi."
+    },
+    {
+        "id": 4,
+        "title": "Bildirimler Çok Geç Geliyor",
+        "content": "Yardım dağıtım bildirimleri 1 saatten geç geliyor. Bildirim sistemi güncellenebilir mi?",
+        "date": "2024-04-20 09:30",
+        "email": "zeynep.ozturk@example.com",
+        "status": "İnceleniyor",
+        "location": "Merkez, Adıyaman",
+        "priority": "Düşük"
+    },
+    {
+        "id": 5,
+        "title": "Uygulama Üzerinden Fotoğraf Gönderilemiyor",
+        "content": "Yardım isteği oluştururken fotoğraf eklemeye çalışınca hata veriyor.",
+        "date": "2024-04-19 11:20",
+        "email": "hasan.sahin@example.com",
+        "status": "Yeni",
+        "location": "Akdeniz, Mersin",
+        "priority": "Orta"
+    },
+    {
+        "id": 6,
+        "title": "Gıda Yardımı Teşekkürü",
+        "content": "Dün mahallemize gelen gıda yardımı için teşekkür ederiz. Ekipler çok ilgiliydi ve organizasyon düzenliydi.",
+        "date": "2024-04-19 08:55",
+        "email": "fatma.yildiz@example.com",
+        "status": "Kapatıldı",
+        "location": "Dulkadiroğlu, Kahramanmaraş",
+        "priority": "Düşük",
+        "resolution_notes": "Teşekkür notu kayda alındı, ilgili ekibe iletildi."
+    },
+    {
+        "id": 7,
+        "title": "Karanlık Mod Eksik",
+        "content": "Geceleri uygulamayı kullanmak zor oluyor. Karanlık mod desteği eklenebilir mi?",
+        "date": "2024-04-18 17:40",
+        "email": "mustafa.akin@example.com",
+        "status": "İnceleniyor",
+        "location": "Yüreğir, Adana",
+        "priority": "Düşük"
+    },
+    {
+        "id": 8,
+        "title": "Veriler Offline Kaydedilmiyor",
+        "content": "İnternet yokken yardım talebi oluşturamıyorum. Bağlantı gelince otomatik gönderme seçeneği olmalı.",
+        "date": "2024-04-18 14:10",
+        "email": "elif.celik@example.com",
+        "status": "Yeni",
+        "location": "Osmaniye Merkez, Osmaniye",
+        "priority": "Orta"
+    },
+    {
+        "id": 9,
+        "title": "Afet Koordinasyon Merkezi Önerisi",
+        "content": "Mahallemizde boş olan belediye binası afet koordinasyon merkezi olarak kullanılabilir.",
+        "date": "2024-04-17 13:25",
+        "email": "ali.toprak@example.com",
+        "status": "Çözümlendi",
+        "location": "Battalgazi, Malatya",
+        "priority": "Düşük",
+        "resolution_notes": "Öneri değerlendirildi, belediye binasının kullanımı için gereken izinler alındı."
+    },
+    {
+        "id": 10,
+        "title": "Şikayet Takip Ekranı Karmaşık",
+        "content": "Geri bildirim takibi için ekran çok karışık. Daha sade ve kullanıcı dostu olabilir.",
+        "date": "2024-04-17 10:05",
+        "email": "deniz.coskun@example.com",
+        "status": "İnceleniyor",
+        "location": "Şahinbey, Gaziantep",
+        "priority": "Orta"
+    }
+]
+
+
+# Feedback yanıtları için örnek veriler
+FEEDBACK_REPLIES = {
+    3: [
+        {
+            "reply_id": 1,
+            "feedback_id": 3,
+            "sender": "Ahmet Yılmaz (Enkaz Kaldırma Koordinatörü)",
+            "content": "Talebiniz alınmıştır. Enkaz kaldırma ekibimiz 22 Nisan tarihinde bölgeye yönlendirilecektir.",
+            "date": "2024-04-21 09:15",
+            "is_public": True
+        },
+        {
+            "reply_id": 2,
+            "feedback_id": 3,
+            "sender": "Mehmet Demir",
+            "content": "Teşekkür ederim, bilgilendirme için.",
+            "date": "2024-04-21 10:30",
+            "is_public": True
+        }
+    ],
+    6: [
+        {
+            "reply_id": 3,
+            "feedback_id": 6,
+            "sender": "Ayşe Kaya (Yardım Koordinatörü)",
+            "content": "Olumlu geri bildiriminiz için teşekkür ederiz. İletinizi ilgili ekibe aktardık.",
+            "date": "2024-04-19 14:20",
+            "is_public": True
+        }
+    ],
+    9: [
+        {
+            "reply_id": 4,
+            "feedback_id": 9,
+            "sender": "Mustafa Öztürk (Koordinasyon Merkezi Sorumlusu)",
+            "content": "Öneriniz için teşekkürler. Belediye binasının kullanımı için gerekli izinler alındı ve önümüzdeki hafta koordinasyon merkezi olarak faaliyete geçecektir.",
+            "date": "2024-04-18 11:45",
+            "is_public": True
+        }
+    ]
+}
+
+# Örnek istatistikler
+FEEDBACK_STATISTICS = {
+    "total": 10,
+    "new": 3,
+    "in_progress": 4,
+    "resolved": 2,
+    "closed": 1,
+    "high_priority": 3,
+    "medium_priority": 4,
+    "low_priority": 3
+}
