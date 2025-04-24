@@ -15,13 +15,14 @@ import {
   StatusBar,
   SafeAreaView
 } from 'react-native';
-import { launchCamera } from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getAuth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import app from '../../firebaseConfig';
 import DropDownPicker from 'react-native-dropdown-picker';
+import Geolocation from 'react-native-geolocation-service';
 
 const Missing = ({ navigation }) => {
   const auth = getAuth(app);
@@ -34,21 +35,22 @@ const Missing = ({ navigation }) => {
     'Güzelbahçe', 'Karabağlar', 'Karşıyaka', 'Konak', 'Menemen', 'Narlıdere'
   ];
 
-  const [hasPermission, setHasPermission] = useState(null);
+  const [hasStoragePermission, setHasStoragePermission] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [image, setImage] = useState(null);
   
   // Dropdown için state'ler
   const [genderOpen, setGenderOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
-  const [genderValue, setGenderValue] = useState('erkek');
+  const [genderValue, setGenderValue] = useState('');
   const [districtValue, setDistrictValue] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     age: '',
-    gender: 'erkek',
+    gender: '',
     district: '',
     clothingDescription: '',
     otherInfo: '',
@@ -68,76 +70,43 @@ const Missing = ({ navigation }) => {
   );
 
   useEffect(() => {
-    checkCameraPermission();
+    // Her sayfa girişinde izinleri kontrol et
+    checkPermissions();
   }, []);
 
-  const checkCameraPermission = async () => {
+  const checkPermissions = async () => {
+    await checkStoragePermission();
+    await checkLocationPermission();
+  };
+
+  const checkStoragePermission = async () => {
     if (Platform.OS === 'android') {
       try {
         const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
+          Platform.Version >= 33
+            ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
+            : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
           {
-            title: 'Kamera İzni',
-            message: 'Fotoğraf çekmek için kamera iznine ihtiyacımız var.',
+            title: 'Galeri İzni',
+            message: 'Galeriden fotoğraf seçmek için depolama iznine ihtiyacımız var.',
             buttonNeutral: 'Daha Sonra Sor',
             buttonNegative: 'İptal',
             buttonPositive: 'Tamam',
           }
         );
-        setHasPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+        setHasStoragePermission(granted === PermissionsAndroid.RESULTS.GRANTED);
       } catch (err) {
         console.warn(err);
-        setHasPermission(false);
+        setHasStoragePermission(false);
       }
     } else {
-      setHasPermission(true);
+      setHasStoragePermission(true);
     }
   };
 
-  const takePicture = async () => {
-    try {
-      const options = {
-        mediaType: 'photo',
-        quality: 1,
-        saveToPhotos: false,
-      };
-
-      const result = await launchCamera(options);
-
-      if (!result.didCancel && result.assets && result.assets[0]) {
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Fotoğraf çekilirken hata:', error);
-      Alert.alert('Hata', 'Fotoğraf çekilirken bir hata oluştu.');
-    }
-  };
-
-  const getCurrentLocation = () => {
-    return new Promise((resolve) => {
-      if (navigator && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-          },
-          (error) => {
-            console.log('Konum hatası:', error);
-            resolve({ latitude: null, longitude: null });
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-      } else {
-        resolve({ latitude: null, longitude: null });
-      }
-    });
-  };
-
-  const selectLocation = async () => {
-    try {
-      if (Platform.OS === 'android') {
+  const checkLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
@@ -148,21 +117,124 @@ const Missing = ({ navigation }) => {
             buttonPositive: 'Tamam',
           }
         );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert('Konum izni gerekli', 'Son görülme konumunu seçmek için konum iznine ihtiyacımız var.');
-          return;
-        }
+        setHasLocationPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+      } catch (err) {
+        console.warn(err);
+        setHasLocationPermission(false);
+      }
+    } else {
+      setHasLocationPermission(true);
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const options = {
+        mediaType: 'photo',
+        quality: 1,
+        saveToPhotos: false,
+      };
+
+      const result = await launchImageLibrary(options);
+
+      if (!result.didCancel && result.assets && result.assets[0]) {
+        setImage(result.assets[0].uri);
+      } else {
+        Alert.alert('Uyarı', 'Fotoğraf seçimi iptal edildi.');
+      }
+    } catch (error) {
+      console.error('Fotoğraf seçilirken hata:', error);
+      Alert.alert('Hata', 'Fotoğraf seçilirken bir hata oluştu.');
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Konum İzni',
+            message: 'Uygulamanın konumunuza erişmesi gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam'
+          }
+        );
+        setHasLocationPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        setHasLocationPermission(false);
+        return false;
+      }
+    } else {
+      return true;
+    }
+  };
+  
+  const getCurrentLocation = async () => {
+    const hasPermission = await requestLocationPermission();
+  
+    return new Promise((resolve, reject) => {
+      if (!hasPermission) {
+        console.log('Konum izni verilmedi');
+        return reject({ latitude: null, longitude: null });
+      }
+  
+      Geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Konum hatası:', error);
+          reject({ latitude: null, longitude: null });
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+    });
+  };
+
+  const selectLocation = async () => {
+    try {
+      const currentLocation = await getCurrentLocation();
+      if (!currentLocation.latitude || !currentLocation.longitude) {
+        Alert.alert('Hata', 'Konum alınamadı.');
+        return;
       }
 
-      const location = await getCurrentLocation();
-      if (location.latitude && location.longitude) {
+      // Mevcut son görülme konumu ile karşılaştırma
+      if (
+        formData.lastSeenLocation &&
+        formData.lastSeenLocation.latitude === currentLocation.latitude &&
+        formData.lastSeenLocation.longitude === currentLocation.longitude
+      ) {
+        Alert.alert(
+          'Konum Aynı',
+          'Mevcut konumunuz, zaten seçilmiş olan son görülme konumuyla aynı. Yine de güncellemek ister misiniz?',
+          [
+            { text: 'Hayır', style: 'cancel' },
+            {
+              text: 'Evet',
+              onPress: () => {
+                setFormData(prev => ({
+                  ...prev,
+                  lastSeenLocation: currentLocation
+                }));
+                Alert.alert('Başarılı', 'Konum güncellendi.');
+              }
+            }
+          ]
+        );
+      } else {
         setFormData(prev => ({
           ...prev,
-          lastSeenLocation: location
+          lastSeenLocation: currentLocation
         }));
-        Alert.alert('Başarılı', 'Konum başarıyla kaydedildi.');
-      } else {
-        Alert.alert('Hata', 'Konum alınamadı.');
+        Alert.alert('Başarılı', 'Son görülme konumu kaydedildi.');
       }
     } catch (error) {
       console.error('Konum alınırken hata:', error);
@@ -171,29 +243,45 @@ const Missing = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
-    if (!image) {
-      Alert.alert('Uyarı', 'Lütfen bir fotoğraf çekin.');
-      return;
-    }
-
     if (!formData.fullName || !formData.phone || !formData.age || !formData.district) {
-      Alert.alert('Uyarı', 'Lütfen zorunlu alanları doldurun.');
+      Alert.alert('Uyarı', 'Lütfen zorunlu alanları doldurun (Ad Soyad, Telefon, Yaş, İlçe).');
       return;
     }
 
+    if (!image) {
+      Alert.alert(
+        'Fotoğraf Önemli',
+        'Fotoğraf yüklemek kayıp ihbarının bulunma şansını artırır. Fotoğraf olmadan devam etmek istiyor musunuz?',
+        [
+          { text: 'Hayır', style: 'cancel' },
+          {
+            text: 'Evet',
+            onPress: async () => {
+              await submitReport(null);
+            }
+          }
+        ]
+      );
+    } else {
+      await submitReport(image);
+    }
+  };
+
+  const submitReport = async (imageUri) => {
     try {
       setUploading(true);
 
-      // Fotoğrafı yükle
-      const response = await fetch(image);
-      const blob = await response.blob();
-      const fileName = `missing_${auth.currentUser.uid}_${Date.now()}.jpg`;
-      const storageRef = ref(storage, `missing-reports/${auth.currentUser.uid}/${fileName}`);
-      
-      await uploadBytes(storageRef, blob);
-      const imageUrl = await getDownloadURL(storageRef);
+      let imageUrl = null;
+      if (imageUri) {
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        const fileName = `missing_${auth.currentUser.uid}_${Date.now()}.jpg`;
+        const storageRef = ref(storage, `missing-reports/${auth.currentUser.uid}/${fileName}`);
+        
+        await uploadBytes(storageRef, blob);
+        imageUrl = await getDownloadURL(storageRef);
+      }
 
-      // Firestore'a kaydet
       const docRef = doc(db, 'missing-reports', `${auth.currentUser.uid}_${Date.now()}`);
       await setDoc(docRef, {
         ...formData,
@@ -208,18 +296,38 @@ const Missing = ({ navigation }) => {
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.error('Kayıp ihbarı gönderilirken hata:', error);
+      console.log('Kayıp ihbarı gönderilirken hata:', error);
       Alert.alert('Hata', 'Kayıp ihbarı gönderilirken bir hata oluştu.');
     } finally {
       setUploading(false);
     }
   };
 
-  if (hasPermission === null) {
-    return <View style={styles.container}><Text>İzin kontrolü yapılıyor...</Text></View>;
+  // İzin gerekli ekranı
+  if (hasStoragePermission === null || hasLocationPermission === null) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionText}>İzin kontrolü yapılıyor...</Text>
+      </View>
+    );
   }
-  if (hasPermission === false) {
-    return <View style={styles.container}><Text>Kamera izni gerekli</Text></View>;
+
+  if (hasStoragePermission === false || hasLocationPermission === false) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionTitle}>İzin Gerekli</Text>
+        <Text style={styles.permissionText}>
+          {hasStoragePermission === false && hasLocationPermission === false
+            ? 'Galeriden fotoğraf seçmek ve konum bilgisi için depolama ve konum izinlerine ihtiyacımız var.'
+            : hasStoragePermission === false
+            ? 'Galeriden fotoğraf seçmek için depolama iznine ihtiyacımız var.'
+            : 'Son görülme konumunu seçmek için konum iznine ihtiyacımız var.'}
+        </Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={checkPermissions}>
+          <Text style={styles.permissionButtonText}>İzin Ver</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -227,18 +335,18 @@ const Missing = ({ navigation }) => {
       <StatusBar
         barStyle="light-content"
         backgroundColor="#2D2D2D"
-        translucent={true}
-      />
+        translucent={true}/>
+
       <SafeAreaView style={styles.safeArea}>
         <ScrollView 
           style={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
+
           <TouchableOpacity 
             style={styles.dismissKeyboard} 
             activeOpacity={1} 
-            onPress={() => Keyboard.dismiss()}
-          >
+            onPress={() => Keyboard.dismiss()}>
+              
             <View style={styles.header}>
               <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Ionicons name="arrow-back" size={24} color="#333" />
@@ -250,14 +358,14 @@ const Missing = ({ navigation }) => {
               {image ? (
                 <View style={styles.imageContainer}>
                   <Image source={{ uri: image }} style={styles.previewImage} />
-                  <TouchableOpacity style={styles.retakeButton} onPress={takePicture}>
-                    <Text style={styles.retakeButtonText}>Yeniden Çek</Text>
+                  <TouchableOpacity style={styles.retakeButton} onPress={pickImage}>
+                    <Text style={styles.retakeButtonText}>Yeniden Seç</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-                  <Ionicons name="camera" size={40} color="#fff" />
-                  <Text style={styles.cameraButtonText}>Fotoğraf Çek</Text>
+                <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+                  <Ionicons name="image" size={40} color="#fff" />
+                  <Text style={styles.cameraButtonText}>Fotoğraf Seç</Text>
                 </TouchableOpacity>
               )}
 
@@ -265,6 +373,7 @@ const Missing = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Ad Soyad"
+                  placeholderTextColor="lightgray"
                   value={formData.fullName}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, fullName: text }))}
                 />
@@ -272,6 +381,7 @@ const Missing = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Telefon"
+                  placeholderTextColor="lightgray"
                   value={formData.phone}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
                   keyboardType="phone-pad"
@@ -280,12 +390,12 @@ const Missing = ({ navigation }) => {
                 <TextInput
                   style={styles.input}
                   placeholder="Yaş"
+                  placeholderTextColor="lightgray"
                   value={formData.age}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, age: text }))}
                   keyboardType="numeric"
                 />
 
-                {/* Cinsiyet Seçimi */}
                 <DropDownPicker
                   open={genderOpen}
                   value={genderValue}
@@ -302,7 +412,6 @@ const Missing = ({ navigation }) => {
                   zIndex={3000}
                 />
 
-                {/* İlçe Seçimi */}
                 <DropDownPicker
                   open={districtOpen}
                   value={districtValue}
@@ -324,6 +433,7 @@ const Missing = ({ navigation }) => {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Kıyafet Tanımı"
+                  placeholderTextColor="lightgray"
                   value={formData.clothingDescription}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, clothingDescription: text }))}
                   multiline
@@ -333,6 +443,7 @@ const Missing = ({ navigation }) => {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Diğer Bilgiler"
+                  placeholderTextColor="lightgray"
                   value={formData.otherInfo}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, otherInfo: text }))}
                   multiline
@@ -341,7 +452,7 @@ const Missing = ({ navigation }) => {
 
                 <TouchableOpacity style={styles.locationButton} onPress={selectLocation}>
                   <Text style={styles.locationButtonText}>
-                    {formData.lastSeenLocation ? 'Son Görülme Konumu Seçildi' : 'Son Görülme Konumu Seç'}
+                    {formData.lastSeenLocation ? 'Son Görülme Konumu Seçildi' : 'Son Görülmeyi Konumum Olarak Seç'}
                   </Text>
                 </TouchableOpacity>
 
@@ -478,6 +589,39 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     borderColor: '#ddd',
     borderRadius: 8,
+  },
+  // Yeni izin ekranı stilleri
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

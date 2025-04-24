@@ -23,9 +23,6 @@ import Geolocation from 'react-native-geolocation-service';
 
 const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
-  const auth = getAuth(app);
-  const storage = getStorage(app);
-  const db = getFirestore(app);
 
   useEffect(() => {
     // Uygulama başladığında senkronizasyon servisini başlat

@@ -32,99 +32,131 @@ const UpdatePassword = ({setUpdatingScreen}) => {
 
   return (
     <View style={styles.container}>
-
-        <TouchableOpacity
-          onPress={()=> setUpdatingScreen(false)}
-          style={[{}, styles.closeButtonContainer]}>
-            <Text style={styles.closeButton}>X</Text>
+      <TouchableOpacity
+        onPress={() => setUpdatingScreen(false)}
+        style={styles.closeButtonContainer}>
+        <Ionicons name="close-circle" size={32} color="#666" />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Şifrenizi Güncelleyin</Text>
+      <View style={styles.contentContainer}>
+        <Text style={styles.title}>Şifrenizi Güncelleyin</Text>
 
-      <View style={styles.inputContainer}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Eski Şifre</Text>
+          <View style={styles.inputWrapper}>
+            <CustomTextInput 
+              secureTextEntry={secureText} 
+              placeholder='Eski Şifrenizi Girin' 
+              onChangeText={setOldPassword} 
+              value={oldPassword}
+            />
+            <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+              <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.label}>Eski Şifre</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Eski Şifrenizi Girin' onChangeText={setOldPassword} value={oldPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
+          <Text style={styles.label}>Yeni Şifre</Text>
+          <View style={styles.inputWrapper}>
+            <CustomTextInput 
+              secureTextEntry={secureText} 
+              placeholder='Yeni Şifrenizi Girin' 
+              onChangeText={setNewPassword} 
+              value={newPassword}
+            />
+            <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+              <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.label}>Yeni Şifre Tekrar</Text>
+          <View style={styles.inputWrapper}>
+            <CustomTextInput 
+              secureTextEntry={secureText} 
+              placeholder='Yeni Şifrenizi Tekrar Girin' 
+              onChangeText={setConfirmPassword} 
+              value={confirmPassword}
+            />
+            <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+              <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <Text style={styles.label}>Yeni Şifre</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Girin' onChangeText={setNewPassword} value={newPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>Yeni Şifre Tekrar</Text>
-        <View style={styles.passwordInputContainer}>
-          <CustomTextInput secureTextEntry={secureText} placeholder='Yeni Şifrenizi Tekrar Girin' onChangeText={setConfirmPassword} value={confirmPassword} />
-          <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
+        <CustomButton 
+          title="Şifreyi Güncelle" 
+          onPress={handleUpdatePassword}
+          style={styles.updateButton}
+        />
       </View>
-
-      <CustomButton title="Şifreyi Güncelle" onPress={handleUpdatePassword} />
     </View>
   );
 };
 
-export default UpdatePassword;
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Tüm alanı kaplayacak şekilde ayarla
-    justifyContent: 'center', // Dikey olarak ortala
-    alignItems: 'center', // Yatay olarak ortala
-    padding: 20,
+    flex: 1,
     backgroundColor: '#f9f9f9',
   },
+  contentContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 80,
+  },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 40,
     color: '#333',
+    textAlign: 'center',
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   label: {
-    fontSize: 12,
+    fontSize: 15,
     color: '#495057',
-    marginBottom: 0,
-    marginTop:2,
+    marginBottom: 8,
+    marginTop: 12,
     marginLeft: 4,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  passwordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  inputWrapper: {
+    position: 'relative',
     width: '100%',
+    marginBottom: 5,
   },
   eyeIcon: {
     position: 'absolute',
     right: 15,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: 8,
   },
-  closeButton:{
-    color:"black",
-    fontWeight:"bold",
-    textAlign:"center",
+  closeButtonContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+    padding: 8,
   },
-  closeButtonContainer:{
-      backgroundColor:"lightgray",
-      width:"30",
-      height:"30",
-      borderRadius:30,
-      alignItems:"center",
-      justifyContent:"center",
-      position:"absolute",
-      top:"50",
-      right:"15",
-}
+  updateButton: {
+    backgroundColor: '#D32F2F',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    width: '80%',
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  }
 });
+
+export default UpdatePassword;

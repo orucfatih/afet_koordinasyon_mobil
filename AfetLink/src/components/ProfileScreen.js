@@ -47,7 +47,23 @@ const ProfileScreen = () => {
         setEmail(userData.email || '');
         setPhone(userData.phone || '');
       })
-      .catch((error) => console.log('Kullanıcı bilgileri alınırken hata:', error));
+      .catch((error) => {
+        console.log('Kullanıcı bilgileri alınırken hata:', error);
+        Alert.alert(
+          'Hata',
+          'Kullanıcı bilgileri alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.',
+          [
+            { 
+              text: 'Tekrar Dene', 
+              onPress: () => dispatch(getUser()) 
+            },
+            { 
+              text: 'Tamam', 
+              style: 'cancel' 
+            }
+          ]
+        );
+      });
   }, [dispatch]);
 
   const [updatingScreen, setUpdatingScreen] = useState(false);
@@ -64,7 +80,7 @@ const ProfileScreen = () => {
     }
 
     try {
-      await addDoc(collection(db, 'feedback'), {
+      await addDoc(collection(db, 'feedbacks'), {
         ...feedback,
         userId: auth.currentUser.uid,
         userEmail: auth.currentUser.email,
@@ -138,17 +154,19 @@ const ProfileScreen = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Başlık"
+                  placeholderTextColor={"lightgray"}
                   value={feedback.title}
-                  onChangeText={(text) => setFeedback(prev => ({ ...prev, title: text }))}
-                />
+                  onChangeText={(text) => setFeedback(prev => ({ ...prev, title: text }))}/>
+
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Açıklama"
+                  placeholderTextColor={"lightgray"}
                   value={feedback.description}
                   onChangeText={(text) => setFeedback(prev => ({ ...prev, description: text }))}
                   multiline
-                  numberOfLines={4}
-                />
+                  numberOfLines={4}/>
+
                 <TouchableOpacity style={styles.submitButton} onPress={handleFeedbackSubmit}>
                   <Ionicons name="paper-plane" size={18} color="#fff" style={styles.submitIcon} />
                   <Text style={styles.submitButtonText}>Gönder</Text>

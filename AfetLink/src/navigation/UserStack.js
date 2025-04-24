@@ -3,7 +3,6 @@ import React from 'react'
 import { HomePage, UnderDebrisScreen, Missing } from '../screens/index.js'
 import { ViewAll, Horn, ViewAll2 } from '../components/index.js'
 import CameraScreen from '../screens/CameraScreen'
-import Missing from '../screens/Missing'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
