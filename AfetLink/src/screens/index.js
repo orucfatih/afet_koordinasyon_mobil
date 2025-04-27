@@ -7,6 +7,7 @@ import LoginPage2 from "./LoginPage2";
 import SignUpPage2 from "./SignUpPage2";
 import UnderDebrisScreen from "./UnderDebrisScreen";
 import Missing from "./Missing";
+import Report from "./Report";
 
 export{
 
@@ -19,4 +20,5 @@ export{
     SignUpPage2,
     UnderDebrisScreen,
     Missing,
+    Report,
 }
