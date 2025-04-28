@@ -1,21 +1,20 @@
 import { createSlice,createAsyncThunk } from "@reduxjs/toolkit";
-import { getAuth, createUserWithEmailAndPassword, 
-    updatePassword ,updateProfile, 
-    EmailAuthProvider, reauthenticateWithCredential, 
-    signInWithEmailAndPassword, signOut, sendEmailVerification} from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import auth, { PhoneAuthProvider } from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { firebase } from '@react-native-firebase/auth';
 
-//!!İki kere giriş yapma engellenecek.
+// TODO: AsyncStorage yerine daha güvenli bir depolama yöntemi kullanılmalı
+// TODO: Aynı kullanıcının birden fazla cihazdan giriş yapmasını engellenecek
+// TODO: Kullanıcı kaydolurken telefon numarasının doğrulanması gerekiyor
 
 //iki parametre alan ve asenkron yapı kullanan giriş yapma fonksiyonu
 export const login = createAsyncThunk('user/login', async({email,password}, {rejectWithValue})=> {
     try {
-        const auth =getAuth();
-        const userCredantial = await signInWithEmailAndPassword(auth, email, password)
+        const userCredantial = await auth().signInWithEmailAndPassword(email, password)
 
         const user = userCredantial.user;
-        const token = user.stsTokenManager.accessToken;
+        const token = await user.getIdToken();
 
         const userData = {
             token,
@@ -43,13 +42,12 @@ export const login = createAsyncThunk('user/login', async({email,password}, {rej
 })
 
 //!!Personel Giriş
-export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, password }, { rejectWithValue }) => {
+export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, password,}, { rejectWithValue }) => {
   try {
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await auth().signInWithEmailAndPassword(email, password);
 
       const user = userCredential.user;
-      const token = user.stsTokenManager.accessToken;
+      const token = await user.getIdToken();
 
       // Kullanıcının personel olup olmadığını kontrol et
       const idTokenResult = await user.getIdTokenResult();
@@ -59,14 +57,33 @@ export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, pa
           return rejectWithValue("Personel yetkiniz bulunmamaktadır.");
       }
 
+      // Kullanıcının Firestore'daki verisini al
+      const userRef = firestore().collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+          return rejectWithValue("Kullanıcı bilgileri bulunamadı.");
+      }
+
+      const userData = userDoc.data();
+      const phoneNumber = userData.phone;
+
+      if (!phoneNumber) {
+        return rejectWithValue("Telefon numaranız sistemde kayıtlı değil.");
+      }
+
+
+      const verificationId = await auth().verifyPhoneNumber(phoneNumber);
+
       const staffData = {
           token,
           user: user,
       };
 
-      await AsyncStorage.setItem("staffToken", token);
-
-      return staffData;
+      return {
+        staffData,
+        verificationId,
+      };
 
   } catch (error) {
       if (error.code === 'auth/user-not-found') {
@@ -81,11 +98,86 @@ export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, pa
   }
 });
 
+export const verifyPhoneCode = createAsyncThunk('user/verifyPhoneCode', async ({ verificationId, code, staffData }, { rejectWithValue, getState, dispatch }) => {
+    try {
+      
+      const user = auth().currentUser;
+      if (!user) {
+        return rejectWithValue('Kullanıcı bulunamadı. Lütfen tekrar giriş yapın.');
+      }
+
+      const phoneCredential = PhoneAuthProvider.credential(verificationId, code);
+
+      if(!phoneCredential){
+        return rejectWithValue('Geçersiz doğrulama kodu.');
+      }
+      
+      await AsyncStorage.setItem("staffToken", staffData.token);
+      
+      return { 
+        success: true,
+        token: staffData.token 
+      };
+      
+    } catch (error) {
+      console.log('Verification Error:', error);
+      const { verifyAttempts, resendAttempts } = getState().user; // state'e doğru erişiyoruz
+  
+      if (verifyAttempts >= 3 && resendAttempts >= 1) {
+        await dispatch(logout());
+        return rejectWithValue('Çok fazla doğrulama denemesi. Lütfen daha sonra tekrar deneyin.');
+      }
+  
+      if (error.code === 'auth/invalid-verification-code') {
+        return rejectWithValue('Doğrulama kodu geçersiz. Lütfen tekrar deneyin.');
+      } else if (error.code === 'auth/code-expired') {
+        return rejectWithValue('Kodun süresi doldu. Tekrar kod istemelisiniz.');
+      } else if (error.code === 'auth/invalid-verification-id') {
+        return rejectWithValue('Doğrulama kimliği geçersiz.');
+      } else {
+        return rejectWithValue(`Bilinmeyen doğrulama hatası: ${error.message}`);
+      }
+    }
+  });
+
+  export const resendPhoneCode = createAsyncThunk('user/resendPhoneCode', async (_, { rejectWithValue }) => {
+    try {
+      const user = auth().currentUser;
+  
+      const userRef = firestore().collection("users").doc(user.uid);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+          return rejectWithValue("Kullanıcı bilgileri bulunamadı.");
+      }
+
+      const userData = userDoc.data();
+      const phoneNumber = userData.phone;
+
+      if (!phoneNumber) {
+        return rejectWithValue("Telefon numaranız sistemde kayıtlı değil.");
+      }
+      
+      const verificationId = await auth().verifyPhoneNumber(phoneNumber);
+  
+      return { verificationId };
+    } catch (error) {
+      if (error.code === 'auth/too-many-requests') {
+        return rejectWithValue('Çok fazla kod gönderme isteği. Lütfen daha sonra tekrar deneyin.');
+      } else if (error.code === 'auth/invalid-phone-number') {
+        return rejectWithValue('Telefon numarası geçersiz.');
+      } else {
+        return rejectWithValue(`Kod gönderme hatası: ${error.message}`);
+      }
+    }
+  });
+  
+
+
 //Şifre Değiştirme
 export const updateCipher = createAsyncThunk('user/updatePassword', 
     async ({ oldPassword, newPassword, confirmPassword }, { rejectWithValue }) => {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      const user = auth().currentUser;
   
       if (!user) {
         return rejectWithValue('Kullanıcı oturumu açık değil.');
@@ -97,11 +189,11 @@ export const updateCipher = createAsyncThunk('user/updatePassword',
   
       try {
         // Eski şifre ile kullanıcıyı yeniden doğrula
-        const credential = EmailAuthProvider.credential(user.email, oldPassword);
-        await reauthenticateWithCredential(user, credential);
+        const credential = auth.EmailAuthProvider.credential(user.email, oldPassword);
+        await user.reauthenticateWithCredential(credential);
   
         // Şifreyi güncelle
-        await updatePassword(user, newPassword);
+        await user.updatePassword(newPassword);
         return 'Şifreniz başarıyla güncellendi!';
       } catch (error) {
         if (error.code === 'auth/wrong-password') {
@@ -117,18 +209,16 @@ export const updateCipher = createAsyncThunk('user/updatePassword',
 //Kullanıcı bilgilerini alma
 export const getUser = createAsyncThunk("user/getUser", async (_, { rejectWithValue }) => {
     try {
-      const auth = getAuth();
-      const db = getFirestore();
-      const user = auth.currentUser;
+      const user = auth().currentUser;
   
       if (!user) {
         return rejectWithValue("Kullanıcı oturum açmamış.");
       }
   
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
+      const userRef = firestore().collection("users").doc(user.uid);
+      const userDoc = await userRef.get();
   
-      if (!userDoc.exists()) {
+      if (!userDoc.exists) {
         return rejectWithValue("Kullanıcı bilgileri bulunamadı.");
       }
   
@@ -181,8 +271,7 @@ export const staffAutoLogin = createAsyncThunk('user/staffAutoLogin', async() =>
 //!!Çıkış
 export const logout = createAsyncThunk('user/logout', async () => {
     try {
-        const auth = getAuth()
-        await signOut(auth)
+        await auth().signOut()
 
         await AsyncStorage.removeItem("userToken")
         await AsyncStorage.removeItem("staffToken")
@@ -201,25 +290,22 @@ export const register = createAsyncThunk(
         if(password !== confirmPassword){
           return rejectWithValue("Şifreler birbiriyle eşleşmiyor.");
         }
-
-        const auth = getAuth();
-        const db = getFirestore();
         
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await auth().createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
-        const token = user.stsTokenManager.accessToken;
+        const token = await user.getIdToken();
         
-        await updateProfile(user, { displayName: `${name} ${surname}` });
-        await sendEmailVerification(user);
+        await user.updateProfile({ displayName: `${name} ${surname}` });
+        await user.sendEmailVerification();
         
         // Firestore'a kullanıcı bilgilerini kaydetme
-        await setDoc(doc(db, 'users', user.uid), {
+        await firestore().collection('users').doc(user.uid).set({
           name,
           surname,
           phone,
           email,
           uid: user.uid,
-          createdAt: new Date().toISOString(),
+          createdAt: firestore.FieldValue.serverTimestamp(),
         });
         
         await AsyncStorage.setItem('userToken', token);
@@ -245,6 +331,10 @@ const initialState = {
     isLoading: false,
     isAuth: false,
     isStaffAuth:false,
+    isFullyAuth:false,
+    verifyAttempts: 0,
+    resendAttempts: 0,
+    resendCooldown: 60,
     token:null,
     user:null,
     error: null,
@@ -301,6 +391,35 @@ export const userSlice = createSlice({
               state.error=action.error.message
           })
 
+          .addCase(verifyPhoneCode.pending,(state)=>{
+            state.isLoading=true
+            state.isFullyAuth=false
+          })
+          .addCase(verifyPhoneCode.fulfilled,(state,action)=>{
+            state.isLoading=false
+            state.isFullyAuth=true
+            state.token=action.payload.token
+            state.verifyAttempts = 0;
+            state.resendAttempts = 0;
+          })
+          .addCase(verifyPhoneCode.rejected,(state,action)=>{
+            state.isLoading=false
+            state.isFullyAuth=false
+            state.error=action.error.message
+            state.verifyAttempts += 1
+          })
+          .addCase(resendPhoneCode.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.resendAttempts += 1;
+          })
+          .addCase(resendPhoneCode.pending, (state) => {
+            state.isLoading = true;
+          })
+          .addCase(resendPhoneCode.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.error.message;
+            state.resendAttempts += 1;
+          })
             .addCase(autoLogin.pending,(state)=>{
                 state.isLoading=true
                 state.isAuth=false
@@ -319,14 +438,17 @@ export const userSlice = createSlice({
             .addCase(staffAutoLogin.pending,(state)=>{
               state.isLoading=true
               state.isStaffAuth=false
+              state.isFullyAuth=false
           })
           .addCase(staffAutoLogin.fulfilled,(state,action)=>{
               state.isLoading=false
+              state.isFullyAuth=true
               state.isStaffAuth=true
               state.token=action.payload
           })
           .addCase(staffAutoLogin.rejected,(state)=>{
               state.isLoading=false
+              state.isFullyAuth=false
               state.isStaffAuth=false
               state.token=null
           })
@@ -338,8 +460,11 @@ export const userSlice = createSlice({
                 state.isLoading=false
                 state.isAuth=false
                 state.isStaffAuth=false
+                state.isFullyAuth=false
                 state.token=null
                 state.error=null
+                state.verifyAttempts = 0;
+                state.resendAttempts = 0;
             })
             .addCase(logout.rejected, (state, action)=> {
                 state.isLoading=false

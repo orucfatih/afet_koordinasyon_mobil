@@ -13,6 +13,7 @@ import ViewAll from "./ViewAll";
 import Agreement from "./Agreement";
 import Horn from "./Horn";
 import ViewAll2 from "./ViewAll2";
+import VerificationModal from "./VerificationModal";
 
 export{
     Loading,
@@ -30,4 +31,5 @@ export{
     ViewAll,
     Agreement,
     ViewAll2,
+    VerificationModal,
 }

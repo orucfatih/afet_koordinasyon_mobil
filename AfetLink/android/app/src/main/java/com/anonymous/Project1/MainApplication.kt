@@ -1,4 +1,4 @@
-package com.afetlink
+package com.anonymous.Project1
 
 import android.app.Application
 import com.facebook.react.PackageList

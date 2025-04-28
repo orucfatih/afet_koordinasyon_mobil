@@ -2,18 +2,18 @@ import {
   StyleSheet,
   Text,
   View,
-  Image,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Alert,
   TextInput,
+  ScrollView,
 } from 'react-native';
 
-import React, { useState, useEffect } from 'react';
-import { Loading, CustomTextInput, CustomButton, Agreement } from '../components/index.js';
+import React, { useState, useEffect} from 'react';
+import { Loading, CustomTextInput, CustomButton, VerificationModal } from '../components/index.js';
 import { useSelector, useDispatch } from 'react-redux';
-import { setIsLoading, staffLogin, staffAutoLogin } from '../redux/userSlice.js';
+import { setIsLoading, staffLogin, staffAutoLogin, logout } from '../redux/userSlice.js';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const generateCaptcha = () => {
@@ -26,8 +26,9 @@ const LoginPage2 = ({ navigation }) => {
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaCode, setCaptchaCode] = useState(generateCaptcha());
   const [captchaAngle, setCaptchaAngle] = useState(Math.random() * 20 - 10);
-  const [attempts, setAttempts] = useState(0);
   const [secureText, setSecureText] = useState(true);
+  const [tempVerificationId, setTempVerificationId] = useState(null);
+  const [tempStaffData, setTempStaffData] = useState(null);
 
   const dispatch = useDispatch();
 
@@ -37,13 +38,14 @@ const LoginPage2 = ({ navigation }) => {
 
 
   const { isLoading } = useSelector((state) => state.user);
+  const { isStaffAuth } = useSelector((state) => state.user);
 
   const handleLogin = () => {
     if (!email || !password) {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz.');
       return;
     }
-
+    
     if (captchaInput.toUpperCase() !== captchaCode) {
       Alert.alert('Hata', 'Captcha doğrulaması başarısız. Tekrar deneyin.');
       setCaptchaCode(generateCaptcha());
@@ -51,59 +53,70 @@ const LoginPage2 = ({ navigation }) => {
       setCaptchaInput('');
       return;
     }
-
+  
     dispatch(staffLogin({ email, password }))
       .unwrap()
-      .catch((errorMessage) => {
-        setAttempts(attempts + 1);
-        console.log('Giriş başarısız:', errorMessage);
-        Alert.alert('Hata', errorMessage, [{ text: 'Tamam', style: 'destructive' }]);
+      .then((response) => {
+        console.log('Giriş başarılı:');
+        setTempVerificationId(response.verificationId);
+        setTempStaffData(response.staffData);
+      })
+      .catch((error) => {
+        console.log('Giriş başarısız:', error);
+        Alert.alert('Hata', error, [{ text: 'Tamam', style: 'destructive' }]);
       });
+  };
+
+  const handleModalClose = (isSuccess) => {
+    if (!isSuccess) {
+      dispatch(logout());
+    }
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-            {/* Geri Butonu */}
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AraMenu")}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-      <Text style={styles.title}>Hoşgeldiniz</Text>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AraMenu")}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
 
-      <View style={styles.iconContainer}>
-          <Ionicons name="log-in-outline" size={100} color="#007BFF" />
+        <Text style={styles.title}>Hoşgeldiniz</Text>
+
+        <View style={styles.iconContainer}>
+            <Ionicons name="log-in-outline" size={100} color="#007BFF" />
         </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
-        <CustomTextInput
-          secureTextEntry={false}
-          placeholder="Email Adresinizi Girin"
-          onChangeText={(email) => setEmail(email)}
-          value={email}/>
-
-        <Text style={styles.label}>Şifre</Text>
-        <View style={styles.passwordInputContainer}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Email</Text>
           <CustomTextInput
-            secureTextEntry={secureText} // Şifreyi göster veya gizle
-            placeholder="Şifre Girin"
-            onChangeText={(password) => setPassword(password)}
-            value={password}
-          />
-          <TouchableOpacity
-            onPress={() => setSecureText(!secureText)}
-            style={styles.eyeIcon}
-            accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}>
+            secureTextEntry={false}
+            placeholder="Email Adresinizi Girin"
+            onChangeText={(email) => setEmail(email)}
+            value={email}/>
 
-            <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-          </TouchableOpacity>
+          <Text style={styles.label}>Şifre</Text>
+          <View style={styles.passwordInputContainer}>
+            <CustomTextInput
+              secureTextEntry={secureText} // Şifreyi göster veya gizle
+              placeholder="Şifre Girin"
+              onChangeText={(password) => setPassword(password)}
+              value={password}/>
+
+            <TouchableOpacity
+              onPress={() => setSecureText(!secureText)}
+              style={styles.eyeIcon}
+              accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}>
+
+              <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* Captcha Gösterimi */}
-      <View style={styles.captchaContainer}>
+        {/* Captcha Gösterimi */}
+        <View style={styles.captchaContainer}>
           <View style={styles.captchaWrapper}>
             <Text style={styles.captchaCode}>{captchaCode}</Text>
             <View style={[styles.captchaStrike, { transform: [{ rotate: `${captchaAngle}deg` }] }]} />
@@ -115,6 +128,7 @@ const LoginPage2 = ({ navigation }) => {
               setCaptchaAngle(Math.random() * 20 - 10);
             }}
             style={styles.refreshCaptcha}>
+
             <Ionicons name="refresh-circle" size={32} color="#007BFF" />
           </TouchableOpacity>
         </View>
@@ -123,18 +137,26 @@ const LoginPage2 = ({ navigation }) => {
         <TextInput
           style={styles.captchaInput}
           placeholder="Captcha Kodunu Girin"
+          placeholderTextColor="lightgray"
           onChangeText={(text) => setCaptchaInput(text)}
           value={captchaInput}
           textAlign="center"/>
 
-      <CustomButton
-        onPress={handleLogin}
-        title="Giriş Yap"
-        style={styles.primaryButton}/>
+        <CustomButton
+          onPress={handleLogin}
+          title="Giriş Yap"
+          style={styles.primaryButton}/>
 
-      {isLoading ? (
-        <Loading changeIsLoading={() => dispatch(setIsLoading(false))} />
-      ) : null}
+        <VerificationModal
+            visible={isStaffAuth}
+            onClose={handleModalClose}
+            verificationId={tempVerificationId}
+            staffData={tempStaffData}/>
+
+        {isLoading ? (
+          <Loading changeIsLoading={() => dispatch(setIsLoading(false))} />
+        ) : null}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -145,9 +167,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+  },
+  scrollContainer: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   backButton: {
     position: "absolute",
@@ -185,6 +211,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     marginBottom: 15,
+    width: '100%',
   },
   linkText: {
     fontSize: 14,
@@ -269,15 +296,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: "center",
   },
-  scrollContainer: {
-    flexGrow: 1, // İçeriğin tam kaydırılmasını sağlar
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 10,
-  },
   modalText: {
     fontSize: 14,
     textAlign: "justify",
@@ -304,18 +322,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  acceptButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  
-  acceptButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  
   closeButton: {
     position: 'absolute',
     top: 10,

@@ -129,6 +129,7 @@ const LoginPage = ({ navigation }) => {
         <TextInput
           style={styles.captchaInput}
           placeholder="Captcha Kodunu Girin"
+          placeholderTextColor="lightgray"
           onChangeText={(text) => setCaptchaInput(text)}
           value={captchaInput}
           textAlign="center"/>

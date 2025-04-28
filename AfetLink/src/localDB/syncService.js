@@ -1,17 +1,20 @@
 import NetInfo from '@react-native-community/netinfo';
-import { getUnsentPhotos, markPhotoAsSent } from './sqliteHelper';
-import { getAuth } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import app from '../../firebaseConfig';
+import { getUnsentPhotos, markPhotoAsSent, initDB } from './sqliteHelper';
+import auth from '@react-native-firebase/auth';
+import storage from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore';
+import { Platform } from 'react-native';
 
 export const startSyncListener = () => {
-  const auth = getAuth(app);
-
+  // Veritabanını başlat
+  initDB().catch(error => {
+    console.error('Senkronizasyon veritabanı başlatma hatası:', error);
+  });
+  
   // Her 5 dakikada bir senkronizasyonu kontrol et
   const intervalId = setInterval(() => {
     NetInfo.fetch().then(state => {
-      if (state.isConnected && auth.currentUser) {
+      if (state.isConnected && auth().currentUser) {
         syncPhotos();
       }
     });
@@ -19,7 +22,7 @@ export const startSyncListener = () => {
 
   // İnternet bağlantısı değişikliklerini dinle
   const unsubscribe = NetInfo.addEventListener(state => {
-    if (state.isConnected && auth.currentUser) {
+    if (state.isConnected && auth().currentUser) {
       syncPhotos();
     }
   });
@@ -54,51 +57,57 @@ const getCurrentLocation = () => {
 };
 
 const syncPhotos = async () => {
-  const auth = getAuth(app);
-  
   // Kullanıcı giriş yapmamışsa senkronizasyonu durdur
-  if (!auth.currentUser) {
+  if (!auth().currentUser) {
     console.log('Kullanıcı giriş yapmamış, senkronizasyon yapılamıyor');
     return;
   }
 
-  const photos = await getUnsentPhotos();
-  const storage = getStorage(app);
-  const db = getFirestore(app);
+  try {
+    const photos = await getUnsentPhotos();
+    console.log('Senkronize edilecek fotoğraf sayısı:', photos.length);
 
-  for (const photo of photos) {
-    try {
-      // Firebase'e yükle
-      const fileName = `${auth.currentUser.uid}_${Date.now()}.jpg`;
-      const storageRef = ref(storage, `afet-bildirimleri/${auth.currentUser.uid}/${fileName}`);
-      
-      const response = await fetch(photo.uri);
-      const blob = await response.blob();
-      
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
+    for (const photo of photos) {
+      try {
+        // Firebase'e yükle
+        const fileName = `${auth().currentUser.uid}_${Date.now()}.jpg`;
+        const storageRef = storage().ref(`afet-bildirimleri/${auth().currentUser.uid}/${fileName}`);
+        
+        const response = await fetch(photo.uri);
+        const blob = await response.blob();
+        
+        await storageRef.put(blob);
+        const downloadURL = await storageRef.getDownloadURL();
 
-      // Firestore'a metadata kaydet
-      const imageDocRef = doc(db, 'afet-bildirimleri', auth.currentUser.uid, 'images', fileName);
-      await setDoc(imageDocRef, {
-        imageUrl: downloadURL,
-        timestamp: photo.timestamp,
-        fileName: fileName,
-        status: "yeni",
-        location: {
-          latitude: photo.latitude,
-          longitude: photo.longitude
-        },
-        description: "",
-        severity: "normal",
-        type: "genel"
-      });
+        // Firestore'a metadata kaydet
+        await firestore()
+          .collection('afet-bildirimleri')
+          .doc(auth().currentUser.uid)
+          .collection('images')
+          .doc(fileName)
+          .set({
+            imageUrl: downloadURL,
+            timestamp: photo.timestamp,
+            fileName: fileName,
+            status: "yeni",
+            location: {
+              latitude: photo.latitude,
+              longitude: photo.longitude
+            },
+            description: "",
+            severity: "normal",
+            type: "genel"
+          });
 
-      // Başarıyla yüklenen fotoğrafı yerel veritabanında işaretle
-      await markPhotoAsSent(photo.id);
-    } catch (error) {
-      console.error('Fotoğraf senkronizasyon hatası:', error);
+        // Başarıyla yüklenen fotoğrafı yerel veritabanında işaretle
+        await markPhotoAsSent(photo.id);
+        console.log(`Fotoğraf başarıyla senkronize edildi. ID: ${photo.id}`);
+      } catch (error) {
+        console.error('Fotoğraf senkronizasyon hatası:', error);
+      }
     }
+  } catch (error) {
+    console.error('Senkronizasyon hatası:', error);
   }
 };
 
@@ -125,22 +134,27 @@ const uploadImageToFirebase = async (uri, coordinates) => {
     const response = await fetch(correctUri);
     const blob = await response.blob();
 
-    const fileName = `${auth.currentUser.uid}_${Date.now()}.jpg`;
-    const storageRef = ref(storage, `afet-bildirimleri/${auth.currentUser.uid}/${fileName}`);
+    const fileName = `${auth().currentUser.uid}_${Date.now()}.jpg`;
+    const storageRef = storage().ref(`afet-bildirimleri/${auth().currentUser.uid}/${fileName}`);
 
-    await uploadBytes(storageRef, blob);
-    const downloadURL = await getDownloadURL(storageRef);
+    await storageRef.put(blob);
+    const downloadURL = await storageRef.getDownloadURL();
 
-    await setDoc(doc(db, `afet-bildirimleri/${auth.currentUser.uid}/images`, fileName), {
-      imageUrl: downloadURL,
-      timestamp: new Date(),
-      fileName: fileName,
-      status: "yeni",
-      location: coordinates || { latitude: null, longitude: null },
-      description: "",
-      severity: "normal",
-      type: "genel"
-    });
+    await firestore()
+      .collection('afet-bildirimleri')
+      .doc(auth().currentUser.uid)
+      .collection('images')
+      .doc(fileName)
+      .set({
+        imageUrl: downloadURL,
+        timestamp: new Date(),
+        fileName: fileName,
+        status: "yeni",
+        location: coordinates || { latitude: null, longitude: null },
+        description: "",
+        severity: "normal",
+        type: "genel"
+      });
 
     return downloadURL;
   } catch (error) {

@@ -18,16 +18,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getUser, logout } from '../redux/userSlice';
 import { Loading, CustomButton, UpdatePassword } from './index.js';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import app from '../../firebaseConfig';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
 
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = () => {
   const dispatch = useDispatch();
-  const db = getFirestore(app);
-  const auth = getAuth(app);
 
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -80,11 +77,11 @@ const ProfileScreen = () => {
     }
 
     try {
-      await addDoc(collection(db, 'feedbacks'), {
+      await firestore().collection('feedbacks').add({
         ...feedback,
-        userId: auth.currentUser.uid,
-        userEmail: auth.currentUser.email,
-        timestamp: new Date(),
+        userId: auth().currentUser.uid,
+        userEmail: auth().currentUser.email,
+        timestamp: firestore.FieldValue.serverTimestamp(),
         status: 'new'
       });
 

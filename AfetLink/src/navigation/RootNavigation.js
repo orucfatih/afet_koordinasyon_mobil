@@ -11,7 +11,7 @@ const Stack = createStackNavigator();
 
 const RootNavigation = () => {
   const dispatch = useDispatch();
-  const { isAuth, isStaffAuth } = useSelector((state) => state.user);
+  const { isAuth, isFullyAuth } = useSelector((state) => state.user);
 
   useEffect(() => {
     dispatch(autoLogin());
@@ -20,7 +20,7 @@ const RootNavigation = () => {
 
   return (
     <NavigationContainer>
-      {isStaffAuth ? <StaffStack /> : isAuth ? <UserStack /> : <AuthStack />}
+      {isFullyAuth ? <StaffStack /> : isAuth ? <UserStack /> : <AuthStack />}
     </NavigationContainer>
   );
 };

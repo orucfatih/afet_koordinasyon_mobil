@@ -1,8 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
+import firebase from '@react-native-firebase/app';
+
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -14,8 +11,6 @@ import {
   FIREBASE_MEASUREMENT_ID
 } from '@env';
 
-//authentication çalışıyor ama firestore database çalışmıyor.
-//firestore database kuralları değişmeli.
 
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
@@ -28,14 +23,12 @@ const firebaseConfig = {
   measurementId: FIREBASE_MEASUREMENT_ID
   };
   
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-const auth = initializeAuth(app, {
-persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
-
-export const db = getFirestore(app);
+  let app;
+  if (!firebase.apps.length) {
+    app = firebase.initializeApp(firebaseConfig);
+  } else {
+    app = firebase.app();
+  }
 
 export default app;
 

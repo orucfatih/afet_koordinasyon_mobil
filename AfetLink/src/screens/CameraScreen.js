@@ -13,11 +13,10 @@ import {
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getAuth } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import app from '../../firebaseConfig';
-import { savePhoto } from '../localDB/sqliteHelper';
+import auth from '@react-native-firebase/auth';
+import storage from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore';
+import { savePhoto, initDB } from '../localDB/sqliteHelper';
 import { startSyncListener } from '../localDB/syncService';
 import Geolocation from 'react-native-geolocation-service';
 
@@ -25,6 +24,11 @@ const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+    // Veritabanını başlat
+    initDB().catch(error => {
+      console.error('Veritabanı başlatma hatası:', error);
+    });
+    
     // Uygulama başladığında senkronizasyon servisini başlat
     startSyncListener();
   }, []);
@@ -145,21 +149,20 @@ const CameraScreen = ({ navigation }) => {
           console.log("Konum alındı:", locationCoordinates);
           
           // Fotoğrafı yerel veritabanına kaydet
-          await savePhoto(uri, locationCoordinates.latitude, locationCoordinates.longitude)
-            .then(() => {
-              console.log("Kayıt başarılı.");
-              Alert.alert(
-                'Başarılı',
-                'Fotoğraf kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
-                [{ text: 'Tamam' }]
-              );
-            })
-            .catch((error) => {
-              console.log("Kayıt sırasında hata:", error);
-              Alert.alert('Hata', 'Fotoğraf kaydedilirken bir hata oluştu.');
-            });
+          try {
+            await savePhoto(uri, locationCoordinates.latitude, locationCoordinates.longitude);
+            console.log("Kayıt başarılı.");
+            Alert.alert(
+              'Başarılı',
+              'Fotoğraf kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
+              [{ text: 'Tamam' }]
+            );
+          } catch (error) {
+            console.error("Kayıt sırasında hata:", error);
+            Alert.alert('Hata', 'Fotoğraf kaydedilirken bir hata oluştu.');
+          }
         } catch (error) {
-          console.log('Kaydetme hatası:', error.message, error.stack);
+          console.error('Kaydetme hatası:', error.message, error.stack);
           Alert.alert('Hata', `Fotoğraf kaydedilirken bir hata oluştu: ${error.message}`);
         } finally {
           setUploading(false);
