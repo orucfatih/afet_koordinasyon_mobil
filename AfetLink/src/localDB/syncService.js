@@ -94,14 +94,19 @@ const syncPhotos = async () => {
               latitude: photo.latitude,
               longitude: photo.longitude
             },
+            rubbleInfo: {
+              personCount: photo.person_count || 0,
+              hoursUnderRubble: photo.hours_under_rubble || 0,
+              additionalInfo: photo.additional_info || ""
+            },
             description: "",
-            severity: "normal",
-            type: "genel"
+            severity: photo.person_count > 5 ? "yüksek" : "normal",
+            type: "enkaz"
           });
 
         // Başarıyla yüklenen fotoğrafı yerel veritabanında işaretle
         await markPhotoAsSent(photo.id);
-        console.log(`Fotoğraf başarıyla senkronize edildi. ID: ${photo.id}`);
+        console.log(`Enkaz bildirimi başarıyla senkronize edildi. ID: ${photo.id}`);
       } catch (error) {
         console.error('Fotoğraf senkronizasyon hatası:', error);
       }
@@ -126,7 +131,7 @@ const uploadPhoto = async (localUri) => {
 
 //------------------------------------------
 
-const uploadImageToFirebase = async (uri, coordinates) => {
+const uploadImageToFirebase = async (uri, coordinates, rubbleInfo = {}) => {
   try {
     // URL formatını kontrol et
     const correctUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
@@ -151,9 +156,14 @@ const uploadImageToFirebase = async (uri, coordinates) => {
         fileName: fileName,
         status: "yeni",
         location: coordinates || { latitude: null, longitude: null },
+        rubbleInfo: {
+          personCount: rubbleInfo.personCount || 0,
+          hoursUnderRubble: rubbleInfo.hoursUnderRubble || 0,
+          additionalInfo: rubbleInfo.additionalInfo || ""
+        },
         description: "",
-        severity: "normal",
-        type: "genel"
+        severity: rubbleInfo.personCount > 5 ? "yüksek" : "normal",
+        type: "enkaz"
       });
 
     return downloadURL;

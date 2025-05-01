@@ -17,18 +17,14 @@ import {
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getAuth } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import app from '../../firebaseConfig';
+import auth from '@react-native-firebase/auth';
+import storage from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore';
 import DropDownPicker from 'react-native-dropdown-picker';
 import Geolocation from 'react-native-geolocation-service';
+import MapView, { Marker } from 'react-native-maps';
 
 const Missing = ({ navigation }) => {
-  const auth = getAuth(app);
-  const storage = getStorage(app);
-  const db = getFirestore(app);
-
   // İlçeler listesi
   const districts = [
     'Aliağa', 'Balçova', 'Bayraklı', 'Bornova', 'Buca', 'Çiğli', 'Gaziemir',
@@ -39,6 +35,8 @@ const Missing = ({ navigation }) => {
   const [hasLocationPermission, setHasLocationPermission] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [image, setImage] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   
   // Dropdown için state'ler
   const [genderOpen, setGenderOpen] = useState(false);
@@ -70,13 +68,15 @@ const Missing = ({ navigation }) => {
   );
 
   useEffect(() => {
-    // Her sayfa girişinde izinleri kontrol et
     checkPermissions();
   }, []);
 
   const checkPermissions = async () => {
     await checkStoragePermission();
     await checkLocationPermission();
+    if (hasLocationPermission) {
+      await fetchCurrentLocation();
+    }
   };
 
   const checkStoragePermission = async () => {
@@ -127,6 +127,25 @@ const Missing = ({ navigation }) => {
     }
   };
 
+  const fetchCurrentLocation = async () => {
+    try {
+      const position = await new Promise((resolve, reject) => {
+        Geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+      });
+      setCurrentLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      });
+    } catch (error) {
+      console.error('Mevcut konum alınırken hata:', error);
+      Alert.alert('Hata', 'Mevcut konum alınamadı, harita varsayılan konumda açılacak.');
+    }
+  };
+
   const pickImage = async () => {
     try {
       const options = {
@@ -148,97 +167,45 @@ const Missing = ({ navigation }) => {
     }
   };
 
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Konum İzni',
-            message: 'Uygulamanın konumunuza erişmesi gerekiyor.',
-            buttonNeutral: 'Daha Sonra Sor',
-            buttonNegative: 'İptal',
-            buttonPositive: 'Tamam'
-          }
-        );
-        setHasLocationPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        setHasLocationPermission(false);
-        return false;
-      }
-    } else {
-      return true;
+  const handleMapPress = (event) => {
+    const { coordinate } = event.nativeEvent;
+    setSelectedLocation(coordinate);
+  };
+
+  const saveSelectedLocation = () => {
+    if (!selectedLocation) {
+      Alert.alert('Uyarı', 'Lütfen haritadan bir konum seçin.');
+      return;
     }
-  };
-  
-  const getCurrentLocation = async () => {
-    const hasPermission = await requestLocationPermission();
-  
-    return new Promise((resolve, reject) => {
-      if (!hasPermission) {
-        console.log('Konum izni verilmedi');
-        return reject({ latitude: null, longitude: null });
-      }
-  
-      Geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Konum hatası:', error);
-          reject({ latitude: null, longitude: null });
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      );
-    });
-  };
 
-  const selectLocation = async () => {
-    try {
-      const currentLocation = await getCurrentLocation();
-      if (!currentLocation.latitude || !currentLocation.longitude) {
-        Alert.alert('Hata', 'Konum alınamadı.');
-        return;
-      }
-
-      // Mevcut son görülme konumu ile karşılaştırma
-      if (
-        formData.lastSeenLocation &&
-        formData.lastSeenLocation.latitude === currentLocation.latitude &&
-        formData.lastSeenLocation.longitude === currentLocation.longitude
-      ) {
-        Alert.alert(
-          'Konum Aynı',
-          'Mevcut konumunuz, zaten seçilmiş olan son görülme konumuyla aynı. Yine de güncellemek ister misiniz?',
-          [
-            { text: 'Hayır', style: 'cancel' },
-            {
-              text: 'Evet',
-              onPress: () => {
-                setFormData(prev => ({
-                  ...prev,
-                  lastSeenLocation: currentLocation
-                }));
-                Alert.alert('Başarılı', 'Konum güncellendi.');
-              }
+    if (
+      formData.lastSeenLocation &&
+      formData.lastSeenLocation.latitude === selectedLocation.latitude &&
+      formData.lastSeenLocation.longitude === selectedLocation.longitude
+    ) {
+      Alert.alert(
+        'Konum Aynı',
+        'Seçilen konum, zaten kaydedilmiş olan son görülme konumuyla aynı. Yine de güncellemek ister misiniz?',
+        [
+          { text: 'Hayır', style: 'cancel' },
+          {
+            text: 'Evet',
+            onPress: () => {
+              setFormData(prev => ({
+                ...prev,
+                lastSeenLocation: selectedLocation
+              }));
+              Alert.alert('Başarılı', 'Konum güncellendi.');
             }
-          ]
-        );
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          lastSeenLocation: currentLocation
-        }));
-        Alert.alert('Başarılı', 'Son görülme konumu kaydedildi.');
-      }
-    } catch (error) {
-      console.error('Konum alınırken hata:', error);
-      Alert.alert('Hata', 'Konum alınırken bir hata oluştu.');
+          }
+        ]
+      );
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        lastSeenLocation: selectedLocation
+      }));
+      Alert.alert('Başarılı', 'Son görülme konumu kaydedildi.');
     }
   };
 
@@ -275,35 +242,36 @@ const Missing = ({ navigation }) => {
       if (imageUri) {
         const response = await fetch(imageUri);
         const blob = await response.blob();
-        const fileName = `missing_${auth.currentUser.uid}_${Date.now()}.jpg`;
-        const storageRef = ref(storage, `missing-reports/${auth.currentUser.uid}/${fileName}`);
+        const fileName = `missing_${auth().currentUser.uid}_${Date.now()}.jpg`;
+        const storageRef = storage().ref(`missing-reports/${auth().currentUser.uid}/${fileName}`);
         
-        await uploadBytes(storageRef, blob);
-        imageUrl = await getDownloadURL(storageRef);
+        await storageRef.put(blob);
+        imageUrl = await storageRef.getDownloadURL();
       }
 
-      const docRef = doc(db, 'missing-reports', `${auth.currentUser.uid}_${Date.now()}`);
-      await setDoc(docRef, {
-        ...formData,
-        imageUrl,
-        reporterId: auth.currentUser.uid,
-        reporterEmail: auth.currentUser.email,
-        timestamp: new Date(),
-        status: 'active'
-      });
+      await firestore()
+        .collection('missing-reports')
+        .doc(`${auth().currentUser.uid}_${Date.now()}`)
+        .set({
+          ...formData,
+          imageUrl,
+          reporterId: auth().currentUser.uid,
+          reporterEmail: auth().currentUser.email,
+          timestamp: new Date(),
+          status: 'active'
+        });
 
       Alert.alert('Başarılı', 'Kayıp ihbarı başarıyla gönderildi.', [
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      console.log('Kayıp ihbarı gönderilirken hata:', error);
+      console.error('Kayıp ihbarı gönderilirken hata:', error);
       Alert.alert('Hata', 'Kayıp ihbarı gönderilirken bir hata oluştu.');
     } finally {
       setUploading(false);
     }
   };
 
-  // İzin gerekli ekranı
   if (hasStoragePermission === null || hasLocationPermission === null) {
     return (
       <View style={styles.permissionContainer}>
@@ -450,11 +418,42 @@ const Missing = ({ navigation }) => {
                   numberOfLines={3}
                 />
 
-                <TouchableOpacity style={styles.locationButton} onPress={selectLocation}>
-                  <Text style={styles.locationButtonText}>
-                    {formData.lastSeenLocation ? 'Son Görülme Konumu Seçildi' : 'Son Görülmeyi Konumum Olarak Seç'}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.mapContainer}>
+                  <Text style={styles.mapTitle}>Son Görülme Konumu Seçin</Text>
+                  <MapView
+                    style={styles.map}
+                    initialRegion={{
+                      latitude: currentLocation ? currentLocation.latitude : 38.4237, // İzmir merkezi
+                      longitude: currentLocation ? currentLocation.longitude : 27.1428,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    }}
+                    onPress={handleMapPress}
+                    showsUserLocation={!!currentLocation} // Mevcut konum varsa kullanıcı konumu göster
+                    zoomEnabled={true}
+                    zoomControlEnabled={true}
+                  >
+                    {selectedLocation && (
+                      <Marker
+                        coordinate={selectedLocation}
+                        title="Seçilen Konum"
+                        pinColor="red"
+                      />
+                    )}
+                    {currentLocation && (
+                      <Marker
+                        coordinate={currentLocation}
+                        title="Mevcut Konum"
+                        pinColor="blue"
+                      />
+                    )}
+                  </MapView>
+                  <TouchableOpacity style={styles.saveLocationButton} onPress={saveSelectedLocation}>
+                    <Text style={styles.saveLocationButtonText}>
+                      {formData.lastSeenLocation ? 'Konumu Güncelle' : 'Konumu Kaydet'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
                   style={styles.submitButton}
@@ -590,7 +589,6 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
   },
-  // Yeni izin ekranı stilleri
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -621,6 +619,35 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  mapContainer: {
+    marginTop: 20,
+    gap: 10,
+  },
+  mapTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  map: {
+    height: 300,
+    borderRadius: 8,
+  },
+  mapLoadingText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  saveLocationButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveLocationButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

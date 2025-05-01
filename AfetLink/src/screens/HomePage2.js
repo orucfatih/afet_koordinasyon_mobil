@@ -19,7 +19,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ProfileScreen, SettingsScreen, Info, CustomButton } from '../components/index';
+import { ProfileScreen, SettingsScreen, Info, CustomButton, ChatScreen } from '../components/index';
 import * as Animatable from 'react-native-animatable';
 import Geolocation from 'react-native-geolocation-service';
 import toplanmaAlanlari from '../../afet_toplanma_alanlari.json';
@@ -378,7 +378,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomePage2')}>
             <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
@@ -576,6 +576,8 @@ const HomePage2 = ({ navigation }) => {
         return <ProfileScreen />;
       case 'Settings':
         return <SettingsScreen />;
+      case 'Chat':
+        return <ChatScreen />;
       default:
         return <EarthquakeScreen />;
     }
@@ -616,10 +618,11 @@ const HomePage2 = ({ navigation }) => {
               </Animatable.View>
               <Text style={styles.tabLabel}>Ana Sayfa</Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={() => setCurrentTab('Profile')}
-              style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}
-            >
+              style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}>
+
               <Animatable.View 
                 animation={currentTab === 'Profile' ? 'modernPulse' : null} 
                 iterationCount="infinite"
@@ -650,6 +653,25 @@ const HomePage2 = ({ navigation }) => {
               </Animatable.View>
               <Text style={styles.tabLabel}>Ayarlar</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setCurrentTab('Chat')}
+              style={[styles.tab, currentTab === 'Chat' && styles.activeTab]}>
+                
+              <Animatable.View 
+                animation={currentTab === 'Chat' ? 'modernPulse' : null} 
+                iterationCount="infinite"
+                duration={1500}>
+
+                <Ionicons 
+                  name={currentTab === 'Chat' ? 'chatbubbles' : 'chatbubbles-outline'} 
+                  size={currentTab === 'Chat' ? 30 : 24} 
+                  color={currentTab === 'Chat' ? '#fff' : '#ccc'} 
+                />
+              </Animatable.View>
+              <Text style={styles.tabLabel}>Sohbet</Text>
+            </TouchableOpacity>
+
           </Animatable.View>
           <TouchableOpacity 
             style={styles.emergencyCallButton} 

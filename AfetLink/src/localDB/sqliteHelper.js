@@ -20,6 +20,9 @@ export const initDB = async () => {
         timestamp TEXT,
         latitude REAL,
         longitude REAL,
+        person_count INTEGER,
+        hours_under_rubble INTEGER,
+        additional_info TEXT,
         sent INTEGER DEFAULT 0
       );`
     );
@@ -31,19 +34,21 @@ export const initDB = async () => {
   }
 };
 
-export const savePhoto = async (uri, latitude, longitude) => {
+export const savePhoto = async (uri, latitude, longitude, rubbleInfo = {}) => {
   try {
     // Veritabanının başlatıldığından emin ol
     const db = await initDB();
     const timestamp = new Date().toISOString();
     
-    // Fotoğrafı kaydet
+    const { personCount = 0, hoursUnderRubble = 0, additionalInfo = '' } = rubbleInfo;
+    
+    // Fotoğrafı enkaz bilgileriyle kaydet
     const [result] = await db.executeSql(
-      'INSERT INTO photos (uri, timestamp, latitude, longitude, sent) VALUES (?, ?, ?, ?, ?)',
-      [uri, timestamp, latitude || null, longitude || null, 0]
+      'INSERT INTO photos (uri, timestamp, latitude, longitude, person_count, hours_under_rubble, additional_info, sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [uri, timestamp, latitude || null, longitude || null, personCount, hoursUnderRubble, additionalInfo, 0]
     );
     
-    console.log('Fotoğraf başarıyla kaydedildi, ID:', result.insertId);
+    console.log('Enkaz bildirimi başarıyla kaydedildi, ID:', result.insertId);
     return result;
   } catch (error) {
     console.error('Fotoğraf kaydetme hatası:', error);
