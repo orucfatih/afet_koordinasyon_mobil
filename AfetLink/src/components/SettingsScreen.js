@@ -17,13 +17,26 @@ import {
   PermissionsAndroid,
   Dimensions,
   StatusBar,
-  SafeAreaView
+  SafeAreaView,
+  ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DeviceInfo from 'react-native-device-info';
 import { Appearance } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { 
+  checkAndRequestSmsPermission,
+  checkAndRequestContactsPermission,
+  checkAndRequestLocationPermission,
+  getAllContacts,
+  sendSmsToContacts
+} from '../utils/contactsAndSms';
+import {
+  ContactPickerModal,
+  SendingModal,
+  SelectedContactsList
+} from './index';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +52,8 @@ const SettingsScreen = ({ navigation }) => {
   const [availableContacts, setAvailableContacts] = useState([]);
   const [savedMessage, setSavedMessage] = useState('');
   const [isEmergencyModeEnabled, setIsEmergencyModeEnabled] = useState(false);
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [sendProgress, setSendProgress] = useState(0);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -99,37 +114,11 @@ const SettingsScreen = ({ navigation }) => {
             'Bildirim İzni Gerekli',
             'Bildirimleri alabilmek için izin vermeniz gerekmektedir.'
           );
-          setIsNotificationsEnabled(false);
-          await AsyncStorage.setItem('isNotificationsEnabled', 'false');
           return false;
         }
         return true;
       } catch (error) {
         console.error('Bildirim izni alınırken hata:', error);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const checkAndRequestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert(
-            'Konum İzni Gerekli',
-            'Konum servislerini kullanabilmek için izin vermeniz gerekmektedir.'
-          );
-          setIsLocationEnabled(false);
-          await AsyncStorage.setItem('isLocationEnabled', 'false');
-          return false;
-        }
-        return true;
-      } catch (error) {
-        console.error('Konum izni alınırken hata:', error);
         return false;
       }
     }
@@ -241,40 +230,132 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  const handleAddContact = async () => {
-    try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status === 'granted') {
-        const { data } = await Contacts.getContactsAsync({
-          fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
-        });
+  const handleSendFamilyMessage = async () => {
+    // SMS iznini kontrol et
+    const hasSmsPermission = await checkAndRequestSmsPermission();
+    if (!hasSmsPermission) return;
 
-        if (data.length > 0) {
-          setContactPickerVisible(true);
-          setAvailableContacts(data);
-        }
+    // Seçili kişiler ve mesaj kontrolü
+    if (selectedContacts.length === 0) {
+      Alert.alert('Uyarı', 'Lütfen en az bir kişi ekleyin.');
+      return;
+    }
+
+    if (!familyMessage || familyMessage.trim() === '') {
+      Alert.alert('Uyarı', 'Lütfen gönderilecek bir mesaj yazın.');
+      return;
+    }
+
+    // Onay al
+    Alert.alert(
+      'Onay',
+      `${selectedContacts.length} kişiye şu mesajı göndermek istediğinizden emin misiniz?\n\n"${familyMessage}"`,
+      [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Gönder', onPress: () => sendMessages() }
+      ]
+    );
+  };
+
+  const sendMessages = async () => {
+    try {
+      setIsSendingSms(true);
+      setSendProgress(0);
+      
+      // Utils fonksiyonunu kullanarak SMS'leri gönderelim
+      const result = await sendSmsToContacts(selectedContacts, familyMessage, setSendProgress);
+      
+      setIsSendingSms(false);
+      
+      // Sonuç bilgisi
+      if (result.successCount > 0 && result.failCount === 0) {
+        Alert.alert('Başarılı', `${result.successCount} kişiye mesaj başarıyla gönderildi.`);
+      } else if (result.successCount > 0 && result.failCount > 0) {
+        Alert.alert('Kısmen Başarılı', `${result.successCount} kişiye mesaj gönderildi, ${result.failCount} kişiye gönderilemedi.`);
+      } else {
+        Alert.alert('Başarısız', 'Mesaj gönderilemedi. Lütfen tekrar deneyin.');
       }
     } catch (error) {
-      console.error('Error accessing contacts:', error);
+      console.error('Mesaj gönderilirken hata:', error);
+      setIsSendingSms(false);
+      Alert.alert('Hata', 'Mesaj gönderilirken bir hata oluştu.');
+    }
+  };
+
+  const handleAddContact = async () => {
+    try {
+      // Kişilere erişim izni iste
+      const hasPermission = await checkAndRequestContactsPermission();
+      if (!hasPermission) return;
+      
+      // Utils fonksiyonunu kullanarak kişileri al
+      const contacts = await getAllContacts();
+      
+      if (contacts.length > 0) {
+        setContactPickerVisible(true);
+        setAvailableContacts(contacts);
+      } else {
+        Alert.alert('Bilgi', 'Rehberinizde hiç kişi bulunamadı.');
+      }
+    } catch (error) {
+      console.error('Kişilere erişirken genel hata:', error);
       Alert.alert('Hata', 'Kişiler listesine erişilemedi.');
     }
   };
 
   const handleContactSelect = async (contact) => {
+    if (!contact.phoneNumbers || contact.phoneNumbers.length === 0) {
+      Alert.alert('Uyarı', 'Bu kişinin telefon numarası bulunmuyor.');
+      return;
+    }
+    
+    // Birden fazla numara varsa seçim yaptır
+    if (contact.phoneNumbers.length > 1) {
+      Alert.alert(
+        'Numara Seçin',
+        'Bu kişinin birden fazla numarası var. Hangisini kullanmak istersiniz?',
+        contact.phoneNumbers.map(phone => ({
+          text: `${phone.label}: ${phone.number}`,
+          onPress: () => addContactWithNumber(contact, phone.number)
+        }))
+      );
+    } else {
+      // Tek numara varsa direkt ekle
+      addContactWithNumber(contact, contact.phoneNumbers[0].number);
+    }
+  };
+
+  const addContactWithNumber = (contact, phoneNumber) => {
     const newContact = {
       id: contact.id,
       name: contact.name,
-      phoneNumber: contact.phoneNumbers?.[0]?.number,
+      phoneNumber: phoneNumber,
     };
+
+    // Zaten eklenmiş mi kontrol et
+    const isAlreadyAdded = selectedContacts.some(c => c.id === contact.id);
+    if (isAlreadyAdded) {
+      Alert.alert('Bilgi', 'Bu kişi zaten eklenmiş.');
+      return;
+    }
 
     const updatedContacts = [...selectedContacts, newContact];
     setSelectedContacts(updatedContacts);
-    await AsyncStorage.setItem('selectedContacts', JSON.stringify(updatedContacts));
+    
+    // AsyncStorage'a kaydet
+    AsyncStorage.setItem('selectedContacts', JSON.stringify(updatedContacts))
+      .catch(err => console.error('Kişileri kaydederken hata:', err));
+      
     setContactPickerVisible(false);
   };
 
   const handleRemoveContact = (contactId) => {
-    setSelectedContacts(prev => prev.filter(contact => contact.id !== contactId));
+    const updatedContacts = selectedContacts.filter(contact => contact.id !== contactId);
+    setSelectedContacts(updatedContacts);
+    
+    // AsyncStorage'a kaydet
+    AsyncStorage.setItem('selectedContacts', JSON.stringify(updatedContacts))
+      .catch(err => console.error('Kişileri kaydederken hata:', err));
   };
 
   const handleSaveMessage = async () => {
@@ -286,65 +367,32 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
-  const renderContactPicker = () => (
-    <Modal
-      visible={isContactPickerVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setContactPickerVisible(false)}>
+  return (
+    <View style={[
+      styles.mainContainer,
+      isEmergencyModeEnabled && styles.emergencyContainer]}>
 
-      <View style={styles.modalContainer}>
-        <View style={[styles.modalContent, styles.contactPickerModal]}>
-          <Text style={styles.modalTitle}>Kişi Seçin</Text>
-          <FlatList
-            data={availableContacts}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.contactListItem}
-                onPress={() => handleContactSelect(item)}
-              >
-                <Text style={styles.contactListName}>{item.name}</Text>
-                {item.phoneNumbers?.[0] && (
-                  <Text style={styles.contactListPhone}>
-                    {item.phoneNumbers[0].number}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
-          />
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setContactPickerVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Kapat</Text>
-          </TouchableOpacity>
+      <StatusBar
+        backgroundColor="#2D2D2D"
+        barStyle="light-content"
+        translucent={true}/>
+
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.topBar}>
+          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
         </View>
-      </View>
-    </Modal>
-   );
 
-   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={[
-        styles.mainContainer,
-        isEmergencyModeEnabled && styles.emergencyContainer]}>
-
-        <StatusBar
-          backgroundColor="#2D2D2D"
-          barStyle="light-content"
-          translucent={true}/>
-
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.topBar}>
-            <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
-          </View>
-
-          <ScrollView 
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}>
-            <View style={styles.settingItem}>
+        <ScrollView 
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={true}>
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            onPress={toggleNotifications} 
+            style={{flex: 1}}>
+            <View style={styles.settingItem} accessible={true}>
               <View style={styles.settingLabel}>
                 <Ionicons name="notifications" size={20} color="#555" style={styles.icon} />
                 <Text style={styles.settingText}>Bildirimler</Text>
@@ -356,8 +404,13 @@ const SettingsScreen = ({ navigation }) => {
                 value={isNotificationsEnabled}
               />
             </View>
-            
-            <View style={styles.settingItem}>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            onPress={toggleLocation} 
+            style={{flex: 1}}>
+            <View style={styles.settingItem} accessible={true}>
               <View style={styles.settingLabel}>
                 <Ionicons name="location" size={20} color="#555" style={styles.icon} />
                 <Text style={styles.settingText}>Konum Servisleri</Text>
@@ -369,8 +422,13 @@ const SettingsScreen = ({ navigation }) => {
                 value={isLocationEnabled}
               />
             </View>
+          </TouchableOpacity>
 
-            <View style={styles.settingItem}>
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            onPress={toggleAutoUpdates} 
+            style={{flex: 1}}>
+            <View style={styles.settingItem} accessible={true}>
               <View style={styles.settingLabel}>
                 <Ionicons name="sync" size={20} color="#555" style={styles.icon} />
                 <Text style={styles.settingText}>Otomatik Güncellemeler</Text>
@@ -382,11 +440,16 @@ const SettingsScreen = ({ navigation }) => {
                 value={isAutoUpdatesEnabled}
               />
             </View>
+          </TouchableOpacity>
 
+          <TouchableOpacity 
+            activeOpacity={0.7} 
+            onPress={toggleEmergencyMode} 
+            style={{flex: 1}}>
             <View style={[
               styles.settingItem,
               isEmergencyModeEnabled && styles.emergencySettingItem
-            ]}>
+            ]} accessible={true}>
               <View style={styles.settingLabel}>
                 <Ionicons 
                   name="battery-dead" 
@@ -406,63 +469,74 @@ const SettingsScreen = ({ navigation }) => {
                 value={isEmergencyModeEnabled}
               />
             </View>
+          </TouchableOpacity>
 
-            <Text style={[
-              styles.emergencyNote,
-              isEmergencyModeEnabled && styles.emergencyNoteActive
-            ]}>
-              *** Bu mod enkaz altında ya da enerji gereksiniminde kullanılmalıdır ***
-            </Text>
+          <Text style={[
+            styles.emergencyNote,
+            isEmergencyModeEnabled && styles.emergencyNoteActive
+          ]}>
+            *** Bu mod enkaz altında ya da enerji gereksiniminde kullanılmalıdır ***
+          </Text>
 
-            <View style={styles.familyNotificationSection}>
-              <Text style={styles.sectionTitle}>Ailene Bildir</Text>
-              
-              <TextInput
-                style={styles.messageInput}
-                placeholder="Ailenize göndermek istediğiniz mesajı yazın..."
-                value={familyMessage}
-                onChangeText={setFamilyMessage}
-                multiline
-                numberOfLines={4}
-              />
+          <View style={styles.familyNotificationSection}>
+            <Text style={styles.sectionTitle}>Ailene Bildir</Text>
+            
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Ailenize göndermek istediğiniz mesajı yazın"
+              placeholderTextColor="lightgray"
+              value={familyMessage}
+              onChangeText={setFamilyMessage}
+              multiline
+              numberOfLines={4}
+            />
 
-              <TouchableOpacity 
-                style={styles.saveMessageButton}
-                onPress={handleSaveMessage}
-              >
-                <Text style={styles.saveMessageButtonText}>Mesajı Kaydet</Text>
-              </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.saveMessageButton}
+              onPress={handleSaveMessage}
+            >
+              <Text style={styles.saveMessageButtonText}>Mesajı Kaydet</Text>
+            </TouchableOpacity>
 
-              <View style={styles.selectedContactsContainer}>
-                {selectedContacts.map(contact => (
-                  <View key={contact.id} style={styles.contactItem}>
-                    <Text style={styles.contactName}>{contact.name}</Text>
-                    <Text style={styles.contactPhone}>{contact.phoneNumber}</Text>
-                    <TouchableOpacity onPress={() => handleRemoveContact(contact.id)}>
-                      <Text style={styles.removeContact}>X</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
+            <SelectedContactsList 
+              contacts={selectedContacts} 
+              onRemoveContact={handleRemoveContact} 
+            />
 
-              <TouchableOpacity 
-                style={styles.addContactButton}
-                onPress={handleAddContact}
-              >
-                <Text style={styles.addContactButtonText}>Kişi Ekle</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
-              <Text style={styles.saveButtonText}>Ayarları Kaydet</Text>
+            <TouchableOpacity 
+              style={styles.addContactButton}
+              onPress={handleAddContact}
+            >
+              <Text style={styles.addContactButtonText}>Kişi Ekle</Text>
             </TouchableOpacity>
             
-          </ScrollView>
+            <TouchableOpacity 
+              style={styles.sendMessageButton}
+              onPress={handleSendFamilyMessage}
+            >
+              <Text style={styles.sendMessageButtonText}>Mesaj Gönder</Text>
+            </TouchableOpacity>
+          </View>
 
-          {renderContactPicker()}
-        </SafeAreaView>
-      </View>
-    </TouchableWithoutFeedback>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
+            <Text style={styles.saveButtonText}>Ayarları Kaydet</Text>
+          </TouchableOpacity>
+          
+        </ScrollView>
+
+        <ContactPickerModal 
+          visible={isContactPickerVisible}
+          onClose={() => setContactPickerVisible(false)}
+          contacts={availableContacts}
+          onSelectContact={handleContactSelect}
+        />
+
+        <SendingModal 
+          visible={isSendingSms} 
+          progress={sendProgress} 
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -518,6 +592,11 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     backgroundColor: '#fff',
   },
+  settingLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -571,13 +650,15 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: '#D32F2F',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
+    padding: 15,
+    alignItems: 'center',
+    margin: 15,
+    borderRadius: 10,
   },
   closeButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   familyNotificationSection: {
     marginTop: 20,
@@ -611,73 +692,51 @@ const styles = StyleSheet.create({
   },
   contactItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f8f8',
     padding: 10,
-    borderRadius: 5,
-    marginBottom: 5,
+    borderRadius: 10,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  selectedContactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1976D2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  selectedContactInitial: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  selectedContactInfo: {
+    flex: 1,
   },
   contactName: {
     fontSize: 16,
+    fontWeight: 'bold',
     color: '#333',
-  },
-  removeContact: {
-    color: '#D32F2F',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  addContactButton: {
-    backgroundColor: '#1976D2',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  addContactButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-  },
-  saveMessageButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  saveMessageButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  contactPickerModal: {
-    maxHeight: '80%',
-    width: '90%',
-  },
-  contactListItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  contactListName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  contactListPhone: {
-    fontSize: 14,
-    color: '#666',
   },
   contactPhone: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
+  },
+  removeContactButton: {
+    padding: 5,
+  },
+  noContactsText: {
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 10,
   },
   emergencyContainer: {
     backgroundColor: '#000', // OLED ekranlar için tam siyah
@@ -698,5 +757,137 @@ const styles = StyleSheet.create({
   },
   emergencyNoteActive: {
     color: '#666', // Koyu gri
+  },
+  sendMessageButton: {
+    backgroundColor: '#D32F2F',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  sendMessageButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  sendingModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  sendingModalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+  },
+  sendingModalText: {
+    marginTop: 15,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  contactPickerModal: {
+    maxHeight: '80%',
+    width: '90%',
+    padding: 0,
+    borderRadius: 15,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginVertical: 15,
+    color: '#333',
+    textAlign: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    marginHorizontal: 15,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  contactList: {
+    marginHorizontal: 15,
+    width: '90%',
+  },
+  contactListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    width: '100%',
+  },
+  contactAvatarContainer: {
+    marginRight: 15,
+  },
+  contactAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#D32F2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contactInitial: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactListName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  contactListPhone: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginLeft: 65,
+  },
+  addContactButton: {
+    backgroundColor: '#1976D2',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  addContactButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  saveMessageButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  saveMessageButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

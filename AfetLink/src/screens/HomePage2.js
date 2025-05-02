@@ -471,6 +471,13 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             <Text style={styles.reportButtonText}>Rapor İşlemleri</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.requestButton} 
+            onPress={() => navigation.navigate('Request')}>
+            <Ionicons name="alert-circle" size={24} color="#fff" />
+            <Text style={styles.requestButtonText}>İhtiyaç Bildir</Text>
+          </TouchableOpacity>
+
           <MapView
             style={styles.map}
             region={region}
@@ -1061,6 +1068,29 @@ export const styles = StyleSheet.create({
      elevation: 5,
   },
   reportButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  requestButton: {
+    backgroundColor: '#FF7043',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+     width: 0,
+     height: 2,
+    },
+     shadowOpacity: 0.25,
+     shadowRadius: 3.84,
+     elevation: 5,
+  },
+  requestButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',

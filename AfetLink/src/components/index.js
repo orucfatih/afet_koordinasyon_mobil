@@ -14,6 +14,9 @@ import Agreement from "./Agreement";
 import Horn from "./Horn";
 import ViewAll2 from "./ViewAll2";
 import VerificationModal from "./VerificationModal";
+import ContactPickerModal from './ContactPickerModal';
+import SendingModal from './SendingModal';
+import SelectedContactsList from './SelectedContactsList';
 
 export{
     Loading,
@@ -32,4 +35,7 @@ export{
     Agreement,
     ViewAll2,
     VerificationModal,
+    ContactPickerModal,
+    SendingModal,
+    SelectedContactsList,
 }

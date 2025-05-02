@@ -8,6 +8,7 @@ import SignUpPage2 from "./SignUpPage2";
 import UnderDebrisScreen from "./UnderDebrisScreen";
 import Missing from "./Missing";
 import Report from "./Report";
+import Request from "./Request";
 
 export{
 
@@ -21,4 +22,5 @@ export{
     UnderDebrisScreen,
     Missing,
     Report,
+    Request,
 }
