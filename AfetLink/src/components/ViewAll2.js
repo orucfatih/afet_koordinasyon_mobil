@@ -10,7 +10,8 @@ import {
   SafeAreaView,
   Alert,
   PermissionsAndroid,
-  Linking
+  Linking,
+  Image
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Geolocation from 'react-native-geolocation-service';
@@ -156,16 +157,26 @@ const ViewAll2 = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <View style={styles.mainContainer}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#2D2D2D"
+        translucent={true}
+      />
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Toplanma Alanları</Text>
+          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+          <View style={styles.placeholder} />
         </View>
 
         <ScrollView style={styles.scrollView}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Toplanma Alanları</Text>
+          </View>
+
           <View style={styles.content}>
             {isLoading ? (
               <Text style={styles.loadingText}>Toplanma alanları yükleniyor...</Text>
@@ -194,38 +205,61 @@ const ViewAll2 = ({ navigation }) => {
             )}
           </View>
         </ScrollView>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#2D2D2D',
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
     backgroundColor: '#2D2D2D',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    elevation: 2,
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    borderTopWidth: 2,
+    borderTopColor: '#444',
+    elevation: 5,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    zIndex: 10,
+    position: 'relative',
+    minHeight: 75,
   },
   backButton: {
-    padding: 8,
+    padding: 10,
+    zIndex: 20,
   },
-  headerTitle: {
-    fontSize: 20,
+  logoImage: {
+    width: 50,
+    height: 50,
+    position: 'absolute',
+    left: '50%',
+    marginLeft: -25,
+    top: 10,
+  },
+  placeholder: {
+    width: 44,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingBottom: 10,
+    paddingHorizontal: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 16,
-    color: 'white',
   },
   scrollView: {
     flex: 1,
@@ -240,13 +274,15 @@ const styles = StyleSheet.create({
   },
   assemblyButton: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   assemblyButtonContent: {
     flexDirection: 'row',
@@ -254,9 +290,9 @@ const styles = StyleSheet.create({
   },
   assemblyIconWrapper: {
     backgroundColor: '#D32F2F',
-    padding: 8,
-    borderRadius: 8,
-    marginRight: 12,
+    padding: 12,
+    borderRadius: 10,
+    marginRight: 15,
   },
   assemblyInfo: {
     flex: 1,

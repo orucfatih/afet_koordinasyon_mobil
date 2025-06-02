@@ -4,6 +4,7 @@ import { HomePage, UnderDebrisScreen, Missing } from '../screens/index.js'
 import { ViewAll, Horn, ViewAll2 } from '../components/index.js'
 import CameraScreen from '../screens/CameraScreen'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import İnformation from '../components/İnformation'
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ const UserStack = () => {
       <Stack.Screen name='Horn' component={Horn} />
       <Stack.Screen name='Missing' component={Missing} />
       <Stack.Screen name='ViewAll2' component={ViewAll2} />
+      <Stack.Screen name='İnformation' component={İnformation} />
 
     </Stack.Navigator>
   )

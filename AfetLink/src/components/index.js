@@ -17,6 +17,7 @@ import VerificationModal from "./VerificationModal";
 import ContactPickerModal from './ContactPickerModal';
 import SendingModal from './SendingModal';
 import SelectedContactsList from './SelectedContactsList';
+import Information from './İnformation';
 
 export{
     Loading,
@@ -38,4 +39,5 @@ export{
     ContactPickerModal,
     SendingModal,
     SelectedContactsList,
+    Information,
 }

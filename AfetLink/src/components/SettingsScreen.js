@@ -54,6 +54,8 @@ const SettingsScreen = ({ navigation }) => {
   const [isEmergencyModeEnabled, setIsEmergencyModeEnabled] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [sendProgress, setSendProgress] = useState(0);
+  const [originalBrightness, setOriginalBrightness] = useState(0.5);
+  const [info, setInfo] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -179,39 +181,85 @@ const SettingsScreen = ({ navigation }) => {
 
           // Wi-Fi kontrolü
           const netInfo = await NetInfo.fetch();
-          if (netInfo.type === 'wifi') {
-            Alert.alert(
-              'Wi-Fi Aktif',
-              'Pil tasarrufu için Wi-Fi bağlantınızı kapatmanız önerilir.'
-            );
-          }
+          const wifiWarning = netInfo.type === 'wifi' 
+            ? '\n⚠️ Wi-Fi aktif - Pil tasarrufu için kapatmanız önerilir' 
+            : '\n✅ Wi-Fi kapalı - İyi!';
+
+          // Bluetooth durumu kontrolü
+          const bluetoothWarning = '\n📱 Bluetooth\'u da kapatmayı unutmayın';
 
           Alert.alert(
-            'Afet Modu Aktif',
-            `Pil tasarrufu için aşağıdaki önlemler alındı:\n\n` +
-            '- Karanlık tema aktifleştirildi (OLED ekranlarda maksimum tasarruf)\n' +
-            '- Arka plan işlemleri sınırlandırıldı\n\n' +
-            'Öneriler:\n' +
-            '- Koyu renk uygulamalar kullanın\n' +
-            '- Wi-Fi ve Bluetooth\'u kapatın\n' +
-            '- Gereksiz uygulamaları kapatın\n' +
-            '- Telefonu güç tasarrufu modunda kullanın\n\n' +
-            `Mevcut Pil Durumu: %${Math.round(batteryLevel * 100)}\n` +
-            `Şarj Durumu: ${isCharging ? 'Şarj Oluyor' : 'Şarj Olmuyor'}`
+            '🚨 AFET MODU AKTİF',
+            `🔋 Maksimum pil tasarrufu sağlanıyor...\n\n` +
+            `✅ YAPILAN AYARLAMALAR:\n` +
+            `• Karanlık tema aktifleştirildi\n` +
+            `• Arka plan işlemleri sınırlandırıldı\n\n` +
+            `📋 MANUEL AYARLAMALAR:\n` +
+            `• Ekran parlaklığını minimum seviyeye düşürün\n` +
+            `• Uçak modunu açıp sadece acil durumlarda kapatın\n` +
+            `• Gereksiz uygulamaları tamamen kapatın\n` +
+            `• Konum servislerini kapatın\n` +
+            `• Otomatik e-posta kontrolünü durdurun\n` +
+            `• Push bildirimlerini minimum seviyeye çekin\n` +
+            `• Telefonunuzu güç tasarrufu modunda kullanın\n\n` +
+            `🔋 MEVCUT PİL DURUMU:\n` +
+            `Pil Seviyesi: %${Math.round(batteryLevel * 100)}\n` +
+            `Şarj Durumu: ${isCharging ? '🔌 Şarj Oluyor' : '🔋 Şarj Olmuyor'}\n` +
+            `${wifiWarning}${bluetoothWarning}\n\n` +
+            `⏰ Bu ayarlar afet durumu bittiğinde otomatik olarak normale döner.`,
+            [
+              {
+                text: 'ANLADIM',
+                style: 'default',
+                onPress: () => {
+                  // Ek bildirim
+                  setTimeout(() => {
+                    Alert.alert(
+                      '💡 AFET MODU İPUÇLARI',
+                      `🔋 BATARYA UZATMA TAKTİKLERİ:\n\n` +
+                      `• Telefonunuzu 15-20°C sıcaklıkta tutun\n` +
+                      `• Yalnızca gerekli aramaları yapın\n` +
+                      `• SMS kullanmayı tercih edin (daha az enerji)\n` +
+                      `• Oyun ve video uygulamalarını kullanmayın\n` +
+                      `• Kamerayı gereksiz yere açmayın\n` +
+                      `• Flaş kullanımını acil durumlarla sınırlayın\n\n` +
+                      `🆘 ACİL DURUM İLETİŞİMİ:\n` +
+                      `• 112 - Genel acil durum\n` +
+                      `• 110 - İtfaiye\n` +
+                      `• 155 - Polis\n` +
+                      `• 156 - Jandarma\n\n` +
+                      `📱 Bu bilgiler uygulama içinde de mevcut.`,
+                      [{ text: 'TAMAM', style: 'default' }]
+                    );
+                  }, 2000);
+                }
+              }
+            ]
           );
         } catch (error) {
           console.error('Afet modu ayarlanırken hata:', error);
+          Alert.alert(
+            'Uyarı', 
+            'Bazı sistem ayarları değiştirilemedi, ancak temel afet modu aktifleştirildi.'
+          );
         }
       } else {
         // Normal moda dön
         try {
+          // Normal moda dön
           Appearance.setColorScheme('light');
+          
+          Alert.alert(
+            '✅ Normal Mod',
+            'Karanlık tema normale döndürüldü.\n\nDiğer sistem ayarlarını (parlaklık, Wi-Fi, vb.) manuel olarak eski haline getirmeyi unutmayın.'
+          );
         } catch (error) {
           console.error('Normal moda dönerken hata:', error);
         }
       }
     } catch (error) {
       console.error('Afet modu değiştirilirken hata:', error);
+      Alert.alert('Hata', 'Afet modu ayarlanırken bir hata oluştu.');
     }
   };
 
@@ -378,8 +426,16 @@ const SettingsScreen = ({ navigation }) => {
         translucent={true}/>
 
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+      <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
+            <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
+            <Ionicons name="megaphone" size={25} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
+            <Ionicons name="information-circle" size={25} color="white" />
+          </TouchableOpacity>
         </View>
 
         <ScrollView 
@@ -564,13 +620,17 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#2D2D2D',
+    paddingVertical: 25,
+    borderTopWidth: 2,
+    borderTopColor: '#444',
+    elevation: 5,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    zIndex: 10,
+    position: 'relative',
     minHeight: 75,
   },
   logoImage: {
@@ -578,7 +638,17 @@ const styles = StyleSheet.create({
     height: 50,
     position: 'absolute',
     left: width / 2 - 25,
-    marginTop: 10,
+    top: -25,
+  },
+  whistleButton: {
+    position: 'absolute',
+    left: 20,
+    top: 20,
+  },
+  info: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
   },
   settingItem: {
     flexDirection: 'row',

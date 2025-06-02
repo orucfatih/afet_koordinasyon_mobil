@@ -23,7 +23,7 @@ import auth from '@react-native-firebase/auth';
 
 const { width } = Dimensions.get('window');
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const [name, setName] = useState('');
@@ -109,8 +109,16 @@ const ProfileScreen = () => {
         translucent={true}/>
 
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+      <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.navigate('HomePage')}>
+            <Image source={require('../../assets/images/deneme.png')} style={styles.logoImage} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.whistleButton} onPress={() => navigation.navigate('Horn')}>
+            <Ionicons name="megaphone" size={25} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.info} onPress={() => setInfo(true)}>
+            <Ionicons name="information-circle" size={25} color="white" />
+          </TouchableOpacity>
         </View>
 
         <ScrollView 
@@ -200,13 +208,17 @@ const styles = StyleSheet.create({
   },
   topBar: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#2D2D2D',
+    paddingVertical: 25,
+    borderTopWidth: 2,
+    borderTopColor: '#444',
+    elevation: 5,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    zIndex: 10,
+    position: 'relative',
     minHeight: 75,
   },
   logoImage: {
@@ -214,7 +226,17 @@ const styles = StyleSheet.create({
     height: 50,
     position: 'absolute',
     left: width / 2 - 25,
-    marginTop: 10,
+    top: -25,
+  },
+  whistleButton: {
+    position: 'absolute',
+    left: 20,
+    top: 20,
+  },
+  info: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
   },
   container: {
     flex: 1,
