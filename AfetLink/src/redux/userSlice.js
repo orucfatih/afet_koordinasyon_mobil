@@ -51,10 +51,11 @@ export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, pa
 
       // Kullanıcının personel olup olmadığını kontrol et
       const idTokenResult = await user.getIdTokenResult();
-      const isStaff = idTokenResult.claims.role === "staff";
+      const isStaff = (idTokenResult.claims.role === "staff" || idTokenResult.claims.role === "supervisor");
 
       if (!isStaff) {
-          return rejectWithValue("Personel yetkiniz bulunmamaktadır.");
+        await auth().signOut();
+        return rejectWithValue("Personel yetkiniz bulunmamaktadır.");
       }
 
       // Kullanıcının Firestore'daki verisini al
@@ -66,7 +67,10 @@ export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, pa
       }
 
       const userData = userDoc.data();
-      const phoneNumber = userData.phone;
+      //const phoneNumber = userData.phone;
+      //!! Firebase Phone Auth'a test için eklemiş olduğumuz numara. Lütfen değiştirmeyin.
+      const phoneNumber = "+905555555555";
+
 
       if (!phoneNumber) {
         return rejectWithValue("Telefon numaranız sistemde kayıtlı değil.");
@@ -152,7 +156,10 @@ export const verifyPhoneCode = createAsyncThunk('user/verifyPhoneCode', async ({
       }
 
       const userData = userDoc.data();
-      const phoneNumber = userData.phone;
+      //const phoneNumber = userData.phone;
+      //!! Firebase Phone Auth'a test için eklemiş olduğumuz numara. Lütfen değiştirmeyin.
+      const phoneNumber = "+905555555555";
+
 
       if (!phoneNumber) {
         return rejectWithValue("Telefon numaranız sistemde kayıtlı değil.");
