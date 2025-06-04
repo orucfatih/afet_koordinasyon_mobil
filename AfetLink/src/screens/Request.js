@@ -280,6 +280,14 @@ const Request = ({ navigation }) => {
                   placeholderTextColor="lightgray"
                   value={formData.contactName}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, contactName: text }))}
+                  autoCorrect={false}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  keyboardType="default"
+                  returnKeyType="next"
+                  {...(Platform.OS === 'ios' && {
+                    clearButtonMode: 'while-editing',
+                  })}
                 />
 
                 <TextInput
@@ -289,6 +297,10 @@ const Request = ({ navigation }) => {
                   value={formData.phone}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
                   keyboardType="phone-pad"
+                  returnKeyType="next"
+                  {...(Platform.OS === 'ios' && {
+                    clearButtonMode: 'while-editing',
+                  })}
                 />
 
                 <DropDownPicker
@@ -305,6 +317,8 @@ const Request = ({ navigation }) => {
                   placeholder="İhtiyaç Kategorisi Seçin"
                   listMode="SCROLLVIEW"
                   zIndex={4000}
+                  searchable={true}
+                  searchPlaceholder="Kategori Ara..."
                 />
 
                 <DropDownPicker
@@ -348,6 +362,7 @@ const Request = ({ navigation }) => {
                   value={formData.peopleCount}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, peopleCount: text }))}
                   keyboardType="numeric"
+                  returnKeyType="next"
                 />
 
                 <TextInput
@@ -358,6 +373,15 @@ const Request = ({ navigation }) => {
                   onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
                   multiline
                   numberOfLines={4}
+                  autoCorrect={false}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  keyboardType="default"
+                  returnKeyType="default"
+                  blurOnSubmit={false}
+                  {...(Platform.OS === 'ios' && {
+                    clearButtonMode: 'while-editing',
+                  })}
                 />
 
                 <TouchableOpacity

@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 
 import React, { useState, useEffect} from 'react';
@@ -15,6 +16,8 @@ import { Loading, CustomTextInput, CustomButton, VerificationModal } from '../co
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading, staffLogin, staffAutoLogin, logout } from '../redux/userSlice.js';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import LocationTrackingService from '../services/LocationTrackingService';
+import * as Animatable from 'react-native-animatable';
 
 const generateCaptcha = () => {
   return Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 karakterlik captcha
@@ -36,7 +39,6 @@ const LoginPage2 = ({ navigation }) => {
     dispatch(staffAutoLogin());
   }, []);
 
-
   const { isLoading } = useSelector((state) => state.user);
   const { isStaffAuth } = useSelector((state) => state.user);
 
@@ -45,6 +47,12 @@ const LoginPage2 = ({ navigation }) => {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz.');
       return;
     }
+    
+    console.log('Captcha Kontrolü:', {
+      girilen: captchaInput.toUpperCase(),
+      beklenen: captchaCode,
+      esit: captchaInput.toUpperCase() === captchaCode
+    });
     
     if (captchaInput.toUpperCase() !== captchaCode) {
       Alert.alert('Hata', 'Captcha doğrulaması başarısız. Tekrar deneyin.');
@@ -60,104 +68,200 @@ const LoginPage2 = ({ navigation }) => {
         console.log('Giriş başarılı:');
         setTempVerificationId(response.verificationId);
         setTempStaffData(response.staffData);
+        // Başarılı giriş sonrası captcha'yı temizle
+        setCaptchaInput('');
+        setCaptchaCode(generateCaptcha());
+        setCaptchaAngle(Math.random() * 20 - 10);
       })
       .catch((error) => {
         console.log('Giriş başarısız:', error);
         Alert.alert('Hata', error, [{ text: 'Tamam', style: 'destructive' }]);
+        // Hatalı giriş sonrası captcha'yı yenile
+        setCaptchaCode(generateCaptcha());
+        setCaptchaAngle(Math.random() * 20 - 10);
+        setCaptchaInput('');
       });
   };
 
-  const handleModalClose = (isSuccess) => {
-    if (!isSuccess) {
+  const handleModalClose = async (isSuccess) => {
+    if (isSuccess) {
+      // Giriş başarılı - Konum takibini başlat ve HomePage2'ye yönlendir
+      console.log('Doğrulama başarılı, konum takibi başlatılıyor...');
+      
+      const locationService = LocationTrackingService.getInstance();
+      await locationService.startLocationTracking();
+      
+      // HomePage2'ye yönlendir
+      navigation.navigate('HomePage2');
+    } else {
       dispatch(logout());
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("AraMenu")}>
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-
-        <Text style={styles.title}>Hoşgeldiniz</Text>
-
-        <View style={styles.iconContainer}>
-            <Ionicons name="log-in-outline" size={100} color="#007BFF" />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <CustomTextInput
-            secureTextEntry={false}
-            placeholder="Email Adresinizi Girin"
-            onChangeText={(email) => setEmail(email)}
-            value={email}/>
-
-          <Text style={styles.label}>Şifre</Text>
-          <View style={styles.passwordInputContainer}>
-            <CustomTextInput
-              secureTextEntry={secureText} // Şifreyi göster veya gizle
-              placeholder="Şifre Girin"
-              onChangeText={(password) => setPassword(password)}
-              value={password}/>
-
-            <TouchableOpacity
-              onPress={() => setSecureText(!secureText)}
-              style={styles.eyeIcon}
-              accessibilityLabel={secureText ? "Şifreyi Göster" : "Şifreyi Gizle"}>
-
-              <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#000000" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Captcha Gösterimi */}
-        <View style={styles.captchaContainer}>
-          <View style={styles.captchaWrapper}>
-            <Text style={styles.captchaCode}>{captchaCode}</Text>
-            <View style={[styles.captchaStrike, { transform: [{ rotate: `${captchaAngle}deg` }] }]} />
-            <View style={[styles.captchaStrikeSecondary, { transform: [{ rotate: `${-captchaAngle}deg` }] }]} />
-          </View>
-          <TouchableOpacity
-            onPress={() => {
-              setCaptchaCode(generateCaptcha());
-              setCaptchaAngle(Math.random() * 20 - 10);
-            }}
-            style={styles.refreshCaptcha}>
-
-            <Ionicons name="refresh-circle" size={32} color="#007BFF" />
+      {/* Background Gradient */}
+      <View style={styles.backgroundGradient} />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContainer} 
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+      >
+        {/* Header with Back Button */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.navigate("AraMenu2")}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Captcha Girişi */}
-        <TextInput
-          style={styles.captchaInput}
-          placeholder="Captcha Kodunu Girin"
-          placeholderTextColor="lightgray"
-          onChangeText={(text) => setCaptchaInput(text)}
-          value={captchaInput}
-          textAlign="center"/>
+        {/* Main Content */}
+        <Animatable.View 
+          animation="fadeInUp" 
+          duration={800}
+          style={styles.contentContainer}
+        >
+          <Animatable.Text 
+            animation="fadeInDown" 
+            delay={200}
+            style={styles.title}
+          >
+            Personel Girişi
+          </Animatable.Text>
+          
+          <Animatable.View 
+            animation="zoomIn" 
+            delay={400}
+            style={styles.iconContainer}
+          >
+            <View style={styles.iconWrapper}>
+              <Ionicons name="shield-checkmark" size={60} color="#2196F3" />
+            </View>
+          </Animatable.View>
 
-        <CustomButton
-          onPress={handleLogin}
-          title="Giriş Yap"
-          style={styles.primaryButton}/>
+          <Animatable.View 
+            animation="fadeInUp" 
+            delay={600}
+            style={styles.inputContainer}
+          >
+            <Text style={styles.label}>Email</Text>
+            <CustomTextInput
+              secureTextEntry={false}
+              placeholder="Email Adresinizi Girin"
+              onChangeText={(email) => setEmail(email)}
+              value={email}
+              style={styles.textInput}
+            />
+
+            <Text style={styles.label}>Şifre</Text>
+            <View style={styles.passwordInputContainer}>
+              <CustomTextInput
+                secureTextEntry={secureText}
+                placeholder="Şifre Girin"
+                onChangeText={(password) => setPassword(password)}
+                value={password}
+                style={styles.textInput}
+              />
+              <TouchableOpacity
+                onPress={() => setSecureText(!secureText)}
+                style={styles.eyeIcon}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={secureText ? "eye-off" : "eye"} size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
+
+          {/* Captcha Section */}
+          <Animatable.View 
+            animation="fadeInUp" 
+            delay={800}
+            style={styles.captchaSection}
+          >
+            <View style={styles.captchaContainer}>
+              <View style={styles.captchaWrapper}>
+                <Text style={styles.captchaCode}>{captchaCode}</Text>
+                <View style={[styles.captchaStrike, { transform: [{ rotate: `${captchaAngle}deg` }] }]} />
+                <View style={[styles.captchaStrikeSecondary, { transform: [{ rotate: `${-captchaAngle}deg` }] }]} />
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setCaptchaCode(generateCaptcha());
+                  setCaptchaAngle(Math.random() * 20 - 10);
+                  setCaptchaInput('');
+                }}
+                style={styles.refreshCaptcha}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-circle" size={32} color="#2196F3" />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.captchaInput}
+              placeholder="Captcha Kodunu Girin"
+              placeholderTextColor="#999"
+              onChangeText={(text) => setCaptchaInput(text)}
+              value={captchaInput}
+              textAlign="center"
+              autoCapitalize="characters"
+              maxLength={4}
+              autoCorrect={false}
+            />
+          </Animatable.View>
+
+          <Animatable.View 
+            animation="fadeInUp" 
+            delay={1000}
+            style={styles.buttonSection}
+          >
+            <CustomButton
+              onPress={handleLogin}
+              title="Giriş Yap"
+              style={styles.primaryButton}
+            />
+
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('SignUpPage2')}
+              style={styles.linkContainer}
+            >
+              <Text style={styles.linkText}>Hesabınız yok mu? Kaydolun</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+
+          {/* Security Notice */}
+          <Animatable.View 
+            animation="fadeInUp" 
+            delay={1200}
+            style={styles.securityNotice}
+          >
+            <Ionicons name="lock-closed" size={18} color="#2196F3" />
+            <Text style={styles.securityText}>
+              Bu giriş sadece yetkili personel içindir
+            </Text>
+          </Animatable.View>
+        </Animatable.View>
 
         <VerificationModal
             visible={isStaffAuth}
             onClose={handleModalClose}
             verificationId={tempVerificationId}
-            staffData={tempStaffData}/>
+            staffData={tempStaffData}
+        />
 
         {isLoading ? (
           <Loading changeIsLoading={() => dispatch(setIsLoading(false))} />
         ) : null}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -166,80 +270,124 @@ export default LoginPage2;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#1a1a1a',
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: '#2D2D2D',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   scrollContainer: {
     flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingBottom: 40,
+  },
+  header: {
+    paddingTop: 50,
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingBottom: 20,
   },
   backButton: {
-    position: "absolute",
-    top: 40, // Üstten boşluk
-    left: 20, // Soldan boşluk
-    padding: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#343A40',
+    color: 'white',
     marginBottom: 20,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  iconContainer: { 
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconContainer: {
     marginBottom: 30,
+  },
+  iconWrapper: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    padding: 25,
+    borderRadius: 50,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
   },
   inputContainer: {
     width: '100%',
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    color: '#495057',
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
     marginBottom: 8,
     marginLeft: 4,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  primaryButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 15,
+  textInput: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 12,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  passwordInputContainer: {
+    position: 'relative',
     width: '100%',
   },
-  linkText: {
-    fontSize: 14,
-    color: '#007BFF',
-    textDecorationLine: 'underline',
-    marginTop: 10,
+  eyeIcon: {
+    position: 'absolute',
+    right: 18,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: 5,
+  },
+  captchaSection: {
+    width: '100%',
+    marginBottom: 20,
   },
   captchaContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   captchaWrapper: {
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 12,
+    padding: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   captchaCode: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#333',
     letterSpacing: 4,
     paddingHorizontal: 10,
@@ -248,99 +396,86 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: 2,
-    backgroundColor: '#888',
+    backgroundColor: '#666',
     opacity: 0.7,
   },
   captchaStrikeSecondary: {
     position: 'absolute',
     width: '80%',
     height: 1.5,
-    backgroundColor: '#666',
+    backgroundColor: '#888',
     opacity: 0.6,
     top: -5,
   },
   refreshCaptcha: {
     marginLeft: 15,
-    padding: 5,
-    borderRadius: 50,
-    backgroundColor: '#fff',
+    padding: 8,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   captchaInput: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 12,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
     textAlign: 'center',
-    marginBottom: 20,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
     borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    padding: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  modalText: {
-    fontSize: 14,
-    textAlign: "justify",
-    marginBottom: 5,
-  },
-  bulletPoint: {
-    fontSize: 14,
-    marginLeft: 10,
-    marginBottom: 3,
-  },
-  buttonContainer: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-  acceptButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  acceptButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    borderColor: 'rgba(255,255,255,0.2)',
     fontSize: 16,
   },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  passwordInputContainer: {
-    position: 'relative',
-  },
-  passwordInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+  buttonSection: {
     width: '100%',
-    marginBottom: 15,
+    alignItems: 'center',
   },
-  eyeIcon: {
-    position: 'absolute',
-    right: 10,
-    top: 10,
+  primaryButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    width: '100%',
+    shadowColor: '#2196F3',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    marginBottom: 20,
+  },
+  securityNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  securityText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 20,
+  },
+  linkContainer: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+  },
+  linkText: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
   },
 });

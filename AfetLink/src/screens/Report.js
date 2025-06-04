@@ -20,6 +20,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Picker } from '@react-native-picker/picker';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import app from '../../firebaseConfig';
+
 // API_KEY'i buraya ekleyin
 const GOOGLE_CLOUD_API_KEY = 'AIzaSyDJA0mwT65t6sEDg4qow-L00LuK1nZycPo';
 
@@ -33,6 +37,9 @@ const Report = ({ navigation }) => {
   const [isListening, setIsListening] = useState(false);
   const [currentField, setCurrentField] = useState('');
   const [audioRecording, setAudioRecording] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Yeni rapor için state'ler
   const [newReport, setNewReport] = useState({
@@ -55,8 +62,25 @@ const Report = ({ navigation }) => {
   ];
 
   useEffect(() => {
-    loadReports();
+    // Authentication state dinleyicisi
+    const unsubscribe = auth().onAuthStateChanged((user) => {
+      setUser(user);
+      setAuthLoading(false);
+      if (user) {
+        console.log('Kullanıcı oturum açmış:', user.email);
+      } else {
+        console.log('Kullanıcı oturum açmamış');
+      }
+    });
+
+    return unsubscribe; // Cleanup
   }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadReports();
+    }
+  }, [authLoading, user]);
 
   const requestMicrophonePermission = async () => {
     try {
@@ -144,6 +168,7 @@ const Report = ({ navigation }) => {
   };
 
   const loadReports = async () => {
+    setLoading(true);
     try {
       const savedReports = await AsyncStorage.getItem('reports');
       if (savedReports) {
@@ -151,6 +176,8 @@ const Report = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Raporlar yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -169,6 +196,8 @@ const Report = ({ navigation }) => {
       return;
     }
 
+    setLoading(true);
+
     const report = {
       id: Date.now().toString(),
       ...newReport,
@@ -176,8 +205,25 @@ const Report = ({ navigation }) => {
       updated_at: Date.now() / 1000
     };
 
+    try {
+      // Önce yerel listeyi güncelle
     const updatedReports = [...reports, report];
     await saveReports(updatedReports);
+      
+      // Eğer kullanıcı oturum açmışsa Firestore'a da kaydet
+      if (auth().currentUser) {
+        await firestore()
+          .collection('reports')
+          .doc(`${auth().currentUser.uid}_${Date.now()}`)
+          .set({
+            ...report,
+            requesterId: auth().currentUser.uid,
+            requesterEmail: auth().currentUser.email,
+            timestamp: new Date(),
+            status: 'active'
+          });
+      }
+      
     setModalVisible(false);
     setNewReport({
       bolge: '',
@@ -189,16 +235,28 @@ const Report = ({ navigation }) => {
       created_at: Date.now() / 1000,
       updated_at: Date.now() / 1000
     });
+      
+      Alert.alert('Başarılı', 'Rapor başarıyla kaydedildi.');
+      
+    } catch (error) {
+      console.error('Rapor ekleme hatası:', error);
+      Alert.alert('Hata', 'Rapor kaydedilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpdateReport = async () => {
     if (!selectedReport) return;
+
+    setLoading(true);
 
     const updatedReport = {
       ...selectedReport,
       updated_at: Date.now() / 1000
     };
 
+    try {
     const updatedReports = reports.map(report =>
       report.id === selectedReport.id ? updatedReport : report
     );
@@ -206,6 +264,15 @@ const Report = ({ navigation }) => {
     await saveReports(updatedReports);
     setEditModalVisible(false);
     setSelectedReport(null);
+      
+      Alert.alert('Başarılı', 'Rapor başarıyla güncellendi.');
+      
+    } catch (error) {
+      console.error('Rapor güncelleme hatası:', error);
+      Alert.alert('Hata', 'Rapor güncellenirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteReport = async (reportId) => {
@@ -221,8 +288,17 @@ const Report = ({ navigation }) => {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
+            setLoading(true);
+            try {
             const updatedReports = reports.filter(report => report.id !== reportId);
             await saveReports(updatedReports);
+              Alert.alert('Başarılı', 'Rapor başarıyla silindi.');
+            } catch (error) {
+              console.error('Rapor silme hatası:', error);
+              Alert.alert('Hata', 'Rapor silinirken bir hata oluştu.');
+            } finally {
+              setLoading(false);
+            }
           },
         },
       ],
@@ -252,6 +328,15 @@ const Report = ({ navigation }) => {
           value={value}
           onChangeText={onChangeText}
           placeholder={`${label} giriniz...`}
+          autoCorrect={false}
+          spellCheck={false}
+          autoCapitalize="none"
+          keyboardType="default"
+          returnKeyType={field === 'detaylar' || field === 'ihtiyaclar' ? 'default' : 'next'}
+          blurOnSubmit={field === 'detaylar' || field === 'ihtiyaclar' ? false : true}
+          {...(Platform.OS === 'ios' && {
+            clearButtonMode: 'while-editing',
+          })}
         />
         <TouchableOpacity
           style={styles.voiceButton}
@@ -315,6 +400,12 @@ const Report = ({ navigation }) => {
         backgroundColor="#2D2D2D"
         translucent={true}
       />
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#D32F2F" />
+          <Text style={styles.loadingText}>İşlem yapılıyor...</Text>
+        </View>
+      )}
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
@@ -327,6 +418,7 @@ const Report = ({ navigation }) => {
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setModalVisible(true)}
+            disabled={loading}
           >
             <Ionicons name="add" size={24} color="white" />
             <Text style={styles.addButtonText}>Yeni Rapor</Text>
@@ -339,6 +431,14 @@ const Report = ({ navigation }) => {
             placeholder="Afet Bölgesi Ara"
             value={searchRegion}
             onChangeText={setSearchRegion}
+            autoCorrect={false}
+            spellCheck={false}
+            autoCapitalize="none"
+            keyboardType="default"
+            returnKeyType="search"
+            {...(Platform.OS === 'ios' && {
+              clearButtonMode: 'while-editing',
+            })}
           />
 
           <View style={styles.typePickerContainer}>
@@ -367,6 +467,8 @@ const Report = ({ navigation }) => {
           style={styles.list}
           contentContainerStyle={filterReports().length === 0 ? {flex: 1} : {paddingBottom: 20}}
           ListEmptyComponent={renderEmptyList}
+          refreshing={loading}
+          onRefresh={loadReports}
         />
 
         {/* Yeni Rapor Modalı */}
@@ -441,14 +543,20 @@ const Report = ({ navigation }) => {
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
                     onPress={() => setModalVisible(false)}
+                    disabled={loading}
                   >
                     <Text style={styles.modalButtonText}>İptal</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={[styles.modalButton, styles.saveButton, loading && styles.disabledButton]}
                     onPress={handleAddReport}
+                    disabled={loading}
                   >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
                     <Text style={styles.modalButtonText}>Kaydet</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -528,14 +636,20 @@ const Report = ({ navigation }) => {
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
                     onPress={() => setEditModalVisible(false)}
+                    disabled={loading}
                   >
                     <Text style={styles.modalButtonText}>İptal</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={[styles.modalButton, styles.saveButton, loading && styles.disabledButton]}
                     onPress={handleUpdateReport}
+                    disabled={loading}
                   >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
                     <Text style={styles.modalButtonText}>Güncelle</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -795,6 +909,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 10,
+    fontSize: 16,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 

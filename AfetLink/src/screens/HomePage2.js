@@ -13,7 +13,8 @@ import {
   Platform,
   SafeAreaView,
   Alert,
-  PermissionsAndroid
+  PermissionsAndroid,
+  AppState,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,6 +24,9 @@ import { ProfileScreen, SettingsScreen, Info, CustomButton, ChatScreen } from '.
 import * as Animatable from 'react-native-animatable';
 import Geolocation from 'react-native-geolocation-service';
 import toplanmaAlanlari from '../../afet_toplanma_alanlari.json';
+import LocationTrackingService from '../services/LocationTrackingService';
+import database from '@react-native-firebase/database';
+import auth from '@react-native-firebase/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -104,13 +108,17 @@ const getCurrentLocation = async () => {
   });
 };
 
+const GOOGLE_PLACES_API_KEY = 'AIzaSyDJA0mwT65t6sEDg4qow-L00LuK1nZycPo';
+
 const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [earthquakeData, setEarthquakeData] = useState([]);
   const [info, setInfo] = useState(false);
   const [assemblyAreas, setAssemblyAreas] = useState([]);
+  const [nearbyHospitals, setNearbyHospitals] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('assembly'); // 'assembly' or 'hospitals'
  
    const [region, setRegion] = useState({
      latitude: 38.4192, // İzmir merkez
@@ -134,6 +142,39 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
       longitudeDelta: Math.max(Math.min(newRegion.longitudeDelta, 15), 0.1),
     };
     setRegion(limitedRegion);
+  };
+
+  const fetchNearbyHospitals = async (latitude, longitude) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=10000&type=hospital&key=${GOOGLE_PLACES_API_KEY}`
+      );
+
+      if (response.data.results) {
+        const hospitals = response.data.results.map(hospital => ({
+          id: hospital.place_id,
+          name: hospital.name,
+          address: hospital.vicinity,
+          rating: hospital.rating || 'N/A',
+          latitude: hospital.geometry.location.lat,
+          longitude: hospital.geometry.location.lng,
+          distance: calculateDistance(
+            latitude,
+            longitude,
+            hospital.geometry.location.lat,
+            hospital.geometry.location.lng
+          ),
+          isOpen: hospital.opening_hours ? hospital.opening_hours.open_now : null,
+          photoReference: hospital.photos ? hospital.photos[0].photo_reference : null
+        }))
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 4);
+
+        setNearbyHospitals(hospitals);
+      }
+    } catch (error) {
+      console.error('Hastane verisi alınırken hata:', error);
+    }
   };
 
   useEffect(() => {
@@ -187,6 +228,9 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
 
           console.log('En yakın 4 toplanma alanı:', areasWithDistance);
           setAssemblyAreas(areasWithDistance);
+
+          // Hastaneleri de al
+          await fetchNearbyHospitals(userLoc.latitude, userLoc.longitude);
           
           setRegion({
             latitude: userLoc.latitude,
@@ -254,7 +298,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
               lon: parseFloat(item.Lon) || null,
             };
           })
-          .filter(item => item !== null)
+          .filter(item => item !== null && item.magnitude >= 3.0)
           .slice(0, 10);
 
         console.log('İşlenmiş veri:', data);
@@ -315,13 +359,27 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
               </View>
             </View>
           </View>
+          <View style={styles.seismicWaves}>
+            <View style={styles.seismicGraph}>
+              {/* Modern sismik dalga */}
+              <View style={styles.waveContainer}>
+                <View style={[styles.modernWave, { height: 8, marginLeft: 0 }]} />
+                <View style={[styles.modernWave, { height: 16, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 24, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 32, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 20, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 12, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 18, marginLeft: 4 }]} />
+                <View style={[styles.modernWave, { height: 10, marginLeft: 4 }]} />
+              </View>
+            </View>
+          </View>
         </View>
         <View style={styles.earthquakeInfo}>
           <Text style={[styles.earthquakeLocation, { fontSize: getFontSizeByLocation(item.location) }]}>{item.location}</Text>
           <Text style={styles.earthquakeTime}>{item.time}</Text>
           <Text style={styles.earthquakeDate}>{item.date}</Text>
         </View>
-        <Ionicons style={styles.dalga} name="water" size={30} color="black" />
       </View>
     );
   };
@@ -433,49 +491,81 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
               </TouchableOpacity>
             </Animatable.View>
 
-            <CustomButton
-            title="ENKAZ ALTINDAYIM"
-            onPress={() => navigation.navigate('UnderDebris')}
-            style={{marginHorizontal: 20, marginBottom: 20}}/>
+            {/* Modern Enkaz Altındayım Butonu */}
+            <TouchableOpacity 
+              style={styles.modernEnkazButton}
+              onPress={() => navigation.navigate('UnderDebris')}
+            >
+              <View style={styles.modernButtonContent}>
+                <View style={styles.modernButtonIcon}>
+                  <Ionicons name="alert-circle" size={28} color="white" />
+                </View>
+                <View style={styles.modernButtonTextContainer}>
+                  <Text style={styles.modernButtonTitle}>ENKAZ ALTINDAYIM</Text>
+                  <Text style={styles.modernButtonSubtitle}>Acil yardım çağır</Text>
+                </View>
+              </View>
+              <View style={styles.modernButtonGlow} />
+            </TouchableOpacity>
           </View>
 
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={styles.smallButton}
+              style={styles.modernSmallButton}
               onPress={handleFamilyNotification}
             >
-              <Ionicons name="notifications" size={24} color="#fff" />
-              <Text style={styles.smallButtonText}>Ailene Bildir</Text>
+              <View style={styles.smallButtonGradient}>
+                <View style={styles.smallButtonIconWrapper}>
+                  <Ionicons name="notifications" size={22} color="#fff" />
+                </View>
+                <Text style={styles.modernSmallButtonText}>Ailene Bildir</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-             style={styles.smallButton}
+             style={styles.modernSmallButton}
              onPress={() => navigation.navigate('Missing')}>
-             <Ionicons name="person" size={24} color="#fff" />
-             <Text style={styles.smallButtonText}>Kayıp İhbar</Text>
+              <View style={styles.smallButtonGradient}>
+                <View style={styles.smallButtonIconWrapper}>
+                  <Ionicons name="person" size={22} color="#fff" />
+                </View>
+                <Text style={styles.modernSmallButtonText}>Kayıp İhbar</Text>
+              </View>
            </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.smallButton} 
-              onPress={() => navigation.navigate('Missing')}>
-                <Ionicons name="information-circle" size={24} color="#fff" />
-                <Text style={styles.smallButtonText}>Deprem Bilgilendirme</Text>
+              style={styles.modernSmallButton} 
+              onPress={() => navigation.navigate('İnformation')}>
+              <View style={styles.smallButtonGradient}>
+                <View style={styles.smallButtonIconWrapper}>
+                  <Ionicons name="information-circle" size={22} color="#fff" />
+                </View>
+                <Text style={styles.modernSmallButtonText}>Deprem Bilgilendirme</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity 
-            style={styles.reportButton} 
+            style={styles.modernSmallButton} 
             onPress={() => navigation.navigate('Report')}>
-            <Ionicons name="document-text" size={24} color="#fff" />
-            <Text style={styles.reportButtonText}>Rapor İşlemleri</Text>
+            <View style={styles.smallButtonGradient}>
+              <View style={styles.smallButtonIconWrapper}>
+                <Ionicons name="document-text" size={22} color="#fff" />
+              </View>
+              <Text style={styles.modernSmallButtonText}>Rapor İşlemleri</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.requestButton} 
+            style={styles.modernSmallButton} 
             onPress={() => navigation.navigate('Request')}>
-            <Ionicons name="alert-circle" size={24} color="#fff" />
-            <Text style={styles.requestButtonText}>İhtiyaç Bildir</Text>
+            <View style={styles.smallButtonGradient}>
+              <View style={styles.smallButtonIconWrapper}>
+                <Ionicons name="alert-circle" size={22} color="#fff" />
+              </View>
+              <Text style={styles.modernSmallButtonText}>İhtiyaç Bildir</Text>
+            </View>
           </TouchableOpacity>
 
           <MapView
@@ -507,6 +597,18 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
                 }}
               />
             ))}
+            {nearbyHospitals.map((hospital, index) => (
+              <Marker
+                key={`hospital-${index}`}
+                coordinate={{
+                  latitude: hospital.latitude,
+                  longitude: hospital.longitude,
+                }}
+                title={hospital.name}
+                description={`${hospital.address}\nUzaklık: ${hospital.distance.toFixed(2)} km`}
+                pinColor="red"
+              />
+            ))}
             {userLocation && (
               <Marker
                 coordinate={userLocation}
@@ -516,42 +618,114 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
             )}
           </MapView>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>En Yakın Toplanma Alanları</Text>
-            <TouchableOpacity onPress={() => {navigation.navigate('ViewAll2')}}> 
-              <Text style={styles.viewAll}>Tümünü Gör</Text>
+          {/* Tab Navigation */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity 
+              style={[styles.tabButton, activeTab === 'assembly' && styles.activeTabButton]}
+              onPress={() => setActiveTab('assembly')}
+            >
+              <Ionicons 
+                name="people" 
+                size={20} 
+                color={activeTab === 'assembly' ? '#fff' : '#666'} 
+                style={styles.tabIcon}
+              />
+              <Text style={[styles.tabText, activeTab === 'assembly' && styles.activeTabText]}>
+                Toplanma Alanları
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.tabButton, activeTab === 'hospitals' && styles.activeTabButton]}
+              onPress={() => setActiveTab('hospitals')}
+            >
+              <Ionicons 
+                name="medical" 
+                size={20} 
+                color={activeTab === 'hospitals' ? '#fff' : '#666'} 
+                style={styles.tabIcon}
+              />
+              <Text style={[styles.tabText, activeTab === 'hospitals' && styles.activeTabText]}>
+                En Yakın Hastaneler
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.assemblyButtonsContainer}>
-            {isLoading ? (
-              <Text style={styles.loadingText}>Toplanma alanları yükleniyor...</Text>
-            ) : (
-             assemblyAreas.map((area) => (
-              <TouchableOpacity
-                key={area.id}
-                style={styles.assemblyButton}
-                onPress={() => handleNavigateToAssemblyArea(area.latitude, area.longitude)}
-              >
-                <View style={styles.assemblyButtonContent}>
-                  <View style={styles.assemblyIconWrapper}>
-                    <Ionicons name="people" size={30} color="white" />
+          {/* Content based on active tab */}
+          {activeTab === 'assembly' && (
+            <View style={styles.assemblyButtonsContainer}>
+              {isLoading ? (
+                <Text style={styles.loadingText}>Toplanma alanları yükleniyor...</Text>
+              ) : (
+               assemblyAreas.map((area) => (
+                <TouchableOpacity
+                  key={area.id}
+                  style={styles.assemblyButton}
+                  onPress={() => handleNavigateToAssemblyArea(area.latitude, area.longitude)}
+                >
+                  <View style={styles.assemblyButtonContent}>
+                    <View style={styles.assemblyIconWrapper}>
+                      <Ionicons name="people" size={30} color="white" />
+                    </View>
+                    <View style={styles.assemblyInfo}>
+                      <Text style={styles.assemblyButtonText}>{area.name}</Text>
+                      <Text style={styles.assemblyDetails}>{area.district} - {area.neighborhood}</Text>
+                      <Text style={styles.assemblyDetails}>{area.street}</Text>
+                        {area.distance && (
+                          <Text style={styles.assemblyDetails}>
+                            Mesafe: {area.distance.toFixed(2)} km
+                          </Text>
+                        )}
+                    </View>
                   </View>
-                  <View style={styles.assemblyInfo}>
-                    <Text style={styles.assemblyButtonText}>{area.name}</Text>
-                    <Text style={styles.assemblyDetails}>{area.district} - {area.neighborhood}</Text>
-                    <Text style={styles.assemblyDetails}>{area.street}</Text>
-                      {area.distance && (
-                        <Text style={styles.assemblyDetails}>
-                          Mesafe: {area.distance.toFixed(2)} km
-                        </Text>
-                      )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              ))
+            )}
+            </View>
           )}
-          </View>
+
+          {activeTab === 'hospitals' && (
+            <View style={styles.assemblyButtonsContainer}>
+              {isLoading ? (
+                <Text style={styles.loadingText}>Hastaneler yükleniyor...</Text>
+              ) : nearbyHospitals.length > 0 ? (
+                nearbyHospitals.map((hospital) => (
+                  <TouchableOpacity
+                    key={hospital.id}
+                    style={styles.assemblyButton}
+                    onPress={() => handleNavigateToAssemblyArea(hospital.latitude, hospital.longitude)}
+                  >
+                    <View style={styles.assemblyButtonContent}>
+                      <View style={[styles.assemblyIconWrapper, { backgroundColor: '#D32F2F' }]}>
+                        <Ionicons name="medical" size={30} color="white" />
+                      </View>
+                      <View style={styles.assemblyInfo}>
+                        <Text style={styles.assemblyButtonText}>{hospital.name}</Text>
+                        <Text style={styles.assemblyDetails}>{hospital.address}</Text>
+                        <View style={styles.hospitalDetailsRow}>
+                          {hospital.rating !== 'N/A' && (
+                            <Text style={styles.hospitalRating}>
+                              ⭐ {hospital.rating}
+                            </Text>
+                          )}
+                          {hospital.isOpen !== null && (
+                            <Text style={[styles.hospitalStatus, { color: hospital.isOpen ? '#4CAF50' : '#F44336' }]}>
+                              {hospital.isOpen ? '🟢 Açık' : '🔴 Kapalı'}
+                            </Text>
+                          )}
+                        </View>
+                        <Text style={styles.assemblyDetails}>
+                          Mesafe: {hospital.distance.toFixed(2)} km
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.loadingText}>Yakında hastane bulunamadı</Text>
+              )}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -568,11 +742,54 @@ const HomePage2 = ({ navigation }) => {
       try {
         const userToken = await AsyncStorage.getItem('staffToken');
         setIsAuthenticated(!!userToken);
+        
+        // Eğer kullanıcı oturum açmışsa konum takibini başlat
+        if (userToken) {
+          console.log('HomePage2 - Kullanıcı oturum açmış, konum takibi başlatılıyor...');
+          const locationService = LocationTrackingService.getInstance();
+          await locationService.startLocationTracking();
+        }
       } catch (error) {
         console.error('Error checking authentication', error);
       }
     };
     checkAuthentication();
+  }, []);
+
+  // App state değişikliklerini dinle (background/foreground)
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState) => {
+      const locationService = LocationTrackingService.getInstance();
+      
+      if (nextAppState === 'active') {
+        // App foreground'a geldiğinde konum takibini yeniden başlat
+        console.log('App foreground - Konum takibi kontrol ediliyor...');
+        if (isAuthenticated && !locationService.isTrackingActive()) {
+          console.log('Konum takibi yeniden başlatılıyor...');
+          await locationService.startLocationTracking();
+        }
+      } else if (nextAppState === 'background') {
+        // App background'a gittiğinde konum takibi devam etsin
+        console.log('App background - Konum takibi devam ediyor...');
+        // Battery tasarrufu için isteğe bağlı olarak durdurabilirsin:
+        // locationService.stopLocationTracking();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, [isAuthenticated]);
+
+  // Component unmount edildiğinde konum takibini durdur
+  useEffect(() => {
+    return () => {
+      // Sadece app tamamen kapanırken durduralım, tab değişiminde değil
+      console.log('HomePage2 component unmounting...');
+      // LocationTrackingService.getInstance().stopLocationTracking();
+    };
   }, []);
 
   const renderScreen = () => {
@@ -595,7 +812,11 @@ const HomePage2 = ({ navigation }) => {
   };
 
   if (!isAuthenticated) {
-    return <Text>Loading...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Yükleniyor...</Text>
+      </View>
+    );
   }
 
   return (
@@ -613,70 +834,71 @@ const HomePage2 = ({ navigation }) => {
               style={[styles.tab, currentTab === 'Earthquake' && styles.activeTab]}
             >
               <Animatable.View 
-                animation={currentTab === 'Earthquake' ? 'modernPulse' : null} 
-                iterationCount="infinite"
-                duration={1500}
+                animation={currentTab === 'Earthquake' ? 'fadeIn' : null} 
+                duration={300}
+                style={[styles.tabIconWrapper, currentTab === 'Earthquake' && styles.activeTabIconWrapper]}
               >
                 <Ionicons 
                   name={currentTab === 'Earthquake' ? 'home' : 'home-outline'} 
-                  size={currentTab === 'Earthquake' ? 30 : 24} 
-                  color={currentTab === 'Earthquake' ? '#fff' : '#ccc'} 
+                  size={24} 
+                  color={currentTab === 'Earthquake' ? '#fff' : '#bbb'} 
                 />
               </Animatable.View>
-              <Text style={styles.tabLabel}>Ana Sayfa</Text>
+              <Text style={[styles.tabLabel, currentTab === 'Earthquake' && styles.activeTabLabel]}>Ana Sayfa</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               onPress={() => setCurrentTab('Profile')}
-              style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}>
-
+              style={[styles.tab, currentTab === 'Profile' && styles.activeTab]}
+            >
               <Animatable.View 
-                animation={currentTab === 'Profile' ? 'modernPulse' : null} 
-                iterationCount="infinite"
-                duration={1500}
+                animation={currentTab === 'Profile' ? 'fadeIn' : null} 
+                duration={300}
+                style={[styles.tabIconWrapper, currentTab === 'Profile' && styles.activeTabIconWrapper]}
               >
                 <Ionicons 
                   name={currentTab === 'Profile' ? 'person' : 'person-outline'} 
-                  size={currentTab === 'Profile' ? 30 : 24} 
-                  color={currentTab === 'Profile' ? '#fff' : '#ccc'} 
+                  size={24} 
+                  color={currentTab === 'Profile' ? '#fff' : '#bbb'} 
                 />
               </Animatable.View>
-              <Text style={styles.tabLabel}>Profil</Text>
+              <Text style={[styles.tabLabel, currentTab === 'Profile' && styles.activeTabLabel]}>Profil</Text>
             </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={() => setCurrentTab('Settings')}
               style={[styles.tab, currentTab === 'Settings' && styles.activeTab]}
             >
               <Animatable.View 
-                animation={currentTab === 'Settings' ? 'modernPulse' : null} 
-                iterationCount="infinite"
-                duration={1500}
+                animation={currentTab === 'Settings' ? 'fadeIn' : null} 
+                duration={300}
+                style={[styles.tabIconWrapper, currentTab === 'Settings' && styles.activeTabIconWrapper]}
               >
                 <Ionicons 
                   name={currentTab === 'Settings' ? 'settings' : 'settings-outline'} 
-                  size={currentTab === 'Settings' ? 30 : 24} 
-                  color={currentTab === 'Settings' ? '#fff' : '#ccc'} 
+                  size={24} 
+                  color={currentTab === 'Settings' ? '#fff' : '#bbb'} 
                 />
               </Animatable.View>
-              <Text style={styles.tabLabel}>Ayarlar</Text>
+              <Text style={[styles.tabLabel, currentTab === 'Settings' && styles.activeTabLabel]}>Ayarlar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setCurrentTab('Chat')}
-              style={[styles.tab, currentTab === 'Chat' && styles.activeTab]}>
-                
+              style={[styles.tab, currentTab === 'Chat' && styles.activeTab]}
+            >
               <Animatable.View 
-                animation={currentTab === 'Chat' ? 'modernPulse' : null} 
-                iterationCount="infinite"
-                duration={1500}>
-
+                animation={currentTab === 'Chat' ? 'fadeIn' : null} 
+                duration={300}
+                style={[styles.tabIconWrapper, currentTab === 'Chat' && styles.activeTabIconWrapper]}
+              >
                 <Ionicons 
                   name={currentTab === 'Chat' ? 'chatbubbles' : 'chatbubbles-outline'} 
-                  size={currentTab === 'Chat' ? 30 : 24} 
-                  color={currentTab === 'Chat' ? '#fff' : '#ccc'} 
+                  size={24} 
+                  color={currentTab === 'Chat' ? '#fff' : '#bbb'} 
                 />
               </Animatable.View>
-              <Text style={styles.tabLabel}>Sohbet</Text>
+              <Text style={[styles.tabLabel, currentTab === 'Chat' && styles.activeTabLabel]}>Sohbet</Text>
             </TouchableOpacity>
 
           </Animatable.View>
@@ -731,7 +953,7 @@ export const styles = StyleSheet.create({
     height: 50,
     position: 'absolute',
     left: width / 2 - 25,
-    top: -20,
+    top: -25,
   },
   whistleButton: {
     position: 'absolute',
@@ -841,11 +1063,38 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     color: '#757575',
   },
-  dalga: {
-    bottom: 100,
-    alignItems: 'center',
+  seismicWaves: {
+    top: '70%',
+    width: '100%',
+    height: 40,
+    right: '14%',
+    alignItems: 'center', 
     justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  seismicGraph: {
+    width: 150,
+    height: 40,
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  waveContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    height: 32,
+  },
+  modernWave: {
+    width: 3,
+    backgroundColor: '#666',
+    borderRadius: 1.5,
+    opacity: 0.8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
   },
   assemblyButtonsContainer: {
     flexDirection: 'column',
@@ -854,23 +1103,25 @@ export const styles = StyleSheet.create({
   },
   assemblyButton: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   assemblyButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   assemblyIconWrapper: {
-    backgroundColor: 'red', // Orange background for assembly icon
-    padding: 8,
-    borderRadius: 8,
-    marginRight: 12,
+    backgroundColor: '#D32F2F',
+    padding: 12,
+    borderRadius: 10,
+    marginRight: 15,
   },
   assemblyButtonText: {
     fontSize: 16,
@@ -880,6 +1131,7 @@ export const styles = StyleSheet.create({
   assemblyDetails: {
     fontSize: 14,
     color: '#555',
+    marginTop: 2,
   },
   bigButtonWrapper: {
     alignSelf: 'center',
@@ -887,14 +1139,14 @@ export const styles = StyleSheet.create({
     height: 155,
     width: 155,
     borderRadius: 100,
-    overflow: 'visible', // Taşmaları gizler
+    overflow: 'visible',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: 'red',
-    shadowOffset: { width: 2, height: 10 },
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 12,
+    elevation: 10,
   },
   bigButton: {
     width: 150,
@@ -903,7 +1155,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 75,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#fff',
   },
   bigButtonText: {
@@ -912,6 +1164,54 @@ export const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 5,
+  },
+  modernEnkazButton: {
+    backgroundColor: '#D32F2F',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginTop: 20,
+    width: '80%',
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    position: 'relative',
+  },
+  modernButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingVertical: 18,
+  },
+  modernButtonIcon: {
+    marginRight: 15,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 8,
+    borderRadius: 12,
+  },
+  modernButtonTextContainer: {
+    flex: 1,
+  },
+  modernButtonTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    letterSpacing: 0.5,
+  },
+  modernButtonSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  modernButtonGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   warning: {
     justifyContent: 'space-between',
@@ -923,87 +1223,134 @@ export const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     marginBottom: 20,
+    gap: 8,
   },
-  smallButton: {
-    backgroundColor: '#2196F3',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
+  modernSmallButton: {
     flex: 1,
-    marginHorizontal: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-     width: 0,
-     height: 2,
-    },
-     shadowOpacity: 0.25,
-     shadowRadius: 3.84,
-     elevation: 5,
+    borderRadius: 18,
+    overflow: 'hidden',
+    elevation: 6,
+    height: 80,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    marginHorizontal: 8,
+    marginBottom: 15,
   },
-  smallButtonText: {
+  smallButtonGradient: {
+    backgroundColor: '#2196F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    position: 'relative',
+    height: '100%',
+  },
+  smallButtonIconWrapper: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 6,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  modernSmallButtonText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
-    marginTop: 5,
     textAlign: 'center',
+    lineHeight: 11,
+    letterSpacing: 0.3,
+    flexWrap: 'wrap',
   },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#2D2D2D',
-    paddingVertical: 15,
-    borderTopWidth: 2,
-    borderTopColor: '#444',
-    elevation: 10,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    backgroundColor: '#1a1a1a',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderTopWidth: 0,
+    elevation: 25,
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    marginHorizontal: 3,
+    height: 90,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
   },
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 25,
+    minWidth: 75,
+    minHeight: 55,
+    position: 'relative',
   },
   activeTab: {
     backgroundColor: '#D32F2F',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    elevation: 15,
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+  },
+  tabIconWrapper: {
+    marginBottom: 4,
+    padding: 6,
+    borderRadius: 18,
+    backgroundColor: 'transparent',
+  },
+  activeTabIconWrapper: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   tabLabel: {
+    color: '#bbb',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  activeTabLabel: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-    marginTop: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   emergencyCallButton: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 110,
     right: 20,
-    width: 60,
-    height: 60,
+    width: 75,
+    height: 75,
     backgroundColor: '#D32F2F',
-    borderRadius: 30,
+    borderRadius: 37.5,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    elevation: 15,
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
     zIndex: 1000,
+    borderWidth: 4,
+    borderColor: '#fff',
   },
   loadingText: {
     textAlign: 'center',
@@ -1014,87 +1361,63 @@ export const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 10,
   },
-  areaListContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
-    padding: 15,
-    maxHeight: '30%',
-  },
-  areaListTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 15,
+    marginTop: 20,
     marginBottom: 10,
-    color: '#333',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 15,
+    padding: 4,
   },
-  areaItem: {
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 5,
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
   },
-  areaName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2196F3',
+  activeTabButton: {
+    backgroundColor: '#D32F2F',
+    shadowColor: '#D32F2F',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  areaDetails: {
+  tabIcon: {
+    marginRight: 6,
+  },
+  tabText: {
     fontSize: 12,
+    fontWeight: '600',
     color: '#666',
-    marginTop: 2,
   },
-  areaDistance: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  reportButton: {
-    backgroundColor: '#FF7043',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-     width: 0,
-     height: 2,
-    },
-     shadowOpacity: 0.25,
-     shadowRadius: 3.84,
-     elevation: 5,
-  },
-  reportButtonText: {
+  activeTabText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  hospitalDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 10,
+  },
+  hospitalRating: {
+    fontSize: 12,
+    color: '#FF9800',
+    fontWeight: 'bold',
+  },
+  hospitalStatus: {
     fontSize: 12,
     fontWeight: 'bold',
-    marginTop: 5,
-    textAlign: 'center',
   },
-  requestButton: {
-    backgroundColor: '#FF7043',
-    padding: 15,
-    borderRadius: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-     width: 0,
-     height: 2,
-    },
-     shadowOpacity: 0.25,
-     shadowRadius: 3.84,
-     elevation: 5,
-  },
-  requestButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 5,
-    textAlign: 'center',
+    backgroundColor: '#2D2D2D',
   },
 });

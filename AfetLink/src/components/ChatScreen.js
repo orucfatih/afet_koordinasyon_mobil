@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, ScrollView, SafeAreaView, Image, KeyboardAvoidingView, Platform, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, ScrollView, SafeAreaView, Image, KeyboardAvoidingView, Platform, StatusBar, Alert, PermissionsAndroid, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
+import storage from '@react-native-firebase/storage';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import Geolocation from 'react-native-geolocation-service';
+
+const audioRecorderPlayer = new AudioRecorderPlayer();
 
 const ChatScreen = ({ navigation }) => {
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -17,7 +23,280 @@ const ChatScreen = ({ navigation }) => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [loading, setLoading] = useState(false);
   
+  // Ses kaydı için state'ler
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioPath, setAudioPath] = useState('');
+  
+  // Dosya yükleme için loading state
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  
   const currentUser = auth().currentUser;
+
+  // İzin isteme fonksiyonları
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Kamera İzni',
+            message: 'Fotoğraf çekebilmek için kamera izni gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const requestAudioPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: 'Mikrofon İzni',
+            message: 'Ses kaydı yapabilmek için mikrofon izni gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Konum İzni',
+            message: 'Konumunuzu paylaşabilmek için konum izni gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam',
+          }
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Dosya yükleme fonksiyonu
+  const uploadFileToStorage = async (uri, fileName, folder = 'chat-media') => {
+    try {
+      const reference = storage().ref(`${folder}/${selectedTeam}/${fileName}`);
+      await reference.putFile(uri);
+      const downloadURL = await reference.getDownloadURL();
+      return downloadURL;
+    } catch (error) {
+      console.error('Dosya yükleme hatası:', error);
+      throw error;
+    }
+  };
+
+  // Resim seçme fonksiyonu
+  const selectImage = () => {
+    const options = {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    };
+
+    launchImageLibrary(options, async (response) => {
+      if (response.assets && response.assets[0]) {
+        setUploadingMedia(true);
+        setAttachmentMenuOpen(false);
+        
+        try {
+          const asset = response.assets[0];
+          const fileName = `image_${Date.now()}.jpg`;
+          const downloadURL = await uploadFileToStorage(asset.uri, fileName);
+          
+          await sendMediaMessage('image', downloadURL, {
+            fileName: asset.fileName || fileName,
+            fileSize: asset.fileSize,
+            width: asset.width,
+            height: asset.height
+          });
+        } catch (error) {
+          Alert.alert('Hata', 'Resim gönderilemedi: ' + error.message);
+        } finally {
+          setUploadingMedia(false);
+        }
+      }
+    });
+  };
+
+  // Fotoğraf çekme fonksiyonu
+  const takePhoto = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert('Hata', 'Kamera izni gerekiyor');
+      return;
+    }
+
+    const options = {
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    };
+
+    launchCamera(options, async (response) => {
+      if (response.assets && response.assets[0]) {
+        setUploadingMedia(true);
+        setAttachmentMenuOpen(false);
+        
+        try {
+          const asset = response.assets[0];
+          const fileName = `photo_${Date.now()}.jpg`;
+          const downloadURL = await uploadFileToStorage(asset.uri, fileName);
+          
+          await sendMediaMessage('image', downloadURL, {
+            fileName: asset.fileName || fileName,
+            fileSize: asset.fileSize,
+            width: asset.width,
+            height: asset.height
+          });
+        } catch (error) {
+          Alert.alert('Hata', 'Fotoğraf gönderilemedi: ' + error.message);
+        } finally {
+          setUploadingMedia(false);
+        }
+      }
+    });
+  };
+
+  // Ses kaydı başlatma
+  const startRecording = async () => {
+    const hasPermission = await requestAudioPermission();
+    if (!hasPermission) {
+      Alert.alert('Hata', 'Mikrofon izni gerekiyor');
+      return;
+    }
+
+    try {
+      const path = Platform.select({
+        ios: `audio_${Date.now()}.m4a`,
+        android: `${audioRecorderPlayer.dirs.CacheDir}/audio_${Date.now()}.mp4`,
+      });
+
+      setAudioPath(path);
+      setIsRecording(true);
+      setRecordingTime(0);
+      setAttachmentMenuOpen(false);
+
+      await audioRecorderPlayer.startRecorder(path);
+      
+      audioRecorderPlayer.addRecordBackListener((e) => {
+        setRecordingTime(Math.floor(e.currentPosition / 1000));
+      });
+    } catch (error) {
+      Alert.alert('Hata', 'Ses kaydı başlatılamadı: ' + error.message);
+      setIsRecording(false);
+    }
+  };
+
+  // Ses kaydı durdurma
+  const stopRecording = async () => {
+    try {
+      setUploadingMedia(true);
+      const result = await audioRecorderPlayer.stopRecorder();
+      setIsRecording(false);
+      audioRecorderPlayer.removeRecordBackListener();
+
+      if (result && audioPath) {
+        const fileName = `audio_${Date.now()}.${Platform.OS === 'ios' ? 'm4a' : 'mp4'}`;
+        const downloadURL = await uploadFileToStorage(audioPath, fileName, 'chat-audio');
+        
+        await sendMediaMessage('audio', downloadURL, {
+          fileName,
+          duration: recordingTime
+        });
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Ses kaydı gönderilemedi: ' + error.message);
+    } finally {
+      setUploadingMedia(false);
+      setRecordingTime(0);
+      setAudioPath('');
+    }
+  };
+
+  // Konum paylaşma
+  const shareLocation = async () => {
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) {
+      Alert.alert('Hata', 'Konum izni gerekiyor');
+      return;
+    }
+
+    setAttachmentMenuOpen(false);
+    setUploadingMedia(true);
+
+    Geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          await sendMediaMessage('location', null, {
+            latitude,
+            longitude,
+            address: 'Konum paylaşıldı'
+          });
+        } catch (error) {
+          Alert.alert('Hata', 'Konum gönderilemedi: ' + error.message);
+        } finally {
+          setUploadingMedia(false);
+        }
+      },
+      (error) => {
+        Alert.alert('Hata', 'Konum alınamadı: ' + error.message);
+        setUploadingMedia(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
+
+  // Medya mesajı gönderme
+  const sendMediaMessage = async (type, url, metadata) => {
+    if (!selectedTeam || !currentUser) return;
+
+    try {
+      const messageRef = database().ref(`teams/${selectedTeam}/messages`).push();
+      await messageRef.set({
+        type,
+        url,
+        metadata,
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || currentUser.email,
+        timestamp: database.ServerValue.TIMESTAMP,
+        isUser: true
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
 
   // Ekipleri dinle
   useEffect(() => {
@@ -67,6 +346,7 @@ const ChatScreen = ({ navigation }) => {
         const messageRef = database().ref(`teams/${selectedTeam}/messages`).push();
         await messageRef.set({
           text: input.trim(),
+          type: 'text',
           senderId: currentUser.uid,
           senderName: currentUser.displayName || currentUser.email,
           timestamp: database.ServerValue.TIMESTAMP,
@@ -213,9 +493,86 @@ const ChatScreen = ({ navigation }) => {
           {!isCurrentUser && (
             <Text style={styles.senderName}>{item.senderName}</Text>
           )}
-          <Text style={[styles.messageText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
-            {item.text}
-          </Text>
+          
+          {/* Mesaj tipine göre içerik render et */}
+          {item.type === 'image' && (
+            <View style={styles.mediaContainer}>
+              <Image 
+                source={{ uri: item.url }} 
+                style={styles.messageImage}
+                resizeMode="cover"
+              />
+              {item.metadata?.fileName && (
+                <Text style={[styles.mediaFileName, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+                  {item.metadata.fileName}
+                </Text>
+              )}
+            </View>
+          )}
+          
+          {item.type === 'audio' && (
+            <View style={styles.mediaContainer}>
+              <View style={styles.audioMessage}>
+                <Ionicons 
+                  name="musical-notes" 
+                  size={20} 
+                  color={isCurrentUser ? 'white' : '#D32F2F'} 
+                />
+                <Text style={[styles.audioText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+                  Ses Kaydı {item.metadata?.duration ? `(${item.metadata.duration}s)` : ''}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => Linking.openURL(item.url)}
+                  style={styles.playButton}
+                >
+                  <Ionicons 
+                    name="play" 
+                    size={16} 
+                    color={isCurrentUser ? 'white' : '#D32F2F'} 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          
+          {item.type === 'location' && (
+            <View style={styles.mediaContainer}>
+              <View style={styles.locationMessage}>
+                <Ionicons 
+                  name="location" 
+                  size={20} 
+                  color={isCurrentUser ? 'white' : '#D32F2F'} 
+                />
+                <Text style={[styles.locationText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+                  {item.metadata?.address || 'Konum paylaşıldı'}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => {
+                    const { latitude, longitude } = item.metadata;
+                    const url = Platform.select({
+                      ios: `maps:0,0?q=${latitude},${longitude}`,
+                      android: `geo:0,0?q=${latitude},${longitude}`
+                    });
+                    Linking.openURL(url);
+                  }}
+                  style={styles.mapButton}
+                >
+                  <Ionicons 
+                    name="map" 
+                    size={16} 
+                    color={isCurrentUser ? 'white' : '#D32F2F'} 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          
+          {(!item.type || item.type === 'text') && (
+            <Text style={[styles.messageText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+              {item.text}
+            </Text>
+          )}
+          
           <Text style={[styles.messageTime, isCurrentUser ? styles.currentUserTime : styles.otherUserTime]}>
             {new Date(item.timestamp).toLocaleTimeString('tr-TR', { 
               hour: '2-digit', 
@@ -240,8 +597,22 @@ const ChatScreen = ({ navigation }) => {
   };
 
   const selectAttachmentOption = (option) => {
-    console.log(`${option} seçildi.`);
-    closeAttachmentMenu();
+    switch (option) {
+      case 'Resim':
+        selectImage();
+        break;
+      case 'Fotoğraf':
+        takePhoto();
+        break;
+      case 'Ses':
+        startRecording();
+        break;
+      case 'Konum':
+        shareLocation();
+        break;
+      default:
+        closeAttachmentMenu();
+    }
   };
 
   const selectedTeamData = teams.find(team => team.id === selectedTeam);
@@ -279,6 +650,29 @@ const ChatScreen = ({ navigation }) => {
           )}
           {!selectedTeam && <View style={styles.topBarRight} />}
         </View>
+
+        {/* Recording indicator */}
+        {isRecording && (
+          <View style={styles.recordingIndicator}>
+            <View style={styles.recordingContent}>
+              <Ionicons name="mic" size={24} color="#D32F2F" />
+              <Text style={styles.recordingText}>Kayıt ediliyor... {recordingTime}s</Text>
+              <TouchableOpacity 
+                style={styles.stopRecordingButton}
+                onPress={stopRecording}
+              >
+                <Ionicons name="stop" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Upload indicator */}
+        {uploadingMedia && (
+          <View style={styles.uploadIndicator}>
+            <Text style={styles.uploadText}>Yükleniyor...</Text>
+          </View>
+        )}
 
         <View style={styles.container}>
           {/* Sol Menü */}
@@ -409,16 +803,24 @@ const ChatScreen = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Basit Ekler Menüsü */}
+                {/* Gelişmiş Ekler Menüsü */}
                 {attachmentMenuOpen && (
                   <View style={styles.attachmentMenu}>
                     <TouchableOpacity style={styles.attachmentOption} onPress={() => selectAttachmentOption('Resim')}>
                       <Icon name="image" size={24} color="#D32F2F" />
-                      <Text style={styles.attachmentText}>Resim</Text>
+                      <Text style={styles.attachmentText}>Resim Seç</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.attachmentOption} onPress={() => selectAttachmentOption('Fotoğraf')}>
                       <Icon name="photo-camera" size={24} color="#D32F2F" />
-                      <Text style={styles.attachmentText}>Fotoğraf</Text>
+                      <Text style={styles.attachmentText}>Fotoğraf Çek</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.attachmentOption} onPress={() => selectAttachmentOption('Ses')}>
+                      <Icon name="mic" size={24} color="#D32F2F" />
+                      <Text style={styles.attachmentText}>Ses Kaydı</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.attachmentOption} onPress={() => selectAttachmentOption('Konum')}>
+                      <Icon name="location-on" size={24} color="#D32F2F" />
+                      <Text style={styles.attachmentText}>Konum Paylaş</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.attachmentOption} onPress={closeAttachmentMenu}>
                       <Icon name="close" size={24} color="#D32F2F" />
@@ -987,6 +1389,99 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
+  },
+  recordingIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  recordingContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recordingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#D32F2F',
+    marginHorizontal: 10,
+  },
+  stopRecordingButton: {
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: '#D32F2F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  uploadText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  mediaContainer: {
+    marginBottom: 10,
+  },
+  messageImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+  },
+  mediaFileName: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  audioMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  audioText: {
+    flex: 1,
+    marginHorizontal: 10,
+  },
+  playButton: {
+    padding: 8,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  locationText: {
+    flex: 1,
+    marginHorizontal: 10,
+  },
+  mapButton: {
+    padding: 8,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

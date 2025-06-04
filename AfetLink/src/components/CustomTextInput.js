@@ -21,6 +21,6 @@ const styles = StyleSheet.create({
         width:"100%",
         height:"40",
         textAlign:"center",
-        color:"black",
+        color:"white",
       },
 })
