@@ -30,6 +30,7 @@
     "react": "19.0.0",
     "react-native": "0.78.2",
     "react-native-animatable": "^1.4.0",
+    "react-native-audio-recorder-player": "^3.6.12",
     "react-native-battery": "^0.1.18",
     "react-native-ble-manager": "^12.1.4",
     "react-native-contacts": "^8.0.4",

@@ -85,9 +85,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.anonymous.Project1"
+    namespace "com.afad.afetlink"
     defaultConfig {
-        applicationId "com.anonymous.Project1"
+        applicationId "com.afad.afetlink"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

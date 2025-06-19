@@ -111,10 +111,7 @@ export const verifyPhoneCode = createAsyncThunk('user/verifyPhoneCode', async ({
       }
 
       const phoneCredential = PhoneAuthProvider.credential(verificationId, code);
-
-      if(!phoneCredential){
-        return rejectWithValue('Geçersiz doğrulama kodu.');
-      }
+      await auth().signInWithCredential(phoneCredential);
       
       await AsyncStorage.setItem("staffToken", staffData.token);
       

@@ -1,4 +1,4 @@
-package com.anonymous.Project1
+package com.afad.afetlink
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
