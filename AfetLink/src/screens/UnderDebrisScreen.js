@@ -23,13 +23,10 @@ import {
   scanStart,
   scanStop,
 } from 'react-native-ble-phone-to-phone';
-import { BleManager as BlePlxManager } from 'react-native-ble-plx';
+import DeviceInfo from 'react-native-device-info';
 
 // Event emitter setup for BLE phone-to-phone
 const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
-
-// BLE PLX manager for connection and messaging
-const blePlxManager = new BlePlxManager();
 
 const UnderDebrisScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +34,40 @@ const UnderDebrisScreen = ({ navigation }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [isBluetoothEnabled, setIsBluetoothEnabled] = useState(false);
   const [isAdvertising, setIsAdvertising] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState(null);
-  const [connectedDevice, setConnectedDevice] = useState(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [uniqueDeviceId, setUniqueDeviceId] = useState(null);
+
+  // Unique device ID oluştur
+  useEffect(() => {
+    const generateUniqueDeviceId = async () => {
+      try {
+        // Önce device ID'yi almaya çalış
+        let deviceId = await DeviceInfo.getUniqueId();
+        
+        // Eğer device ID null ise, zamana dayalı unique ID oluştur
+        if (!deviceId || deviceId === 'unknown' || deviceId === 'null') {
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substr(2, 9);
+          deviceId = `time_${timestamp}_${randomSuffix}`;
+        }
+        
+        setUniqueDeviceId(deviceId);
+        console.log('Unique Device ID:', deviceId);
+      } catch (error) {
+        console.warn('Device ID alınamadı, zamana dayalı ID oluşturuluyor:', error);
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substr(2, 9);
+        const fallbackId = `fallback_${timestamp}_${randomSuffix}`;
+        setUniqueDeviceId(fallbackId);
+      }
+    };
+
+    generateUniqueDeviceId();
+  }, []);
+
+  // Sabit UUID kullan (tüm cihazlar için aynı)
+  const getAfetLinkUUID = () => {
+    return '26f08670-ffdf-40eb-9067-78b9ae6e7919';
+  };
 
   useEffect(() => {
     BleManager.start({ showAlert: false }).then(() => {
@@ -61,127 +88,15 @@ const UnderDebrisScreen = ({ navigation }) => {
     const handleBluetoothStateChange = (state) => {
       setIsBluetoothEnabled(state === 'on');
     };
-
-    // Peripheral mode event listener'ları (A cihazı için)
-    const handlePeripheralConnected = (data) => {
-      console.log("Peripheral: Başka bir cihaz bize bağlandı:", data);
-      setConnectedDevice({
-        id: data.peripheral || data.deviceId,
-        name: data.name || 'AfetLink Cihazı'
-      });
-      Alert.alert(
-        'Kurtarma Ekibi Bağlandı!', 
-        `${data.name || data.peripheral} cihazı size bağlandı! Kurtarma ekibi sizi buldu!`,
-        [{ text: "Tamam" }]
-      );
-    };
-
-    const handlePeripheralDisconnected = (data) => {
-      console.log("Peripheral: Cihaz bağlantısı kesildi:", data);
-      setConnectedDevice(null);
-      Alert.alert(
-        'Bağlantı Kesildi', 
-        `${data.name || data.peripheral} cihazı ile bağlantı kesildi.`,
-        [{ text: "Tamam" }]
-      );
-    };
-
-    // Mesaj alma event listener'ı
-    const handleCharacteristicRead = (data) => {
-      console.log("Peripheral: Karakteristik okundu:", data);
-      try {
-        // Base64'ten string'e çevir
-        const messageString = atob(data.value);
-        const message = JSON.parse(messageString);
-        console.log("Alınan mesaj:", message);
-        
-        if (message.type === 'test') {
-          Alert.alert(
-            'Test Mesajı Alındı!', 
-            `Gönderen: ${message.sender}\nMesaj: ${message.message}\nZaman: ${new Date(message.timestamp).toLocaleTimeString()}`,
-            [{ text: "Tamam" }]
-          );
-        }
-      } catch (error) {
-        console.warn("Mesaj parse hatası:", error);
-        // Alternatif parse yöntemi dene
-        try {
-          const message = JSON.parse(data.value);
-          console.log("Alınan mesaj (alternatif):", message);
-          
-          if (message.type === 'test') {
-            Alert.alert(
-              'Test Mesajı Alındı!', 
-              `Gönderen: ${message.sender}\nMesaj: ${message.message}\nZaman: ${new Date(message.timestamp).toLocaleTimeString()}`,
-              [{ text: "Tamam" }]
-            );
-          }
-        } catch (error2) {
-          console.warn("Alternatif parse de başarısız:", error2);
-        }
-      }
-    };
-
-    // Mesaj yazma event listener'ı
-    const handleCharacteristicWrite = (data) => {
-      console.log("Peripheral: Karakteristik yazıldı:", data);
-      try {
-        // String olarak parse et
-        const message = JSON.parse(data.value);
-        console.log("Yazılan mesaj:", message);
-        
-        if (message.type === 'test') {
-          Alert.alert(
-            'Test Mesajı Alındı!', 
-            `Gönderen: ${message.sender}\nMesaj: ${message.message}\nZaman: ${new Date(message.timestamp).toLocaleTimeString()}`,
-            [{ text: "Tamam" }]
-          );
-        }
-      } catch (error) {
-        console.warn("Yazılan mesaj parse hatası:", error);
-      }
-    };
-
-    // Karakteristik değişiklik event listener'ı
-    const handleCharacteristicChanged = (data) => {
-      console.log("Peripheral: Karakteristik değişti:", data);
-      try {
-        // String olarak parse et
-        const message = JSON.parse(data.value);
-        console.log("Değişen mesaj:", message);
-        
-        if (message.type === 'test') {
-          Alert.alert(
-            'Test Mesajı Alındı!', 
-            `Gönderen: ${message.sender}\nMesaj: ${message.message}\nZaman: ${new Date(message.timestamp).toLocaleTimeString()}`,
-            [{ text: "Tamam" }]
-          );
-        }
-      } catch (error) {
-        console.warn("Değişen mesaj parse hatası:", error);
-      }
-    };
   
     const discoverListener = bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
     const stateChangeListener = bleManagerEmitter.addListener('BleManagerDidUpdateState', handleBluetoothStateChange);
     const stopListener = bleManagerEmitter.addListener('BleManagerStopScan', () => setIsScanning(false));
-    
-    // Peripheral mode event listener'ları
-    const peripheralConnectedListener = bleManagerEmitter.addListener('BleManagerPeripheralConnected', handlePeripheralConnected);
-    const peripheralDisconnectedListener = bleManagerEmitter.addListener('BleManagerPeripheralDisconnected', handlePeripheralDisconnected);
-    const characteristicReadListener = bleManagerEmitter.addListener('BleManagerCharacteristicRead', handleCharacteristicRead);
-    const characteristicWriteListener = bleManagerEmitter.addListener('BleManagerCharacteristicWrite', handleCharacteristicWrite);
-    const characteristicChangedListener = bleManagerEmitter.addListener('BleManagerCharacteristicChanged', handleCharacteristicChanged);
   
     return () => {
       discoverListener.remove();
       stateChangeListener.remove();
       stopListener.remove();
-      peripheralConnectedListener.remove();
-      peripheralDisconnectedListener.remove();
-      characteristicReadListener.remove();
-      characteristicWriteListener.remove();
-      characteristicChangedListener.remove();
     };
   }, []);
   
@@ -197,44 +112,29 @@ const UnderDebrisScreen = ({ navigation }) => {
       console.log('Found device data:', data);
       // Cihazı listeye ekle
       setScannedDevices(prevDevices => {
-        // UUID bazlı tekil kontrol
         const deviceUuid = data.uuids && data.uuids.length > 0 ? data.uuids[0] : null;
         const deviceAddress = data.deviceAddress || data.id || `device_${Date.now()}`;
         
-        // Aynı UUID'ye sahip cihaz var mı kontrol et
-        const existingDeviceByUuid = deviceUuid ? prevDevices.find(device => 
-          device.uuids && device.uuids.length > 0 && device.uuids[0] === deviceUuid
-        ) : null;
+        // AfetLink cihazı mı kontrol et (base UUID ile başlıyor mu)
+        const isAfetLinkDevice = deviceUuid && deviceUuid.startsWith('26f08670-ffdf-40eb-9067-78b9ae6e7919');
         
-        // Aynı adrese sahip cihaz var mı kontrol et
+        if (!isAfetLinkDevice) {
+          // AfetLink cihazı değilse ekleme
+          return prevDevices;
+        }
+        
+        // Aynı adrese sahip cihaz var mı kontrol et (ana tanımlayıcı olarak adres kullan)
         const existingDeviceByAddress = prevDevices.find(device => 
           device.address === deviceAddress || device.id === deviceAddress
         );
         
-        if (existingDeviceByUuid) {
-          // Aynı UUID'ye sahip cihaz varsa, sadece RSSI ve adres bilgisini güncelle
-          console.log('Aynı UUID cihaz güncelleniyor:', deviceUuid);
-          return prevDevices.map(device => {
-            if (device.uuids && device.uuids.length > 0 && device.uuids[0] === deviceUuid) {
-              return {
-                ...device,
-                rssi: data.rssi || device.rssi,
-                address: deviceAddress, // Yeni adresi güncelle
-                lastSeen: Date.now()
-              };
-            }
-            return device;
-          });
-        }
-        
         if (existingDeviceByAddress) {
-          // Aynı adrese sahip cihaz varsa, UUID bilgisini güncelle
+          // Aynı adrese sahip cihaz varsa, sadece RSSI ve lastSeen güncelle
           console.log('Aynı adres cihaz güncelleniyor:', deviceAddress);
           return prevDevices.map(device => {
             if (device.address === deviceAddress || device.id === deviceAddress) {
               return {
                 ...device,
-                uuids: data.uuids || device.uuids,
                 rssi: data.rssi || device.rssi,
                 lastSeen: Date.now()
               };
@@ -243,15 +143,20 @@ const UnderDebrisScreen = ({ navigation }) => {
           });
         }
         
-        // Yeni cihaz ekle
-        console.log('Yeni cihaz ekleniyor:', deviceAddress);
+        // Yeni AfetLink cihazı ekle
+        console.log('Yeni AfetLink cihazı ekleniyor:', deviceAddress);
+        
+        // Device ID'yi adresten türet (kısa ve unique)
+        const deviceId = deviceAddress.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+        
         return [...prevDevices, {
           id: deviceAddress,
-          name: data.deviceName || 'AfetLink Cihazı',
+          name: `AfetLink Cihazı (${deviceId})`,
           rssi: data.rssi || 'N/A',
           address: deviceAddress,
           uuids: data.uuids || [],
-          lastSeen: Date.now()
+          lastSeen: Date.now(),
+          deviceId: deviceId
         }];
       });
     });
@@ -260,94 +165,13 @@ const UnderDebrisScreen = ({ navigation }) => {
       console.log('BLE Log:', log);
     });
 
-    // react-native-ble-phone-to-phone tüm olası event'leri dinle
-    const connectionListener = eventEmitter.addListener('connection', (data) => {
-      console.log('BLE Phone-to-Phone: Bağlantı olayı:', data);
-      if (data.type === 'connected') {
-        setConnectedDevice({
-          id: data.deviceId || data.deviceAddress,
-          name: data.deviceName || 'AfetLink Cihazı'
-        });
-        Alert.alert(
-          'Kurtarma Ekibi Bağlandı!', 
-          `${data.deviceName || data.deviceId} cihazı size bağlandı! Kurtarma ekibi sizi buldu!`,
-          [{ text: "Tamam" }]
-        );
-      } else if (data.type === 'disconnected') {
-        setConnectedDevice(null);
-        Alert.alert(
-          'Bağlantı Kesildi', 
-          `${data.deviceName || data.deviceId} cihazı ile bağlantı kesildi.`,
-          [{ text: "Tamam" }]
-        );
-      }
-    });
-
-    // Diğer olası event isimleri
-    const connectListener = eventEmitter.addListener('connect', (data) => {
-      console.log('BLE Phone-to-Phone: Connect event:', data);
-    });
-
-    const disconnectListener = eventEmitter.addListener('disconnect', (data) => {
-      console.log('BLE Phone-to-Phone: Disconnect event:', data);
-    });
-
-    const peripheralListener = eventEmitter.addListener('peripheral', (data) => {
-      console.log('BLE Phone-to-Phone: Peripheral event:', data);
-    });
-
-    const clientListener = eventEmitter.addListener('client', (data) => {
-      console.log('BLE Phone-to-Phone: Client event:', data);
-    });
-
-    const errorListener = eventEmitter.addListener('error', (error) => {
-      console.log('BLE Phone-to-Phone Error:', error);
-    });
-
-    // BLE PLX event listener'ları ekle
-    // react-native-ble-plx kütüphanesinin kendi event sistemini kullan
-    const stateChangeListener = blePlxManager.onStateChange((state) => {
-      console.log('BLE PLX State changed:', state);
-    }, true);
-
     return () => {
       // Event listener'ları temizle
       foundUuidListener.remove();
       foundDeviceListener.remove();
       logListener.remove();
-      connectionListener.remove();
-      connectListener.remove();
-      disconnectListener.remove();
-      peripheralListener.remove();
-      clientListener.remove();
-      errorListener.remove();
-      stateChangeListener.remove();
     };
   }, []);
-
-  // Bağlantı kesilme event listener'ı
-  useEffect(() => {
-    let disconnectSubscription;
-    if (connectedDevice) {
-      disconnectSubscription = blePlxManager.onDeviceDisconnected(
-        connectedDevice.id,
-        (error, device) => {
-          console.log('BLE PLX: Cihaz bağlantısı kesildi:', device);
-          setConnectedDevice(null);
-          Alert.alert(
-            'Bağlantı Kesildi',
-            `${device?.name || device?.id} cihazı ile bağlantı kesildi.`,
-            [{ text: "Tamam" }]
-          );
-        }
-      );
-    }
-    return () => {
-      if (disconnectSubscription) {
-        disconnectSubscription.remove();
-      }
-    };
-  }, [connectedDevice]);
 
   const requestBluetoothPermission = async () => {
     if (Platform.OS === 'android') {
@@ -456,16 +280,6 @@ const UnderDebrisScreen = ({ navigation }) => {
            const result = await BleManager.enableBluetooth();
            console.log('BleManager.enableBluetooth sonucu:', result);
            
-           // Kullanıcıya bilgi ver - artık manuel olarak açması gerekiyor
-           Alert.alert(
-             "Bluetooth Açma İsteği Gönderildi", 
-             "Sistemin bluetooth açma isteği gönderildi. Lütfen gelen uyarıyı onaylayın veya manuel olarak bluetooth'u açın.",
-             [
-               { text: "Bluetooth Ayarlarını Aç", onPress: () => Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS') },
-               { text: "Tamam" }
-             ]
-           );
-           
            // Biraz bekleyip durumu kontrol et
            setTimeout(async () => {
              const newState = await checkBluetoothState();
@@ -545,9 +359,9 @@ const UnderDebrisScreen = ({ navigation }) => {
     try {
       console.log("BLE phone-to-phone tarama başlatılıyor...");
       
-      // AfetLink UUID'si ile tarama başlat
-      const afetLinkUuid = '26f08670-ffdf-40eb-9067-78b9ae6e7919';
-      await scanStart([afetLinkUuid].join());
+      // Base AfetLink UUID'si ile tarama başlat (tüm AfetLink cihazlarını bul)
+      const baseAfetLinkUuid = '26f08670-ffdf-40eb-9067-78b9ae6e7919';
+      await scanStart([baseAfetLinkUuid].join());
       
       console.log("Tarama başlatıldı");
 
@@ -598,11 +412,11 @@ const UnderDebrisScreen = ({ navigation }) => {
       setIsAdvertising(true);
       console.log("BLE phone-to-phone advertising başlatılıyor...");
 
-      // AfetLink UUID'si ile advertising başlat
-      const afetLinkUuid = '26f08670-ffdf-40eb-9067-78b9ae6e7919';
-      await advertiseStart(afetLinkUuid);
+      // Sabit AfetLink UUID ile advertising başlat
+      const afetLinkUUID = getAfetLinkUUID();
+      await advertiseStart(afetLinkUUID);
 
-      console.log("Advertising başlatıldı");
+      console.log("Advertising başlatıldı - UUID:", afetLinkUUID);
       Alert.alert("Bağlantı İçin Hazır", "Diğer AfetLink cihazları sizi bulabilir.");
 
     } catch (error) {
@@ -623,198 +437,13 @@ const UnderDebrisScreen = ({ navigation }) => {
     }
   };
 
-  const connectToDevice = async (device) => {
-    try {
-      setIsConnecting(true);
-      console.log("Cihaza bağlanılıyor:", device.name || device.id);
-
-      // BLE PLX ile cihaza bağlan
-      const connectedDevice = await blePlxManager.connectToDevice(device.id);
-      console.log("Cihaza bağlanıldı:", connectedDevice.name || connectedDevice.id);
-
-      // Gerçekten bağlı mı kontrol et
-      const isConnected = await connectedDevice.isConnected();
-      console.log("Gerçekten bağlı mı:", isConnected);
-
-      if (!isConnected) {
-        throw new Error("Bağlantı kurulamadı - cihaz bağlı değil");
-      }
-
-      // Servisleri ve karakteristikleri keşfet
-      try {
-        await connectedDevice.discoverAllServicesAndCharacteristics();
-        console.log("Servisler ve karakteristikler keşfedildi");
-        
-        // Servisleri listele
-        const services = await connectedDevice.services();
-        console.log("Bulunan servisler:", services.map(s => s.uuid));
-        
-        if (services.length === 0) {
-          console.warn("Hiç servis bulunamadı - bağlantı gerçek olmayabilir");
-        }
-      } catch (discoverError) {
-        console.warn("Servis keşfi başarısız:", discoverError);
-        // Servis keşfi başarısız olsa bile bağlantıyı kabul et
-      }
-
-      setConnectedDevice(connectedDevice);
-      
-      Alert.alert(
-        'Bağlantı Başarılı', 
-        `${device.name || device.id} cihazına başarıyla bağlanıldı!\nBağlantı durumu: ${isConnected ? 'Bağlı' : 'Bağlı değil'}`,
-        [{ text: "Tamam" }]
-      );
-
-    } catch (error) {
-      console.error('Bağlantı hatası:', error);
-      Alert.alert('Bağlantı Hatası', `Cihaza bağlanılamadı: ${error.message}`);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const disconnectFromDevice = async () => {
-    try {
-      if (connectedDevice) {
-        await connectedDevice.cancelConnection();
-        console.log("Bağlantı kesildi");
-        setConnectedDevice(null);
-        Alert.alert("Bağlantı Kesildi", "Cihaz ile bağlantı kesildi.");
-      }
-    } catch (error) {
-      console.error('Bağlantı kesme hatası:', error);
-      Alert.alert('Hata', 'Bağlantı kesilirken hata oluştu.');
-    }
-  };
-
-  const testConnection = async () => {
-    if (!connectedDevice) {
-      Alert.alert('Hata', 'Bağlı cihaz yok');
-      return;
-    }
-
-    try {
-      console.log('Bağlantı testi başlatılıyor...');
-      
-      // Bağlantı durumunu tekrar kontrol et
-      const isConnected = await connectedDevice.isConnected();
-      console.log('Test sırasında bağlantı durumu:', isConnected);
-      
-      if (!isConnected) {
-        Alert.alert('Bağlantı Testi', 'Cihaz bağlı değil!');
-        setConnectedDevice(null);
-        return;
-      }
-
-      // Servisleri kontrol et
-      const services = await connectedDevice.services();
-      console.log('Test sırasında servisler:', services.map(s => s.uuid));
-      
-      Alert.alert(
-        'Bağlantı Testi', 
-        `Bağlantı durumu: ${isConnected ? 'Bağlı' : 'Bağlı değil'}\nServis sayısı: ${services.length}`
-      );
-
-    } catch (error) {
-      console.error('Bağlantı testi hatası:', error);
-      Alert.alert('Test Hatası', `Bağlantı testi başarısız: ${error.message}`);
-      setConnectedDevice(null);
-    }
-  };
-
-  const sendTestMessage = async () => {
-    if (!connectedDevice) {
-      Alert.alert('Hata', 'Bağlı cihaz bulunamadı!');
-      return;
-    }
-
-    console.log('Test mesajı gönderiliyor...');
-    
-    const testMessage = {
-      type: 'test',
-      message: 'Merhaba! Bu bir test mesajıdır.',
-      timestamp: Date.now(),
-      sender: 'B_Cihazı'
-    };
-
-    console.log('Gönderilecek mesaj:', testMessage);
-    console.log('Mevcut servisler:', Object.keys(services));
-
-    // Tüm servisleri kontrol et
-    for (const serviceUUID of Object.keys(services)) {
-      console.log('Servis kontrol ediliyor:', serviceUUID);
-      const service = services[serviceUUID];
-      console.log(`Servis ${serviceUUID} karakteristikleri:`, Object.keys(service));
-      
-      // Bu servisteki tüm karakteristikleri kontrol et
-      for (const characteristicUUID of Object.keys(service)) {
-        const characteristic = service[characteristicUUID];
-        console.log(`Karakteristik ${characteristicUUID} özellikleri:`, characteristic);
-        
-        // Yazılabilir karakteristik ara
-        if (characteristic.properties && 
-            (characteristic.properties.write || 
-             characteristic.properties.writeWithoutResponse || 
-             characteristic.properties.indicate || 
-             characteristic.properties.notify)) {
-          
-          console.log(`Yazılabilir karakteristik bulundu: ${characteristicUUID} (servis: ${serviceUUID})`);
-          
-          try {
-            // JSON string'i doğrudan gönder
-            const messageString = JSON.stringify(testMessage);
-            console.log('Gönderilecek string:', messageString);
-            
-            // writeWithoutResponse ile gönder
-            await BleManager.writeWithoutResponse(
-              connectedDevice.id,
-              serviceUUID,
-              characteristicUUID,
-              messageString
-            );
-            
-            console.log('Test mesajı writeWithoutResponse ile gönderildi!');
-            Alert.alert('Başarılı', 'Test mesajı gönderildi!');
-            return;
-            
-          } catch (error) {
-            console.log('Mesaj yazma hatası:', error);
-            
-            // write ile dene
-            try {
-              await BleManager.write(
-                connectedDevice.id,
-                serviceUUID,
-                characteristicUUID,
-                messageString
-              );
-              
-              console.log('Test mesajı write ile gönderildi!');
-              Alert.alert('Başarılı', 'Test mesajı gönderildi!');
-              return;
-              
-            } catch (writeError) {
-              console.log('Write hatası da:', writeError);
-            }
-          }
-        }
-      }
-      
-      console.log(`Servis ${serviceUUID}'de yazılabilir karakteristik bulunamadı`);
-    }
-    
-    Alert.alert('Hata', 'Yazılabilir karakteristik bulunamadı!');
-  };
-
   const renderDevice = ({ item }) => {
     const timeAgo = item.lastSeen ? Math.floor((Date.now() - item.lastSeen) / 1000) : null;
     
     return (
-      <TouchableOpacity
-        onPress={() => setSelectedDevice(item)}
+      <View
         style={[
           styles.deviceItem,
-          selectedDevice?.id === item.id && styles.selectedDeviceItem,
           item.name && item.name.includes('AfetLink') && styles.afetLinkDeviceItem
         ]}
       >
@@ -824,6 +453,9 @@ const UnderDebrisScreen = ({ navigation }) => {
         </Text>
         <Text style={styles.deviceId}>Adres: {item.address || item.id}</Text>
         <Text style={styles.deviceRssi}>RSSI: {item.rssi}</Text>
+        {item.deviceId && item.deviceId !== 'Unknown' && (
+          <Text style={styles.deviceUniqueId}>Cihaz ID: {item.deviceId}</Text>
+        )}
         {item.uuids && item.uuids.length > 0 && (
           <Text style={styles.deviceUuid}>UUID: {item.uuids[0]}</Text>
         )}
@@ -832,7 +464,7 @@ const UnderDebrisScreen = ({ navigation }) => {
             {timeAgo < 60 ? `${timeAgo}s önce` : `${Math.floor(timeAgo / 60)}d önce`}
           </Text>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -847,143 +479,70 @@ const UnderDebrisScreen = ({ navigation }) => {
           <Text style={styles.headerTitle}>Enkaz Altındayım</Text>
         </View>
 
-        <ScrollView style={styles.scrollView}>
-          <View style={styles.content}>
-            <Text style={styles.infoText}>
-              Enkaz altındaysanız, kurtarma ekiplerinin sizi bulabilmesi için lütfen Bluetooth'u açık tutun.
+        <View style={styles.content}>
+          <Text style={styles.infoText}>
+            Enkaz altındaysanız, kurtarma ekiplerinin sizi bulabilmesi için lütfen Bluetooth'u açık tutun.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.bluetoothButton, isLoading && styles.bluetoothButtonDisabled]}
+            onPress={toggleBluetooth}
+            disabled={isLoading}>
+            <Ionicons name="bluetooth-outline" size={40} color="white" />
+            <Text style={styles.buttonText}>
+              {isLoading ? "İşlem Yapılıyor..." : 
+               isBluetoothEnabled ? "Bluetooth Açık" : "Bluetooth'u Aç"}
             </Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.bluetoothButton, isLoading && styles.bluetoothButtonDisabled]}
-              onPress={toggleBluetooth}
-              disabled={isLoading}>
-              <Ionicons name="bluetooth-outline" size={40} color="white" />
-              <Text style={styles.buttonText}>
-                {isLoading ? "İşlem Yapılıyor..." : 
-                 isBluetoothEnabled ? "Bluetooth Açık" : "Bluetooth'u Aç"}
-              </Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.bluetoothButton, 
+              (isScanning || !isBluetoothEnabled) && styles.bluetoothButtonDisabled
+            ]}
+            onPress={startScan}
+            disabled={isScanning || !isBluetoothEnabled}>
+            <Ionicons name="search-outline" size={30} color="white" />
+            <Text style={styles.buttonText}>
+              {isScanning ? "Taranıyor..." : 
+               !isBluetoothEnabled ? "Bluetooth Kapalı" : "Cihaz Tara"}
+            </Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.bluetoothButton, 
-                (isScanning || !isBluetoothEnabled) && styles.bluetoothButtonDisabled
-              ]}
-              onPress={startScan}
-              disabled={isScanning || !isBluetoothEnabled}>
-              <Ionicons name="search-outline" size={30} color="white" />
-              <Text style={styles.buttonText}>
-                {isScanning ? "Taranıyor..." : 
-                 !isBluetoothEnabled ? "Bluetooth Kapalı" : "Cihaz Tara"}
-              </Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.bluetoothButton, 
+              (isLoading || !isBluetoothEnabled) && styles.bluetoothButtonDisabled
+            ]}
+            onPress={isAdvertising ? stopAdvertising : startAdvertising}
+            disabled={isLoading || !isBluetoothEnabled}>
+            <Ionicons name={isAdvertising ? "radio" : "radio-outline"} size={30} color="white" />
+            <Text style={styles.buttonText}>
+              {isAdvertising ? "Reklam Yayınını Durdur" : 
+               !isBluetoothEnabled ? "Bluetooth Kapalı" : "Bağlantı İçin Hazır"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-            <TouchableOpacity
-              style={[
-                styles.bluetoothButton, 
-                (isLoading || !isBluetoothEnabled) && styles.bluetoothButtonDisabled
-              ]}
-              onPress={isAdvertising ? stopAdvertising : startAdvertising}
-              disabled={isLoading || !isBluetoothEnabled}>
-              <Ionicons name={isAdvertising ? "radio" : "radio-outline"} size={30} color="white" />
-              <Text style={styles.buttonText}>
-                {isAdvertising ? "Reklam Yayınını Durdur" : 
-                 !isBluetoothEnabled ? "Bluetooth Kapalı" : "Bağlantı İçin Hazır"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.bluetoothButton,
-                (!selectedDevice || isConnecting || !isBluetoothEnabled) && styles.bluetoothButtonDisabled
-              ]}
-              onPress={() => selectedDevice && connectToDevice(selectedDevice)}
-              disabled={!selectedDevice || isConnecting || !isBluetoothEnabled}>
-              <Ionicons name="bluetooth" size={30} color="white" />
-              <Text style={styles.buttonText}>
-                {isConnecting ? "Bağlanıyor..." : 
-                 !selectedDevice ? "Lütfen bir cihaz seçin" : 
-                 connectedDevice ? "Bağlı" : "Seçili Cihaza Bağlan"}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Bağlantı Durumu Göstergesi */}
-            {connectedDevice && (
-              <View style={styles.connectionStatusContainer}>
-                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                <Text style={styles.connectionStatusText}>
-                  {isAdvertising 
-                    ? `Kurtarma ekibi (${connectedDevice.name || connectedDevice.id}) bağlandı!`
-                    : `${connectedDevice.name || connectedDevice.id} ile bağlı`
-                  }
-                </Text>
-                <TouchableOpacity
-                  style={styles.disconnectButton}
-                  onPress={disconnectFromDevice}>
-                  <Ionicons name="close-circle" size={20} color="#FF6B6B" />
-                </TouchableOpacity>
+        {/* Cihaz listesi için ayrı ScrollView */}
+        <View style={styles.deviceSection}>
+          <Text style={styles.devicesTitle}>Bulunan Cihazlar</Text>
+          <ScrollView style={styles.deviceScrollView}>
+            {scannedDevices.length > 0 ? (
+              <FlatList
+                data={scannedDevices}
+                renderItem={renderDevice}
+                keyExtractor={(item) => item.id}
+                style={styles.deviceList}
+                scrollEnabled={false}
+              />
+            ) : (
+              <View style={styles.noDevicesContainer}>
+                <Text style={styles.noDevicesText}>Henüz cihaz bulunamadı</Text>
               </View>
             )}
-
-            {/* Bağlantı Testi Butonu */}
-            {connectedDevice && (
-              <TouchableOpacity
-                style={styles.testButton}
-                onPress={testConnection}>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#007AFF" />
-                <Text style={styles.testButtonText}>Bağlantıyı Test Et</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Mesaj Gönderme Butonu */}
-            {connectedDevice && (
-              <TouchableOpacity
-                style={styles.messageButton}
-                onPress={sendTestMessage}>
-                <Ionicons name="send" size={20} color="#4CAF50" />
-                <Text style={styles.messageButtonText}>Test Mesajı Gönder</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Advertising Durumu Göstergesi */}
-            {isAdvertising && !connectedDevice && (
-              <View style={styles.advertisingStatusContainer}>
-                <Ionicons name="radio" size={24} color="#FF9800" />
-                <Text style={styles.advertisingStatusText}>
-                  Kurtarma ekiplerini bekliyorsunuz...
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.instructionsContainer}>
-              <Text style={styles.instructionsTitle}>Önemli Bilgiler:</Text>
-              <Text style={styles.instructionText}>
-                • Bluetooth sinyali duvarları geçebilir{"\n"}
-                • Pil tasarrufu için ekranı kapatabilirsiniz{"\n"}
-                • Mümkünse telefonunuzu yüksek bir noktada tutun{"\n"}
-                • Bluetooth açıkken kurtarma ekipleri sizi daha kolay bulabilir
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Cihaz listesi ScrollView dışında */}
-        {scannedDevices.length > 0 ? (
-          <View style={styles.deviceListContainer}>
-            <Text style={styles.devicesTitle}>Bulunan Cihazlar:</Text>
-            <FlatList
-              data={scannedDevices}
-              renderItem={renderDevice}
-              keyExtractor={(item) => item.id}
-              style={styles.deviceList}
-              scrollEnabled={false}
-            />
-          </View>
-        ) : (
-          <View style={styles.deviceListContainer}>
-            <Text style={styles.noDevicesText}>Henüz cihaz bulunamadı</Text>
-          </View>
-        )}
+          </ScrollView>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -1022,9 +581,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   content: {
-    flex: 1,
     padding: 20,
     alignItems: 'center',
+    paddingBottom: 10,
   },
   infoText: {
     fontSize: 16,
@@ -1051,23 +610,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 6,
   },
-  instructionsContainer: {
-    marginTop: 30,
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    width: '100%',
+  deviceSection: {
+    flex: 1,
+    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  instructionsTitle: {
+  devicesTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     color: '#333',
   },
-  instructionText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
+  deviceScrollView: {
+    flex: 1,
   },
   deviceItem: {
     backgroundColor: '#eef',
@@ -1089,8 +645,15 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
-  scrollView: {
-    flex: 1,
+  deviceUuid: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  deviceTimeAgo: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
   deviceList: {
     width: '100%',
@@ -1100,105 +663,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ff0000',
   },
+  noDevicesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
   noDevicesText: {
     fontSize: 16,
     color: '#666',
-    marginTop: 20,
+    textAlign: 'center',
   },
-  deviceUuid: {
+  deviceUniqueId: {
     fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  deviceListContainer: {
-    marginTop: 20,
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    width: '100%',
-  },
-  devicesTitle: {
-    fontSize: 18,
+    color: '#007AFF',
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  selectedDeviceItem: {
-    backgroundColor: '#e3e3ff',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  connectionStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    width: '100%',
-  },
-  connectionStatusText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 10,
-    flex: 1,
-  },
-  disconnectButton: {
-    padding: 5,
-    borderRadius: 15,
-    marginLeft: 10,
-  },
-  advertisingStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#FFF3E0',
-    borderRadius: 10,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#FF9800',
-  },
-  advertisingStatusText: {
-    fontSize: 14,
-    color: '#E65100',
-    marginLeft: 10,
-    fontWeight: '500',
-  },
-  deviceTimeAgo: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  testButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: '80%',
-    marginTop: 15,
-  },
-  testButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 6,
-  },
-  messageButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: '80%',
-    marginTop: 15,
-  },
-  messageButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 6,
   },
 });
 
