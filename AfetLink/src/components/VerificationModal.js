@@ -161,7 +161,7 @@ const VerificationModal = ({ visible, onClose, verificationId, staffData }) => {
           {isTimerRunning ? (
             <View style={styles.timerContainer}>
               <Ionicons name="time-outline" size={18} color="#6B7280" />
-              <Text style={styles.timerText}>{timer} saniye içinde kod gelmeli</Text>
+              <Text style={styles.timerText}>{timer} saniye içinde tekrar kod alabilirsiniz</Text>
             </View>
           ) : (
             <TouchableOpacity style={styles.resendContainer} onPress={handleResendCode}>

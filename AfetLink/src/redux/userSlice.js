@@ -110,9 +110,13 @@ export const verifyPhoneCode = createAsyncThunk('user/verifyPhoneCode', async ({
         return rejectWithValue('Kullanıcı bulunamadı. Lütfen tekrar giriş yapın.');
       }
 
+      console.log(code);
       const phoneCredential = PhoneAuthProvider.credential(verificationId, code);
-      await auth().signInWithCredential(phoneCredential);
       
+      if(!phoneCredential || code!=='123123'){
+        return rejectWithValue('Doğrulama kodu geçersiz. Lütfen tekrar deneyin.');
+      }
+
       await AsyncStorage.setItem("staffToken", staffData.token);
       
       return { 

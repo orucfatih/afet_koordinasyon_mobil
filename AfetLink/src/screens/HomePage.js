@@ -15,6 +15,7 @@ import {
   Alert,
   PermissionsAndroid
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -710,6 +711,8 @@ const HomePage = ({ navigation }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
 
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
@@ -744,7 +747,7 @@ const HomePage = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {marginBottom: insets.bottom}]}>
       {!cameraVisible && (
         <>
           <View style={styles.screenContainer}>{renderScreen()}</View>
