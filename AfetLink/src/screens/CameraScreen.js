@@ -12,7 +12,9 @@ import {
   StatusBar,
   Image,
   ScrollView,
-  TextInput
+  TextInput,
+  Modal,
+  FlatList
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -22,35 +24,38 @@ import firestore from '@react-native-firebase/firestore';
 import { savePhoto, initDB } from '../localDB/sqliteHelper';
 import { startSyncListener } from '../localDB/syncService';
 import Geolocation from 'react-native-geolocation-service';
-import DropDownPicker from 'react-native-dropdown-picker';
 
 const CameraScreen = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
   const [photoUri, setPhotoUri] = useState(null);
   const [location, setLocation] = useState(null);
   const [personCount, setPersonCount] = useState('');
-  const [personCountOpen, setPersonCountOpen] = useState(false);
-  const [personCountItems, setPersonCountItems] = useState([
-    {label: '1 kişi', value: '1'},
-    {label: '2 kişi', value: '2'},
-    {label: '3 kişi', value: '3'},
-    {label: '4 kişi', value: '4'},
-    {label: '5 kişi', value: '5'},
-    {label: '6-10 kişi', value: '8'},
-    {label: '10+ kişi', value: '15'},
-    {label: 'Bilinmiyor', value: '0'},
+  const [personCountModalVisible, setPersonCountModalVisible] = useState(false);
+  const [personCountItems] = useState([
+    {label: '1 kişi', value: '1 kişi'},
+    {label: '2 kişi', value: '2 kişi'},
+    {label: '3 kişi', value: '3 kişi'},
+    {label: '4 kişi', value: '4 kişi'},
+    {label: '5 kişi', value: '5 kişi'},
+    {label: '6-10 kişi', value: '6-10 kişi'},
+    {label: '11-20 kişi', value: '11-20 kişi'},
+    {label: '21-50 kişi', value: '21-50 kişi'},
+    {label: '50+ kişi', value: '50+ kişi'},
+    {label: 'Bilinmiyor', value: 'Bilinmiyor'},
   ]);
   
   const [hoursUnderRubble, setHoursUnderRubble] = useState('');
-  const [hoursUnderRubbleOpen, setHoursUnderRubbleOpen] = useState(false);
-  const [hoursUnderRubbleItems, setHoursUnderRubbleItems] = useState([
-    {label: '0-3 saat', value: '2'},
-    {label: '3-6 saat', value: '5'},
-    {label: '6-12 saat', value: '9'},
-    {label: '12-24 saat', value: '18'},
-    {label: '24-48 saat', value: '36'},
-    {label: '48+ saat', value: '60'},
-    {label: 'Bilinmiyor', value: '0'},
+  const [hoursUnderRubbleModalVisible, setHoursUnderRubbleModalVisible] = useState(false);
+  const [hoursUnderRubbleItems] = useState([
+    {label: '0-1 saat', value: '0-1 saat'},
+    {label: '1-3 saat', value: '1-3 saat'},
+    {label: '3-6 saat', value: '3-6 saat'},
+    {label: '6-12 saat', value: '6-12 saat'},
+    {label: '12-24 saat', value: '12-24 saat'},
+    {label: '24-48 saat', value: '24-48 saat'},
+    {label: '48-72 saat', value: '48-72 saat'},
+    {label: '72+ saat', value: '72+ saat'},
+    {label: 'Bilinmiyor', value: 'Bilinmiyor'},
   ]);
   
   const [additionalInfo, setAdditionalInfo] = useState('');
@@ -212,8 +217,8 @@ const CameraScreen = ({ navigation }) => {
     try {
       // Enkaz bilgilerini içeren nesne
       const rubbleInfo = {
-        personCount: parseInt(personCount) || 0,
-        hoursUnderRubble: parseInt(hoursUnderRubble) || 0,
+        personCount: personCount || null,
+        hoursUnderRubble: hoursUnderRubble || null,
         additionalInfo: additionalInfo,
       };
       
@@ -264,47 +269,38 @@ const CameraScreen = ({ navigation }) => {
         
         <View style={styles.formGroup}>
           <Text style={styles.label}>Enkaz Altındaki Tahmini Kişi Sayısı*</Text>
-          <DropDownPicker
-            open={personCountOpen}
-            value={personCount}
-            items={personCountItems}
-            setOpen={setPersonCountOpen}
-            setValue={setPersonCount}
-            setItems={setPersonCountItems}
-            placeholder="Kişi sayısı seçin"
-            style={styles.dropdown}
-            dropDownContainerStyle={styles.dropdownContainer}
-            listItemLabelStyle={styles.dropdownItemLabel}
-            zIndex={3000}
-            zIndexInverse={1000}
-          />
+          <TouchableOpacity 
+            style={styles.selectorButton} 
+            onPress={() => setPersonCountModalVisible(true)}
+          >
+            <Text style={personCount ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+              {personCount ? personCountItems.find(item => item.value === personCount)?.label : 'Kişi sayısı seçin'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#666" />
+          </TouchableOpacity>
         </View>
         
-        <View style={[styles.formGroup, {marginTop: personCountOpen ? 150 : 20}]}>
+        <View style={styles.formGroup}>
           <Text style={styles.label}>Enkazın Üzerinden Geçen Süre*</Text>
-          <DropDownPicker
-            open={hoursUnderRubbleOpen}
-            value={hoursUnderRubble}
-            items={hoursUnderRubbleItems}
-            setOpen={setHoursUnderRubbleOpen}
-            setValue={setHoursUnderRubble}
-            setItems={setHoursUnderRubbleItems}
-            placeholder="Süre seçin"
-            style={styles.dropdown}
-            dropDownContainerStyle={styles.dropdownContainer}
-            listItemLabelStyle={styles.dropdownItemLabel}
-            zIndex={2000}
-            zIndexInverse={2000}
-          />
+          <TouchableOpacity 
+            style={styles.selectorButton} 
+            onPress={() => setHoursUnderRubbleModalVisible(true)}
+          >
+            <Text style={hoursUnderRubble ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+              {hoursUnderRubble ? hoursUnderRubbleItems.find(item => item.value === hoursUnderRubble)?.label : 'Süre seçin'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#666" />
+          </TouchableOpacity>
         </View>
         
-        <View style={[styles.formGroup, {marginTop: hoursUnderRubbleOpen ? 150 : 20}]}>
+        <View style={styles.formGroup}>
           <Text style={styles.label}>Ek Bilgiler</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea,]}
             value={additionalInfo}
             onChangeText={setAdditionalInfo}
             placeholder="Varsa ek bilgiler (isteğe bağlı)"
+            placeholderTextColor="#999"
             multiline
             numberOfLines={4}
           />
@@ -327,6 +323,74 @@ const CameraScreen = ({ navigation }) => {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Person Count Modal */}
+        <Modal
+          visible={personCountModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setPersonCountModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Kişi Sayısı Seçin</Text>
+                <TouchableOpacity onPress={() => setPersonCountModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={personCountItems}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setPersonCount(item.value);
+                      setPersonCountModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {/* Hours Under Rubble Modal */}
+        <Modal
+          visible={hoursUnderRubbleModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setHoursUnderRubbleModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Süre Seçin</Text>
+                <TouchableOpacity onPress={() => setHoursUnderRubbleModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={hoursUnderRubbleItems}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setHoursUnderRubble(item.value);
+                      setHoursUnderRubbleModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     );
   };
@@ -480,20 +544,23 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  // Dropdown stilleri
-  dropdown: {
+  selectorButton: {
     backgroundColor: '#f5f5f5',
     borderColor: '#ddd',
+    borderWidth: 1,
     borderRadius: 8,
     height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
-  dropdownContainer: {
-    backgroundColor: '#fff',
-    borderColor: '#ddd',
-    borderWidth: 1,
-  },
-  dropdownItemLabel: {
+  selectorButtonText: {
     color: '#333',
+    fontSize: 16,
+  },
+  selectorButtonPlaceholder: {
+    color: '#999',
     fontSize: 16,
   },
   submitButton: {
@@ -516,7 +583,42 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 10,
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
 });
 
 export default CameraScreen;

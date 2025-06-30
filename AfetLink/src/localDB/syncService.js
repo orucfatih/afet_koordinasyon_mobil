@@ -5,6 +5,29 @@ import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import { Platform } from 'react-native';
 
+// Severity seviyesini kişi sayısına göre belirle
+const getSeverityLevel = (personCount) => {
+  if (!personCount) return "bilinmiyor";
+  
+  switch (personCount) {
+    case '1 kişi':
+    case '2 kişi':
+    case '3 kişi':
+    case '4 kişi':
+    case '5 kişi':
+      return "normal";
+    case '6-10 kişi':
+    case '11-20 kişi':
+      return "yüksek";
+    case '21-50 kişi':
+    case '50+ kişi':
+      return "kritik";
+    case 'Bilinmiyor':
+    default:
+      return "bilinmiyor";
+  }
+};
+
 export const startSyncListener = () => {
   // Veritabanını başlat
   initDB().catch(error => {
@@ -95,12 +118,12 @@ const syncPhotos = async () => {
               longitude: photo.longitude
             },
             rubbleInfo: {
-              personCount: photo.person_count || 0,
-              hoursUnderRubble: photo.hours_under_rubble || 0,
+              personCount: photo.person_count || null,
+              hoursUnderRubble: photo.hours_under_rubble || null,
               additionalInfo: photo.additional_info || ""
             },
             description: "",
-            severity: photo.person_count > 5 ? "yüksek" : "normal",
+            severity: getSeverityLevel(photo.person_count),
             type: "enkaz"
           });
 
@@ -157,12 +180,12 @@ const uploadImageToFirebase = async (uri, coordinates, rubbleInfo = {}) => {
         status: "yeni",
         location: coordinates || { latitude: null, longitude: null },
         rubbleInfo: {
-          personCount: rubbleInfo.personCount || 0,
-          hoursUnderRubble: rubbleInfo.hoursUnderRubble || 0,
+          personCount: rubbleInfo.personCount || null,
+          hoursUnderRubble: rubbleInfo.hoursUnderRubble || null,
           additionalInfo: rubbleInfo.additionalInfo || ""
         },
         description: "",
-        severity: rubbleInfo.personCount > 5 ? "yüksek" : "normal",
+        severity: getSeverityLevel(rubbleInfo.personCount),
         type: "enkaz"
       });
 

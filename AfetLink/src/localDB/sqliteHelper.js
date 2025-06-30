@@ -20,8 +20,8 @@ export const initDB = async () => {
         timestamp TEXT,
         latitude REAL,
         longitude REAL,
-        person_count INTEGER,
-        hours_under_rubble INTEGER,
+        person_count TEXT,
+        hours_under_rubble TEXT,
         additional_info TEXT,
         sent INTEGER DEFAULT 0
       );`
@@ -40,7 +40,7 @@ export const savePhoto = async (uri, latitude, longitude, rubbleInfo = {}) => {
     const db = await initDB();
     const timestamp = new Date().toISOString();
     
-    const { personCount = 0, hoursUnderRubble = 0, additionalInfo = '' } = rubbleInfo;
+    const { personCount = null, hoursUnderRubble = null, additionalInfo = '' } = rubbleInfo;
     
     // Fotoğrafı enkaz bilgileriyle kaydet
     const [result] = await db.executeSql(
