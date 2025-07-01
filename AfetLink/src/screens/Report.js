@@ -328,6 +328,7 @@ const Report = ({ navigation }) => {
           value={value}
           onChangeText={onChangeText}
           placeholder={`${label} giriniz...`}
+          placeholderTextColor="#999"
           autoCorrect={false}
           spellCheck={false}
           autoCapitalize="none"
@@ -429,6 +430,7 @@ const Report = ({ navigation }) => {
           <TextInput
             style={styles.searchInput}
             placeholder="Afet Bölgesi Ara"
+            placeholderTextColor="#999"
             value={searchRegion}
             onChangeText={setSearchRegion}
             autoCorrect={false}
@@ -448,12 +450,13 @@ const Report = ({ navigation }) => {
               style={styles.typePicker}
               mode="dropdown"
             >
-              <Picker.Item label="Tüm Türler" value="" />
+              <Picker.Item label="Tüm Türler" value="" color="#999" />
               {reportTypes.map(type => (
                 <Picker.Item
                   key={type.value}
                   label={type.label}
                   value={type.value}
+                  color="#999"
                 />
               ))}
             </Picker>
@@ -512,6 +515,7 @@ const Report = ({ navigation }) => {
                           key={type.value}
                           label={type.label}
                           value={type.value}
+                          color="#999"
                         />
                       ))}
                     </Picker>
@@ -605,6 +609,7 @@ const Report = ({ navigation }) => {
                           key={type.value}
                           label={type.label}
                           value={type.value}
+                          color="#999"
                         />
                       ))}
                     </Picker>
@@ -729,6 +734,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     backgroundColor: '#fafafa',
+    color: 'black',
   },
   typePickerContainer: {
     borderWidth: 1,
@@ -739,6 +745,7 @@ const styles = StyleSheet.create({
   },
   typePicker: {
     height: 50,
+    color: '#black',
   },
   list: {
     flex: 1,
@@ -860,6 +867,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     fontSize: 16,
+    color: 'black',
   },
   textArea: {
     height: 100,
@@ -885,6 +893,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 50,
+    color: 'black',
   },
   modalButtons: {
     flexDirection: 'row',
