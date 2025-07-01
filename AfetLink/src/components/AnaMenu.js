@@ -4,18 +4,21 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useSelector } from 'react-redux';
 import { Loading } from './index.js';
 import * as Animatable from 'react-native-animatable';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const AnaMenu = ({ navigation }) => {
   const { isLoading } = useSelector((state) => state.user);
+  const insets = useSafeAreaInsets();
+
 
   if (isLoading) {
     return <Loading />;
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
       {/* Background Gradient Effect */}

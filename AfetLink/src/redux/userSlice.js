@@ -35,6 +35,8 @@ export const login = createAsyncThunk('user/login', async({email,password}, {rej
             return rejectWithValue('Hatalı kullanıcı adı veya şifre. Lütfen tekrar deneyin.');
         } else if (error.code === 'auth/too-many-requests') {
             return rejectWithValue('Çok fazla giriş denemesi. Daha sonra tekrar deneyin.');
+        }else if (error.code === 'auth/invalid-email') {
+            return rejectWithValue('Geçersiz e-posta adresi. Lütfen geçerli bir e-posta adresi girin.');
         } else {
             return rejectWithValue(`Bilinmeyen hata: ${error.message}`); // Daha detaylı bir mesaj döndür
         }
@@ -96,6 +98,8 @@ export const staffLogin = createAsyncThunk('user/staffLogin', async ({ email, pa
           return rejectWithValue('Hatalı personel bilgileri. Lütfen tekrar deneyin.');
       } else if (error.code === 'auth/too-many-requests') {
           return rejectWithValue('Çok fazla giriş denemesi. Daha sonra tekrar deneyin.');
+      } else if (error.code === 'auth/invalid-email') {
+        return rejectWithValue('Geçersiz e-posta adresi. Lütfen geçerli bir e-posta adresi girin.');
       } else {
           return rejectWithValue(`Bilinmeyen hata: ${error.message}`);
       }

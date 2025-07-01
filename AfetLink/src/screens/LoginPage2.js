@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   StatusBar,
+  SafeAreaView,
 } from 'react-native';
 
 import React, { useState, useEffect} from 'react';
@@ -18,12 +19,14 @@ import { setIsLoading, staffLogin, staffAutoLogin, logout } from '../redux/userS
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LocationTrackingService from '../services/LocationTrackingService';
 import * as Animatable from 'react-native-animatable';
+//import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const generateCaptcha = () => {
   return Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 karakterlik captcha
 };
 
 const LoginPage2 = ({ navigation }) => {
+  //const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -99,7 +102,11 @@ const LoginPage2 = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={[styles.container, { /*marginBottom: insets.bottom */ }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
       {/* Background Gradient */}
@@ -229,12 +236,6 @@ const LoginPage2 = ({ navigation }) => {
               style={styles.primaryButton}
             />
 
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('SignUpPage2')}
-              style={styles.linkContainer}
-            >
-              <Text style={styles.linkText}>Hesabınız yok mu? Kaydolun</Text>
-            </TouchableOpacity>
           </Animatable.View>
 
           {/* Security Notice */}
@@ -261,7 +262,7 @@ const LoginPage2 = ({ navigation }) => {
           <Loading changeIsLoading={() => dispatch(setIsLoading(false))} />
         ) : null}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

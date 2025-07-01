@@ -1,16 +1,18 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as Animatable from 'react-native-animatable';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const AraMenu = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
       {/* Background Gradient */}
@@ -47,7 +49,11 @@ const AraMenu = () => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.modernButton}
-            onPress={() => alert('E-devlet ile giriş henüz uygulanmadı.')}
+            onPress={() => Alert.alert(
+              'Bilgi',
+              'E-devlet ile giriş henüz uygulanmadı.',
+              [{ text: 'Tamam', style: 'default' }]
+            )}
             activeOpacity={0.8}
           >
             <View style={styles.buttonContent}>

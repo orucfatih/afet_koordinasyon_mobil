@@ -135,8 +135,8 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     const limitedRegion = {
       latitude: Math.max(Math.min(newRegion.latitude, TURKEY_BOUNDS.maxLatitude), TURKEY_BOUNDS.minLatitude),
       longitude: Math.max(Math.min(newRegion.longitude, TURKEY_BOUNDS.maxLongitude), TURKEY_BOUNDS.minLongitude),
-      latitudeDelta: Math.max(Math.min(newRegion.latitudeDelta, 15), 0.1),
-      longitudeDelta: Math.max(Math.min(newRegion.longitudeDelta, 15), 0.1),
+      latitudeDelta: Math.max(Math.min(newRegion.latitudeDelta, 15), 0.001),
+      longitudeDelta: Math.max(Math.min(newRegion.longitudeDelta, 15), 0.001),
     };
     setRegion(limitedRegion);
   };

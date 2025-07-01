@@ -14,7 +14,8 @@ import {
   ScrollView,
   TextInput,
   Modal,
-  FlatList
+  FlatList,
+  KeyboardAvoidingView
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -258,71 +259,81 @@ const CameraScreen = ({ navigation }) => {
     if (!photoUri) return null;
     
     return (
-      <ScrollView style={styles.formContainer}>
-        <View style={styles.photoPreviewContainer}>
-          <Image source={{ uri: photoUri }} style={styles.previewImage} />
-          <TouchableOpacity style={styles.retakeButton} onPress={takePicture}>
-            <Ionicons name="camera-reverse" size={24} color="#fff" />
-            <Text style={styles.retakeButtonText}>Yeniden Çek</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Enkaz Altındaki Tahmini Kişi Sayısı*</Text>
-          <TouchableOpacity 
-            style={styles.selectorButton} 
-            onPress={() => setPersonCountModalVisible(true)}
-          >
-            <Text style={personCount ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
-              {personCount ? personCountItems.find(item => item.value === personCount)?.label : 'Kişi sayısı seçin'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Enkazın Üzerinden Geçen Süre*</Text>
-          <TouchableOpacity 
-            style={styles.selectorButton} 
-            onPress={() => setHoursUnderRubbleModalVisible(true)}
-          >
-            <Text style={hoursUnderRubble ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
-              {hoursUnderRubble ? hoursUnderRubbleItems.find(item => item.value === hoursUnderRubble)?.label : 'Süre seçin'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Ek Bilgiler</Text>
-          <TextInput
-            style={[styles.input, styles.textArea,]}
-            value={additionalInfo}
-            onChangeText={setAdditionalInfo}
-            placeholder="Varsa ek bilgiler (isteğe bağlı)"
-            placeholderTextColor="#999"
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-        
-        <TouchableOpacity 
-          style={[
-            styles.submitButton, 
-            formComplete ? styles.submitButtonActive : styles.submitButtonDisabled
-          ]} 
-          onPress={saveRubbleReport}
-          disabled={!formComplete || uploading}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {uploading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="send" size={24} color="#fff" />
-              <Text style={styles.submitButtonText}>Enkazı Bildir</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          <View style={styles.photoPreviewContainer}>
+            <Image source={{ uri: photoUri }} style={styles.previewImage} />
+            <TouchableOpacity style={styles.retakeButton} onPress={takePicture}>
+              <Ionicons name="camera-reverse" size={24} color="#fff" />
+              <Text style={styles.retakeButtonText}>Yeniden Çek</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Enkaz Altındaki Tahmini Kişi Sayısı*</Text>
+            <TouchableOpacity 
+              style={styles.selectorButton} 
+              onPress={() => setPersonCountModalVisible(true)}
+            >
+              <Text style={personCount ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                {personCount ? personCountItems.find(item => item.value === personCount)?.label : 'Kişi sayısı seçin'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Enkazın Üzerinden Geçen Süre*</Text>
+            <TouchableOpacity 
+              style={styles.selectorButton} 
+              onPress={() => setHoursUnderRubbleModalVisible(true)}
+            >
+              <Text style={hoursUnderRubble ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                {hoursUnderRubble ? hoursUnderRubbleItems.find(item => item.value === hoursUnderRubble)?.label : 'Süre seçin'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Ek Bilgiler</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={additionalInfo}
+              onChangeText={setAdditionalInfo}
+              placeholder="Varsa ek bilgiler (isteğe bağlı)"
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+          
+          <TouchableOpacity 
+            style={[
+              styles.submitButton, 
+              formComplete ? styles.submitButtonActive : styles.submitButtonDisabled
+            ]} 
+            onPress={saveRubbleReport}
+            disabled={!formComplete || uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="send" size={24} color="#fff" />
+                <Text style={styles.submitButtonText}>Enkazı Bildir</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
 
         {/* Person Count Modal */}
         <Modal
@@ -391,7 +402,7 @@ const CameraScreen = ({ navigation }) => {
             </View>
           </View>
         </Modal>
-      </ScrollView>
+      </KeyboardAvoidingView>
     );
   };
 
@@ -495,6 +506,9 @@ const styles = StyleSheet.create({
     color: '#666' 
   },
   // Form stilleri
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   formContainer: {
     flex: 1,
     padding: 16,

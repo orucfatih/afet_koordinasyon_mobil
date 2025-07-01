@@ -18,12 +18,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading, login, autoLogin } from '../redux/userSlice.js';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as Animatable from 'react-native-animatable';
+//import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const generateCaptcha = () => {
   return Math.random().toString(36).substring(2, 6).toUpperCase(); // 4 karakterlik captcha
 };
 
 const LoginPage = ({ navigation }) => {
+  //const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -80,7 +82,11 @@ const LoginPage = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={[styles.container, { /*marginBottom: insets.bottom */ }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
       {/* Background Gradient */}
@@ -222,7 +228,7 @@ const LoginPage = ({ navigation }) => {
 
         {isLoading ? <Loading changeIsLoading={() => dispatch(setIsLoading(false))} /> : null}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
