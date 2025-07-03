@@ -25,13 +25,31 @@ import firestore from '@react-native-firebase/firestore';
 import { savePhoto, initDB } from '../localDB/sqliteHelper';
 import { startSyncListener } from '../localDB/syncService';
 import Geolocation from 'react-native-geolocation-service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CameraScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
   const [uploading, setUploading] = useState(false);
   const [photoUri, setPhotoUri] = useState(null);
   const [location, setLocation] = useState(null);
+  const [disasterType, setDisasterType] = useState('');
+  const [disasterTypeModalVisible, setDisasterTypeModalVisible] = useState(false);
+  const [customDisasterType, setCustomDisasterType] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [personCount, setPersonCount] = useState('');
   const [personCountModalVisible, setPersonCountModalVisible] = useState(false);
+  const [disasterTypeItems] = useState([
+    {label: 'Deprem', value: 'Deprem'},
+    {label: 'Sel', value: 'Sel'},
+    {label: 'Yangın', value: 'Yangın'},
+    {label: 'Çığ', value: 'Çığ'},
+    {label: 'Heyelan', value: 'Heyelan'},
+    {label: 'Fırtına', value: 'Fırtına'},
+    {label: 'Kuraklık', value: 'Kuraklık'},
+    {label: 'Diğer', value: 'Diğer'},
+  ]);
+
   const [personCountItems] = useState([
     {label: '1 kişi', value: '1 kişi'},
     {label: '2 kişi', value: '2 kişi'},
@@ -45,9 +63,9 @@ const CameraScreen = ({ navigation }) => {
     {label: 'Bilinmiyor', value: 'Bilinmiyor'},
   ]);
   
-  const [hoursUnderRubble, setHoursUnderRubble] = useState('');
-  const [hoursUnderRubbleModalVisible, setHoursUnderRubbleModalVisible] = useState(false);
-  const [hoursUnderRubbleItems] = useState([
+  const [timeSinceDisaster, setTimeSinceDisaster] = useState('');
+  const [timeSinceDisasterModalVisible, setTimeSinceDisasterModalVisible] = useState(false);
+  const [timeSinceDisasterItems] = useState([
     {label: '0-1 saat', value: '0-1 saat'},
     {label: '1-3 saat', value: '1-3 saat'},
     {label: '3-6 saat', value: '3-6 saat'},
@@ -64,12 +82,13 @@ const CameraScreen = ({ navigation }) => {
 
   useEffect(() => {
     // Form alanlarının dolu olup olmadığını kontrol et
-    if (photoUri && personCount !== '' && hoursUnderRubble !== '') {
+    const isDisasterTypeValid = disasterType !== '' && (disasterType !== 'Diğer' || customDisasterType.trim() !== '');
+    if (photoUri && isDisasterTypeValid && personCount !== '' && timeSinceDisaster !== '') {
       setFormComplete(true);
     } else {
       setFormComplete(false);
     }
-  }, [photoUri, personCount, hoursUnderRubble]);
+  }, [photoUri, disasterType, customDisasterType, personCount, timeSinceDisaster]);
 
   useEffect(() => {
     // Veritabanını başlat
@@ -216,10 +235,11 @@ const CameraScreen = ({ navigation }) => {
     setUploading(true);
     
     try {
-      // Enkaz bilgilerini içeren nesne
-      const rubbleInfo = {
+      // Afet bilgilerini içeren nesne
+      const disasterInfo = {
+        disasterType: disasterType === 'Diğer' ? customDisasterType : disasterType,
         personCount: personCount || null,
-        hoursUnderRubble: hoursUnderRubble || null,
+        timeSinceDisaster: timeSinceDisaster || null,
         additionalInfo: additionalInfo,
       };
       
@@ -228,28 +248,31 @@ const CameraScreen = ({ navigation }) => {
         photoUri, 
         location?.latitude, 
         location?.longitude, 
-        rubbleInfo
+        disasterInfo
       );
       
       console.log("Kayıt başarılı.");
       Alert.alert(
         'Başarılı',
-        'Enkaz bildirimi kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
+        'Afet bildirimi kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
         [{ 
           text: 'Tamam', 
-          onPress: () => {
-            // Formu sıfırla
-            setPhotoUri(null);
-            setPersonCount('');
-            setHoursUnderRubble('');
-            setAdditionalInfo('');
-            setLocation(null);
-          } 
+                      onPress: () => {
+              // Formu sıfırla
+              setPhotoUri(null);
+              setDisasterType('');
+              setCustomDisasterType('');
+              setShowCustomInput(false);
+              setPersonCount('');
+              setTimeSinceDisaster('');
+              setAdditionalInfo('');
+              setLocation(null);
+            } 
         }]
       );
     } catch (error) {
       console.error("Kayıt sırasında hata:", error);
-      Alert.alert('Hata', 'Enkaz bildirimi kaydedilirken bir hata oluştu.');
+      Alert.alert('Hata', 'Afet bildirimi kaydedilirken bir hata oluştu.');
     } finally {
       setUploading(false);
     }
@@ -260,7 +283,7 @@ const CameraScreen = ({ navigation }) => {
     
     return (
       <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView}
+        style={[styles.keyboardAvoidingView, { marginBottom: insets.bottom }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
@@ -278,7 +301,33 @@ const CameraScreen = ({ navigation }) => {
           </View>
           
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Enkaz Altındaki Tahmini Kişi Sayısı*</Text>
+            <Text style={styles.label}>Afet Türü*</Text>
+            <TouchableOpacity 
+              style={styles.selectorButton} 
+              onPress={() => setDisasterTypeModalVisible(true)}
+            >
+              <Text style={disasterType ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                {disasterType ? (disasterType === 'Diğer' ? customDisasterType : disasterTypeItems.find(item => item.value === disasterType)?.label) : 'Afet türü seçin'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
+          {showCustomInput && (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Afet Türü (Özel)</Text>
+              <TextInput
+                style={styles.input}
+                value={customDisasterType}
+                onChangeText={setCustomDisasterType}
+                placeholder="Afet türünü yazın"
+                placeholderTextColor="#999"
+              />
+            </View>
+          )}
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Afetten Etkilenen Tahmini Kişi Sayısı*</Text>
             <TouchableOpacity 
               style={styles.selectorButton} 
               onPress={() => setPersonCountModalVisible(true)}
@@ -291,13 +340,13 @@ const CameraScreen = ({ navigation }) => {
           </View>
           
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Enkazın Üzerinden Geçen Süre*</Text>
+            <Text style={styles.label}>Afetin Üzerinden Geçen Süre*</Text>
             <TouchableOpacity 
               style={styles.selectorButton} 
-              onPress={() => setHoursUnderRubbleModalVisible(true)}
+              onPress={() => setTimeSinceDisasterModalVisible(true)}
             >
-              <Text style={hoursUnderRubble ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
-                {hoursUnderRubble ? hoursUnderRubbleItems.find(item => item.value === hoursUnderRubble)?.label : 'Süre seçin'}
+              <Text style={timeSinceDisaster ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                {timeSinceDisaster ? timeSinceDisasterItems.find(item => item.value === timeSinceDisaster)?.label : 'Süre seçin'}
               </Text>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
@@ -329,11 +378,51 @@ const CameraScreen = ({ navigation }) => {
             ) : (
               <>
                 <Ionicons name="send" size={24} color="#fff" />
-                <Text style={styles.submitButtonText}>Enkazı Bildir</Text>
+                <Text style={styles.submitButtonText}>Afet Bildir</Text>
               </>
             )}
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Disaster Type Modal */}
+        <Modal
+          visible={disasterTypeModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setDisasterTypeModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Afet Türü Seçin</Text>
+                <TouchableOpacity onPress={() => setDisasterTypeModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={disasterTypeItems}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setDisasterType(item.value);
+                      if (item.value === 'Diğer') {
+                        setShowCustomInput(true);
+                      } else {
+                        setShowCustomInput(false);
+                        setCustomDisasterType('');
+                      }
+                      setDisasterTypeModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
 
         {/* Person Count Modal */}
         <Modal
@@ -369,30 +458,30 @@ const CameraScreen = ({ navigation }) => {
           </View>
         </Modal>
 
-        {/* Hours Under Rubble Modal */}
+        {/* Time Since Disaster Modal */}
         <Modal
-          visible={hoursUnderRubbleModalVisible}
+          visible={timeSinceDisasterModalVisible}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => setHoursUnderRubbleModalVisible(false)}
+          onRequestClose={() => setTimeSinceDisasterModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Süre Seçin</Text>
-                <TouchableOpacity onPress={() => setHoursUnderRubbleModalVisible(false)}>
+                <TouchableOpacity onPress={() => setTimeSinceDisasterModalVisible(false)}>
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
               <FlatList
-                data={hoursUnderRubbleItems}
+                data={timeSinceDisasterItems}
                 keyExtractor={(item) => item.value}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.modalItem}
                     onPress={() => {
-                      setHoursUnderRubble(item.value);
-                      setHoursUnderRubbleModalVisible(false);
+                      setTimeSinceDisaster(item.value);
+                      setTimeSinceDisasterModalVisible(false);
                     }}
                   >
                     <Text style={styles.modalItemText}>{item.label}</Text>
@@ -414,14 +503,14 @@ const CameraScreen = ({ navigation }) => {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.title}>Enkaz Bildirimi</Text>
+          <Text style={styles.title}>Afet Bildirimi</Text>
         </View>
         
         {photoUri ? (
           renderPhotoForm()
         ) : (
           <View style={styles.content}>
-            <Text style={styles.description}>Enkaz bölgesini fotoğraflamak için kamerayı kullanın.</Text>
+            <Text style={styles.description}>Afet bölgesini fotoğraflamak için kamerayı kullanın.</Text>
             {uploading ? (
               <View style={styles.uploadingContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />

@@ -20,8 +20,9 @@ export const initDB = async () => {
         timestamp TEXT,
         latitude REAL,
         longitude REAL,
+        disaster_type TEXT,
         person_count TEXT,
-        hours_under_rubble TEXT,
+        time_since_disaster TEXT,
         additional_info TEXT,
         sent INTEGER DEFAULT 0
       );`
@@ -34,21 +35,21 @@ export const initDB = async () => {
   }
 };
 
-export const savePhoto = async (uri, latitude, longitude, rubbleInfo = {}) => {
+export const savePhoto = async (uri, latitude, longitude, disasterInfo = {}) => {
   try {
     // Veritabanının başlatıldığından emin ol
     const db = await initDB();
     const timestamp = new Date().toISOString();
     
-    const { personCount = null, hoursUnderRubble = null, additionalInfo = '' } = rubbleInfo;
+    const { disasterType = null, personCount = null, timeSinceDisaster = null, additionalInfo = '' } = disasterInfo;
     
-    // Fotoğrafı enkaz bilgileriyle kaydet
+    // Fotoğrafı afet bilgileriyle kaydet
     const [result] = await db.executeSql(
-      'INSERT INTO photos (uri, timestamp, latitude, longitude, person_count, hours_under_rubble, additional_info, sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [uri, timestamp, latitude || null, longitude || null, personCount, hoursUnderRubble, additionalInfo, 0]
+      'INSERT INTO photos (uri, timestamp, latitude, longitude, disaster_type, person_count, time_since_disaster, additional_info, sent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [uri, timestamp, latitude || null, longitude || null, disasterType, personCount, timeSinceDisaster, additionalInfo, 0]
     );
     
-    console.log('Enkaz bildirimi başarıyla kaydedildi, ID:', result.insertId);
+    console.log('Afet bildirimi başarıyla kaydedildi, ID:', result.insertId);
     return result;
   } catch (error) {
     console.error('Fotoğraf kaydetme hatası:', error);

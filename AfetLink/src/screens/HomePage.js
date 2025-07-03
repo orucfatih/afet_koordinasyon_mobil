@@ -483,7 +483,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
                 style={styles.bigButton} 
                 onPress={() => navigation.navigate('Camera')}>
 
-                <Text style={styles.bigButtonText}>ENKAZ BİLDİR</Text>
+                <Text style={styles.bigButtonText}>AFET BİLDİR</Text>
                 <Ionicons name="warning" size={30} color="white" style={styles.camera} />
               </TouchableOpacity>
             </Animatable.View>

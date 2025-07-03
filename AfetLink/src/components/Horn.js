@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Vibration, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import Sound from 'react-native-sound';
 import * as Animatable from 'react-native-animatable';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 Sound.setCategory('Playback');
 
@@ -10,12 +11,12 @@ const Horn = ({ navigation }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeSound, setActiveSound] = useState(null);
   const soundRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   const stopSound = () => {
     if (soundRef.current) {
       soundRef.current.stop();
       soundRef.current.release();
-      Vibration.cancel();
       setIsPlaying(false);
       setActiveSound(null);
     }
@@ -31,9 +32,6 @@ const Horn = ({ navigation }) => {
     setActiveSound(fileName);
 
     try {
-      const PATTERN = [0, 1000, 500];
-      Vibration.vibrate(PATTERN, true);
-
       console.log('Loading sound file:', fileName);
       const sound = new Sound(fileName, Sound.MAIN_BUNDLE, (error) => {
         if (error) {
@@ -45,23 +43,30 @@ const Horn = ({ navigation }) => {
 
         soundRef.current = sound;
         console.log('Sound loaded, playing...');
-        sound.play((success) => {
-          if (success) {
-            console.log('Sound finished playing');
-          } else {
-            console.log('Sound playback failed');
-          }
-          sound.release();
-          setIsPlaying(false);
-          setActiveSound(null);
-          Vibration.cancel();
-        });
+        
+        // 3 kez çal
+        let playCount = 0;
+        const playThreeTimes = () => {
+          sound.play((success) => {
+            playCount++;
+            if (playCount < 3) {
+              // Hemen tekrar çal
+              playThreeTimes();
+            } else {
+              // 3 kez çaldıktan sonra bitir
+              sound.release();
+              setIsPlaying(false);
+              setActiveSound(null);
+            }
+          });
+        };
+        
+        playThreeTimes();
       });
     } catch (error) {
       console.error('Error playing sound:', error);
       setIsPlaying(false);
       setActiveSound(null);
-      Vibration.cancel();
     }
   };
 
@@ -130,7 +135,7 @@ const Horn = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { marginBottom: insets.bottom}]}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="#f8f9fa"
@@ -146,14 +151,15 @@ const Horn = ({ navigation }) => {
         </View>
         
         <View style={styles.container}>
-          <View style={styles.headerSection}>
-            <Text style={styles.mainTitle}>Acil Durum Sesleri</Text>
-            <Text style={styles.subtitle}>Yardım almak için kullanın</Text>
-          </View>
 
-          <View style={styles.soundCardsContainer}>
+          <ScrollView style={styles.soundCardsContainer}>
+            <View style={styles.headerSection}>
+              <Text style={styles.mainTitle}>Acil Durum Sesleri</Text>
+              <Text style={styles.subtitle}>Yardım almak için kullanın</Text>
+            </View>
+
             {renderSoundCard(
-              'megaphone.mp3', 
+              'refereewhistle.mp3', 
               'wind', 
               'Düdük Sesi', 
               'Dikkat çekmek için ideal',
@@ -166,7 +172,7 @@ const Horn = ({ navigation }) => {
               'Uzun mesafe için güçlü',
               '#B71C1C'
             )}
-          </View>
+          </ScrollView>
         </View>
       </SafeAreaView>
     </View>

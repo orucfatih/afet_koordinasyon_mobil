@@ -117,14 +117,14 @@ const syncPhotos = async () => {
               latitude: photo.latitude,
               longitude: photo.longitude
             },
-            rubbleInfo: {
+            disasterInfo: {
+              disasterType: photo.disaster_type || null,
               personCount: photo.person_count || null,
-              hoursUnderRubble: photo.hours_under_rubble || null,
+              timeSinceDisaster: photo.time_since_disaster || null,
               additionalInfo: photo.additional_info || ""
             },
             description: "",
             severity: getSeverityLevel(photo.person_count),
-            type: "enkaz"
           });
 
         // Başarıyla yüklenen fotoğrafı yerel veritabanında işaretle
@@ -154,7 +154,7 @@ const uploadPhoto = async (localUri) => {
 
 //------------------------------------------
 
-const uploadImageToFirebase = async (uri, coordinates, rubbleInfo = {}) => {
+const uploadImageToFirebase = async (uri, coordinates, disasterInfo = {}) => {
   try {
     // URL formatını kontrol et
     const correctUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
@@ -179,10 +179,11 @@ const uploadImageToFirebase = async (uri, coordinates, rubbleInfo = {}) => {
         fileName: fileName,
         status: "yeni",
         location: coordinates || { latitude: null, longitude: null },
-        rubbleInfo: {
-          personCount: rubbleInfo.personCount || null,
-          hoursUnderRubble: rubbleInfo.hoursUnderRubble || null,
-          additionalInfo: rubbleInfo.additionalInfo || ""
+        disasterInfo: {
+          disasterType: disasterInfo.disasterType || null,
+          personCount: disasterInfo.personCount || null,
+          timeSinceDisaster: disasterInfo.timeSinceDisaster || null,
+          additionalInfo: disasterInfo.additionalInfo || ""
         },
         description: "",
         severity: getSeverityLevel(rubbleInfo.personCount),
