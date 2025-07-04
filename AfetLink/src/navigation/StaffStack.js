@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import { HomePage2, UnderDebrisScreen, Report, Missing, Request } from '../screens/index.js'
+import { HomePage2, UnderDebrisScreen, Report, Missing, Request, Tasks } from '../screens/index.js'
 import { ViewAll,Horn } from '../components/index.js'
 import CameraScreen from '../screens/CameraScreen'
 import İnformation from '../components/İnformation'
@@ -20,6 +20,7 @@ const StaffStack = () => {
       <Stack.Screen name='UnderDebris' component={UnderDebrisScreen} />
       <Stack.Screen name='Horn' component={Horn} />
       <Stack.Screen name='Report' component={Report} />
+      <Stack.Screen name='Tasks' component={Tasks} />
       <Stack.Screen name='Missing' component={Missing} />
       <Stack.Screen name='Request' component={Request} />
       <Stack.Screen name='İnformation' component={İnformation} />

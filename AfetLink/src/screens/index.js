@@ -9,6 +9,7 @@ import UnderDebrisScreen from "./UnderDebrisScreen";
 import Missing from "./Missing";
 import Report from "./Report";
 import Request from "./Request";
+import Tasks from "./Tasks";
 
 export{
 
@@ -23,4 +24,5 @@ export{
     Missing,
     Report,
     Request,
+    Tasks,
 }

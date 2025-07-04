@@ -6,21 +6,43 @@ import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer, {
+  AVEncoderAudioQualityIOSType,
+  AVEncodingOption,
+  AudioEncoderAndroidType,
+  AudioSourceAndroidType,
+  OutputFormatAndroidType,
+} from 'react-native-audio-recorder-player';
 import Geolocation from 'react-native-geolocation-service';
 import RNFS from 'react-native-fs';
 
-const audioRecorderPlayer = new AudioRecorderPlayer();
-
 const ChatScreen = ({ navigation }) => {
-  // Component unmount olduğunda ses kaydını temizle
+  const [audioRecorderPlayer, setAudioRecorderPlayer] = useState(null);
+  const [recordingTimer, setRecordingTimer] = useState(0);
+  const [recordingInterval, setRecordingInterval] = useState(null);
+  const [playingAudio, setPlayingAudio] = useState(null);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
+  const [playbackInterval, setPlaybackInterval] = useState(null);
+
+  // AudioRecorderPlayer instance'ını oluştur
   useEffect(() => {
+    const audioRecorderPlayer = new AudioRecorderPlayer();
+    setAudioRecorderPlayer(audioRecorderPlayer);
+
+    // Cleanup function
     return () => {
       if (audioRecorderPlayer) {
         audioRecorderPlayer.stopRecorder();
         audioRecorderPlayer.stopPlayer();
         audioRecorderPlayer.removeRecordBackListener();
         audioRecorderPlayer.removePlayBackListener();
+      }
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+      if (playbackInterval) {
+        clearInterval(playbackInterval);
       }
     };
   }, []);
@@ -37,7 +59,6 @@ const ChatScreen = ({ navigation }) => {
   
   // Ses kaydı için state'ler
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
   const [audioPath, setAudioPath] = useState('');
   
   // Dosya yükleme için loading state
@@ -254,25 +275,36 @@ const ChatScreen = ({ navigation }) => {
       
       setAudioPath(path);
       setIsRecording(true);
-      setRecordingTime(0);
+      setRecordingTimer(0);
       setAttachmentMenuOpen(false);
 
-      // Kayıt başlat
-      const result = await audioRecorderPlayer.startRecorder(path, {
-        AudioEncoderAndroid: audioRecorderPlayer.AUDIO_ENCODER_AAC,
-        AudioSourceAndroid: audioRecorderPlayer.AUDIO_SOURCE_MIC,
-        AVEncoderAudioQualityKeyIOS: audioRecorderPlayer.AV_ENCODER_AUDIO_QUALITY_HIGH,
+      // Platform-specific ses ayarları
+      const audioSet = Platform.OS === 'ios' ? {
+        AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
         AVNumberOfChannelsKeyIOS: 1,
-        AVFormatIDKeyIOS: audioRecorderPlayer.AV_FILE_TYPE_MPEG4AAC,
-      });
-      
+        AVFormatIDKeyIOS: AVEncodingOption.aac,
+      } : {
+        AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+        AudioSourceAndroid: AudioSourceAndroidType.MIC,
+        OutputFormatAndroid: OutputFormatAndroidType.MPEG_4,
+      };
+
+      // Kayıt başlat
+      const result = await audioRecorderPlayer.startRecorder(path, audioSet);
       console.log('Kayıt başlatıldı:', result);
       
-      // Zamanlayıcı başlat
-      audioRecorderPlayer.addRecordBackListener((e) => {
-        console.log('Kayıt süresi:', e.currentPosition);
-        setRecordingTime(Math.floor(e.currentPosition / 1000));
-      });
+      // Timer başlat
+      const interval = setInterval(() => {
+        setRecordingTimer(prev => {
+          if (prev >= 60) { // 60 saniye sonra otomatik durdur
+            stopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      setRecordingInterval(interval);
+      
     } catch (error) {
       console.error('Ses kaydı başlatma hatası:', error);
       Alert.alert('Hata', 'Ses kaydı başlatılamadı: ' + error.message);
@@ -286,6 +318,12 @@ const ChatScreen = ({ navigation }) => {
     try {
       console.log('Ses kaydı durduruluyor...');
       setUploadingMedia(true);
+      
+      // Timer'ı durdur
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        setRecordingInterval(null);
+      }
       
       const result = await audioRecorderPlayer.stopRecorder();
       console.log('Kayıt durduruldu:', result);
@@ -312,7 +350,7 @@ const ChatScreen = ({ navigation }) => {
           
           await sendMediaMessage('audio', downloadURL, {
             fileName,
-            duration: recordingTime
+            duration: recordingTimer
           });
           
           console.log('Ses mesajı gönderildi');
@@ -335,7 +373,7 @@ const ChatScreen = ({ navigation }) => {
       Alert.alert('Hata', 'Ses kaydı gönderilemedi: ' + error.message);
     } finally {
       setUploadingMedia(false);
-      setRecordingTime(0);
+      setRecordingTimer(0);
       setAudioPath('');
     }
   };
@@ -615,15 +653,22 @@ const ChatScreen = ({ navigation }) => {
                   size={20} 
                   color={isCurrentUser ? 'white' : '#D32F2F'} 
                 />
-                <Text style={[styles.audioText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
-                  Ses Kaydı {item.metadata?.duration ? `(${item.metadata.duration}s)` : ''}
-                </Text>
+                <View style={styles.audioInfo}>
+                  <Text style={[styles.audioText, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+                    Ses Kaydı {item.metadata?.duration ? `(${item.metadata.duration}s)` : ''}
+                  </Text>
+                  {playingAudio === item.id && (
+                    <Text style={[styles.audioProgress, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
+                      {playbackTime}s / {playbackDuration}s
+                    </Text>
+                  )}
+                </View>
                 <TouchableOpacity 
-                  onPress={() => playAudio(item.url)}
-                  style={styles.playButton}
+                  onPress={() => playAudio(item.url, item.id)}
+                  style={[styles.playButton, playingAudio === item.id && styles.playingButton]}
                 >
                   <Ionicons 
-                    name="play" 
+                    name={playingAudio === item.id ? "pause" : "play"} 
                     size={16} 
                     color={isCurrentUser ? 'white' : '#D32F2F'} 
                   />
@@ -714,28 +759,97 @@ const ChatScreen = ({ navigation }) => {
 
   const selectedTeamData = teams.find(team => team.id === selectedTeam);
 
+  // Ses oynatmayı durdurma fonksiyonu
+  const stopAudioPlayback = async () => {
+    try {
+      console.log('Ses oynatma durduruluyor...');
+      
+      // Listener'ı kaldır
+      audioRecorderPlayer.removePlayBackListener();
+      
+      // Oynatmayı durdur
+      await audioRecorderPlayer.stopPlayer();
+      console.log('Oynatma başarıyla durduruldu');
+      
+      // State'leri temizle
+      setPlayingAudio(null);
+      setPlaybackTime(0);
+      setPlaybackDuration(0);
+      
+      // Timer'ı temizle
+      if (playbackInterval) {
+        clearInterval(playbackInterval);
+        setPlaybackInterval(null);
+      }
+    } catch (error) {
+      console.error('Oynatma durdurma hatası:', error);
+    }
+  };
+
   // Ses dosyası oynatma fonksiyonu
-  const playAudio = async (audioUrl) => {
+  const playAudio = async (audioUrl, messageId) => {
     try {
       console.log('Ses dosyası oynatılıyor:', audioUrl);
       
+      // Eğer aynı ses dosyası zaten oynatılıyorsa durdur
+      if (playingAudio === messageId) {
+        await stopAudioPlayback();
+        return;
+      }
+      
       // Önceki oynatmayı durdur
-      await audioRecorderPlayer.stopPlayer();
-      audioRecorderPlayer.removePlayBackListener();
+      await stopAudioPlayback();
       
       // Yeni ses dosyasını oynat
-      await audioRecorderPlayer.startPlayer(audioUrl);
+      const result = await audioRecorderPlayer.startPlayer(audioUrl);
+      console.log('Oynatma başlatıldı:', result);
       
+      setPlayingAudio(messageId);
+      setPlaybackTime(0);
+      
+      // Oynatma başladıktan sonra kısa bir süre bekleyip duration'ı al
+      // setTimeout(() => {
+      //   audioRecorderPlayer.getCurrentTime().then((currentTime) => {
+      //     console.log('Başlangıç zamanı:', currentTime);
+      //   }).catch((error) => {
+      //     console.log('Zaman alma hatası:', error);
+      //   });
+      // }, 100);
+      
+      // Oynatma listener'ı ekle
       audioRecorderPlayer.addPlayBackListener((e) => {
         console.log('Oynatma durumu:', e.currentPosition, '/', e.duration);
-        if (e.currentPosition === e.duration) {
-          audioRecorderPlayer.stopPlayer();
-          audioRecorderPlayer.removePlayBackListener();
+        const currentTime = Math.floor(e.currentPosition / 1000);
+        const totalDuration = Math.floor(e.duration / 1000);
+        
+        setPlaybackTime(currentTime);
+        setPlaybackDuration(totalDuration);
+        
+        // Oynatma bittiğinde kontrol et (1 saniye tolerans ile)
+        if (e.currentPosition >= e.duration - 1000 || currentTime >= totalDuration) {
+          console.log('Oynatma bitti, durduruluyor...');
+          stopAudioPlayback();
         }
       });
+      
+      // Manuel timer başlat (backup olarak)
+      const interval = setInterval(() => {
+        setPlaybackTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= playbackDuration && playbackDuration > 0) {
+            console.log('Timer ile oynatma bitti');
+            stopAudioPlayback();
+            return prev;
+          }
+          return newTime;
+        });
+      }, 1000);
+      setPlaybackInterval(interval);
+      
     } catch (error) {
       console.error('Ses oynatma hatası:', error);
       Alert.alert('Hata', 'Ses dosyası oynatılamadı: ' + error.message);
+      await stopAudioPlayback();
     }
   };
 
@@ -778,7 +892,9 @@ const ChatScreen = ({ navigation }) => {
           <View style={styles.recordingIndicator}>
             <View style={styles.recordingContent}>
               <Ionicons name="mic" size={24} color="#D32F2F" />
-              <Text style={styles.recordingText}>Kayıt ediliyor... {recordingTime}s</Text>
+              <Text style={styles.recordingText}>
+                Kayıt ediliyor... ({Math.floor(recordingTimer / 60)}:{(recordingTimer % 60).toString().padStart(2, '0')})
+              </Text>
               <TouchableOpacity 
                 style={styles.stopRecordingButton}
                 onPress={stopRecording}
@@ -1578,9 +1694,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
   },
-  audioText: {
+  audioInfo: {
     flex: 1,
     marginHorizontal: 10,
+  },
+  audioText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  audioProgress: {
+    fontSize: 12,
+    marginTop: 2,
+    opacity: 0.8,
   },
   playButton: {
     padding: 8,
@@ -1588,6 +1713,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  playingButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   locationMessage: {
     flexDirection: 'row',

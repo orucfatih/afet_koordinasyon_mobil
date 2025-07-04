@@ -560,6 +560,17 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
 
           <TouchableOpacity 
             style={styles.modernSmallButton} 
+            onPress={() => navigation.navigate('Tasks')}>
+            <View style={styles.smallButtonGradient}>
+              <View style={styles.smallButtonIconWrapper}>
+                <Ionicons name="list" size={22} color="#fff" />
+              </View>
+              <Text style={styles.modernSmallButtonText}>Görevler</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.modernSmallButton} 
             onPress={() => navigation.navigate('Request')}>
             <View style={styles.smallButtonGradient}>
               <View style={styles.smallButtonIconWrapper}>
