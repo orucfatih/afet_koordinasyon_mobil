@@ -8,10 +8,22 @@ import storage from '@react-native-firebase/storage';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import Geolocation from 'react-native-geolocation-service';
+import RNFS from 'react-native-fs';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
 const ChatScreen = ({ navigation }) => {
+  // Component unmount olduğunda ses kaydını temizle
+  useEffect(() => {
+    return () => {
+      if (audioRecorderPlayer) {
+        audioRecorderPlayer.stopRecorder();
+        audioRecorderPlayer.stopPlayer();
+        audioRecorderPlayer.removeRecordBackListener();
+        audioRecorderPlayer.removePlayBackListener();
+      }
+    };
+  }, []);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
   const [input, setInput] = useState('');
@@ -103,9 +115,27 @@ const ChatScreen = ({ navigation }) => {
   // Dosya yükleme fonksiyonu
   const uploadFileToStorage = async (uri, fileName, folder = 'chat-media') => {
     try {
+      console.log('Dosya yükleniyor:', uri, fileName, folder);
+      
+      // Dosyanın var olup olmadığını kontrol et
+      const fileExists = await RNFS.exists(uri);
+      if (!fileExists) {
+        throw new Error('Dosya bulunamadı: ' + uri);
+      }
+      
+      // Dosya boyutunu kontrol et
+      const fileStats = await RNFS.stat(uri);
+      console.log('Dosya boyutu:', fileStats.size, 'bytes');
+      
+      if (fileStats.size === 0) {
+        throw new Error('Dosya boş');
+      }
+      
       const reference = storage().ref(`${folder}/${selectedTeam}/${fileName}`);
       await reference.putFile(uri);
       const downloadURL = await reference.getDownloadURL();
+      
+      console.log('Dosya başarıyla yüklendi:', downloadURL);
       return downloadURL;
     } catch (error) {
       console.error('Dosya yükleme hatası:', error);
@@ -196,45 +226,112 @@ const ChatScreen = ({ navigation }) => {
     }
 
     try {
+      // Önceki kayıtları temizle
+      if (isRecording) {
+        await audioRecorderPlayer.stopRecorder();
+        audioRecorderPlayer.removeRecordBackListener();
+      }
+
+      // Dosya yolu oluştur
+      const fileName = `audio_${Date.now()}.${Platform.OS === 'ios' ? 'm4a' : 'mp3'}`;
       const path = Platform.select({
-        ios: `audio_${Date.now()}.m4a`,
-        android: `${audioRecorderPlayer.dirs.CacheDir}/audio_${Date.now()}.mp4`,
+        ios: `${RNFS.DocumentDirectoryPath}/${fileName}`,
+        android: `${RNFS.CachesDirectoryPath}/${fileName}`,
       });
 
+      console.log('Ses kaydı başlatılıyor:', path);
+      
+      // Dizin var mı kontrol et, yoksa oluştur
+      const dirPath = Platform.select({
+        ios: RNFS.DocumentDirectoryPath,
+        android: RNFS.CachesDirectoryPath,
+      });
+      
+      const dirExists = await RNFS.exists(dirPath);
+      if (!dirExists) {
+        await RNFS.mkdir(dirPath);
+      }
+      
       setAudioPath(path);
       setIsRecording(true);
       setRecordingTime(0);
       setAttachmentMenuOpen(false);
 
-      await audioRecorderPlayer.startRecorder(path);
+      // Kayıt başlat
+      const result = await audioRecorderPlayer.startRecorder(path, {
+        AudioEncoderAndroid: audioRecorderPlayer.AUDIO_ENCODER_AAC,
+        AudioSourceAndroid: audioRecorderPlayer.AUDIO_SOURCE_MIC,
+        AVEncoderAudioQualityKeyIOS: audioRecorderPlayer.AV_ENCODER_AUDIO_QUALITY_HIGH,
+        AVNumberOfChannelsKeyIOS: 1,
+        AVFormatIDKeyIOS: audioRecorderPlayer.AV_FILE_TYPE_MPEG4AAC,
+      });
       
+      console.log('Kayıt başlatıldı:', result);
+      
+      // Zamanlayıcı başlat
       audioRecorderPlayer.addRecordBackListener((e) => {
+        console.log('Kayıt süresi:', e.currentPosition);
         setRecordingTime(Math.floor(e.currentPosition / 1000));
       });
     } catch (error) {
+      console.error('Ses kaydı başlatma hatası:', error);
       Alert.alert('Hata', 'Ses kaydı başlatılamadı: ' + error.message);
       setIsRecording(false);
+      setAudioPath('');
     }
   };
 
   // Ses kaydı durdurma
   const stopRecording = async () => {
     try {
+      console.log('Ses kaydı durduruluyor...');
       setUploadingMedia(true);
+      
       const result = await audioRecorderPlayer.stopRecorder();
+      console.log('Kayıt durduruldu:', result);
+      
       setIsRecording(false);
       audioRecorderPlayer.removeRecordBackListener();
 
       if (result && audioPath) {
-        const fileName = `audio_${Date.now()}.${Platform.OS === 'ios' ? 'm4a' : 'mp4'}`;
-        const downloadURL = await uploadFileToStorage(audioPath, fileName, 'chat-audio');
+        // Dosyanın var olup olmadığını kontrol et
+        const fileExists = await RNFS.exists(audioPath);
+        console.log('Dosya mevcut mu:', fileExists, audioPath);
         
-        await sendMediaMessage('audio', downloadURL, {
-          fileName,
-          duration: recordingTime
-        });
+        if (fileExists) {
+          // Dosya boyutunu kontrol et
+          const fileStats = await RNFS.stat(audioPath);
+          console.log('Kayıt dosyası boyutu:', fileStats.size, 'bytes');
+          
+          if (fileStats.size < 1000) { // 1KB'dan küçükse kayıt başarısız
+            throw new Error('Kayıt çok kısa veya başarısız');
+          }
+          
+          const fileName = `audio_${Date.now()}.${Platform.OS === 'ios' ? 'm4a' : 'mp3'}`;
+          const downloadURL = await uploadFileToStorage(audioPath, fileName, 'chat-audio');
+          
+          await sendMediaMessage('audio', downloadURL, {
+            fileName,
+            duration: recordingTime
+          });
+          
+          console.log('Ses mesajı gönderildi');
+          
+          // Başarılı yüklemeden sonra dosyayı sil
+          try {
+            await RNFS.unlink(audioPath);
+            console.log('Geçici ses dosyası silindi');
+          } catch (deleteError) {
+            console.log('Geçici dosya silinemedi:', deleteError);
+          }
+        } else {
+          throw new Error('Kayıt dosyası bulunamadı');
+        }
+      } else {
+        throw new Error('Kayıt sonucu alınamadı');
       }
     } catch (error) {
+      console.error('Ses kaydı durdurma hatası:', error);
       Alert.alert('Hata', 'Ses kaydı gönderilemedi: ' + error.message);
     } finally {
       setUploadingMedia(false);
@@ -522,7 +619,7 @@ const ChatScreen = ({ navigation }) => {
                   Ses Kaydı {item.metadata?.duration ? `(${item.metadata.duration}s)` : ''}
                 </Text>
                 <TouchableOpacity 
-                  onPress={() => Linking.openURL(item.url)}
+                  onPress={() => playAudio(item.url)}
                   style={styles.playButton}
                 >
                   <Ionicons 
@@ -616,6 +713,31 @@ const ChatScreen = ({ navigation }) => {
   };
 
   const selectedTeamData = teams.find(team => team.id === selectedTeam);
+
+  // Ses dosyası oynatma fonksiyonu
+  const playAudio = async (audioUrl) => {
+    try {
+      console.log('Ses dosyası oynatılıyor:', audioUrl);
+      
+      // Önceki oynatmayı durdur
+      await audioRecorderPlayer.stopPlayer();
+      audioRecorderPlayer.removePlayBackListener();
+      
+      // Yeni ses dosyasını oynat
+      await audioRecorderPlayer.startPlayer(audioUrl);
+      
+      audioRecorderPlayer.addPlayBackListener((e) => {
+        console.log('Oynatma durumu:', e.currentPosition, '/', e.duration);
+        if (e.currentPosition === e.duration) {
+          audioRecorderPlayer.stopPlayer();
+          audioRecorderPlayer.removePlayBackListener();
+        }
+      });
+    } catch (error) {
+      console.error('Ses oynatma hatası:', error);
+      Alert.alert('Hata', 'Ses dosyası oynatılamadı: ' + error.message);
+    }
+  };
 
   return (
     <View style={styles.mainContainer}>

@@ -23,9 +23,15 @@ import { Picker } from '@react-native-picker/picker';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import app from '../../firebaseConfig';
-
-// API_KEY'i buraya ekleyin
-const GOOGLE_CLOUD_API_KEY = 'AIzaSyDJA0mwT65t6sEDg4qow-L00LuK1nZycPo';
+import { GOOGLE_CLOUD_API_KEY } from '@env';
+import AudioRecorderPlayer, {
+  AVEncoderAudioQualityIOSType,
+  AVEncodingOption,
+  AudioEncoderAndroidType,
+  AudioSourceAndroidType,
+  OutputFormatAndroidType,
+} from 'react-native-audio-recorder-player';
+import RNFS from 'react-native-fs';
 
 const Report = ({ navigation }) => {
   const [reports, setReports] = useState([]);
@@ -36,10 +42,13 @@ const Report = ({ navigation }) => {
   const [searchType, setSearchType] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [currentField, setCurrentField] = useState('');
-  const [audioRecording, setAudioRecording] = useState(null);
+  const [audioRecorderPlayer, setAudioRecorderPlayer] = useState(null);
+  const [recordingPath, setRecordingPath] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [recordingTimer, setRecordingTimer] = useState(0);
+  const [recordingInterval, setRecordingInterval] = useState(null);
 
   // Yeni rapor için state'ler
   const [newReport, setNewReport] = useState({
@@ -60,6 +69,23 @@ const Report = ({ navigation }) => {
     { label: 'Müdahale Raporu', value: 'Müdahale Raporu' },
     { label: 'Koordinasyon Raporu', value: 'Koordinasyon Raporu' },
   ];
+
+  useEffect(() => {
+    // AudioRecorderPlayer instance'ını oluştur
+    const audioRecorderPlayer = new AudioRecorderPlayer();
+    setAudioRecorderPlayer(audioRecorderPlayer);
+
+    // Cleanup function
+    return () => {
+      if (audioRecorderPlayer) {
+        audioRecorderPlayer.stopRecorder();
+        audioRecorderPlayer.removeRecordBackListener();
+      }
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Authentication state dinleyicisi
@@ -104,6 +130,17 @@ const Report = ({ navigation }) => {
     }
   };
 
+  const getRecordingPath = () => {
+    const timestamp = Date.now();
+    const fileName = Platform.OS === 'ios' ? `recording_${timestamp}.m4a` : `recording_${timestamp}.mp3`;
+    
+    if (Platform.OS === 'ios') {
+      return `${RNFS.DocumentDirectoryPath}/${fileName}`;
+    } else {
+      return `${RNFS.ExternalDirectoryPath}/${fileName}`;
+    }
+  };
+
   const startListening = async (field) => {
     try {
       const hasPermission = await requestMicrophonePermission();
@@ -115,7 +152,87 @@ const Report = ({ navigation }) => {
       setCurrentField(field);
       setIsListening(true);
 
-      // Google Cloud Speech-to-Text API'ye istek gönderme
+      const path = getRecordingPath();
+      setRecordingPath(path);
+
+      const audioSet = Platform.OS === 'ios' ? {
+        AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
+        AVNumberOfChannelsKeyIOS: 1,
+        AVFormatIDKeyIOS: AVEncodingOption.aac,
+      } : {
+        AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+        AudioSourceAndroid: AudioSourceAndroidType.MIC,
+        OutputFormatAndroid: OutputFormatAndroidType.MPEG_4,
+      };
+
+      const uri = await audioRecorderPlayer.startRecorder(path, audioSet);
+      console.log('Ses kaydı başladı:', uri);
+
+      // Timer başlat
+      setRecordingTimer(0);
+      const interval = setInterval(() => {
+        setRecordingTimer(prev => {
+          if (prev >= 60) { // 60 saniye sonra otomatik durdur
+            stopListening();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      setRecordingInterval(interval);
+
+    } catch (error) {
+      console.error('Ses kaydı başlatma hatası:', error);
+      Alert.alert('Hata', 'Ses kaydı başlatılırken bir hata oluştu.');
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = async () => {
+    try {
+      if (!audioRecorderPlayer) return;
+
+      // Timer'ı durdur
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+        setRecordingInterval(null);
+      }
+
+      const result = await audioRecorderPlayer.stopRecorder();
+      console.log('Ses kaydı durduruldu:', result);
+      
+      setIsListening(false);
+
+      // Ses dosyasını Google Cloud Speech-to-Text API'ye gönder
+      await transcribeAudio(recordingPath, currentField);
+
+    } catch (error) {
+      console.error('Ses kaydı durdurma hatası:', error);
+      Alert.alert('Hata', 'Ses kaydı durdurulurken bir hata oluştu.');
+      setIsListening(false);
+    }
+  };
+
+  const transcribeAudio = async (audioPath, field) => {
+    try {
+      setLoading(true);
+
+      // Ses dosyasının var olup olmadığını kontrol et
+      const exists = await RNFS.exists(audioPath);
+      if (!exists) {
+        throw new Error('Ses dosyası bulunamadı');
+      }
+
+      // Ses dosyasını base64'e çevir
+      const audioData = await RNFS.readFile(audioPath, 'base64');
+      
+      if (!audioData || audioData.length === 0) {
+        throw new Error('Ses dosyası boş');
+      }
+
+      console.log('Ses dosyası boyutu:', audioData.length, 'bytes');
+      
+      // Google Cloud Speech-to-Text API'ye istek gönder
       const response = await fetch(
         `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
         {
@@ -125,46 +242,67 @@ const Report = ({ navigation }) => {
           },
           body: JSON.stringify({
             config: {
-              encoding: 'LINEAR16',
-              sampleRateHertz: 16000,
+              encoding: Platform.OS === 'ios' ? 'MP3' : 'MP3',
+              sampleRateHertz: 44100,
               languageCode: 'tr-TR',
+              enableAutomaticPunctuation: true,
+              model: 'default',
+              useEnhanced: true,
             },
             audio: {
-              content: audioRecording, // Base64 encoded audio content
+              content: audioData,
             },
           }),
         }
       );
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Hatası:', response.status, errorText);
+        throw new Error(`API Hatası: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log('API Yanıtı:', data);
       
-      if (data.results && data.results[0]) {
+      if (data.results && data.results[0] && data.results[0].alternatives && data.results[0].alternatives[0]) {
         const transcription = data.results[0].alternatives[0].transcript;
         
+        // Mevcut metne ekle
         if (selectedReport) {
+          const currentText = selectedReport[field] || '';
+          const newText = currentText + (currentText ? ' ' : '') + transcription;
           setSelectedReport(prev => ({
             ...prev,
-            [currentField]: transcription
+            [field]: newText
           }));
         } else {
+          const currentText = newReport[field] || '';
+          const newText = currentText + (currentText ? ' ' : '') + transcription;
           setNewReport(prev => ({
             ...prev,
-            [currentField]: transcription
+            [field]: newText
           }));
         }
+
+        Alert.alert('Başarılı', 'Ses başarıyla metne çevrildi.');
+      } else {
+        Alert.alert('Uyarı', 'Ses tanınamadı. Lütfen tekrar deneyin.');
+      }
+
+      // Geçici ses dosyasını sil
+      try {
+        await RNFS.unlink(audioPath);
+      } catch (deleteError) {
+        console.log('Ses dosyası silinemedi:', deleteError);
       }
 
     } catch (error) {
       console.error('Ses tanıma hatası:', error);
-      Alert.alert('Hata', 'Ses tanıma sırasında bir hata oluştu.');
+      Alert.alert('Hata', `Ses tanıma sırasında bir hata oluştu: ${error.message}`);
     } finally {
-      setIsListening(false);
+      setLoading(false);
     }
-  };
-
-  const stopListening = async () => {
-    setIsListening(false);
-    // Ses kaydını durdurma ve API'ye gönderme işlemleri burada yapılacak
   };
 
   const loadReports = async () => {
@@ -340,18 +478,33 @@ const Report = ({ navigation }) => {
           })}
         />
         <TouchableOpacity
-          style={styles.voiceButton}
+          style={[
+            styles.voiceButton,
+            isListening && currentField === field && styles.voiceButtonActive
+          ]}
           onPress={() => isListening ? stopListening() : startListening(field)}
+          disabled={loading}
         >
           <Ionicons
-            name={isListening && currentField === field ? "mic" : "mic-outline"}
+            name={isListening && currentField === field ? "stop" : "mic-outline"}
             size={24}
-            color={isListening && currentField === field ? "#D32F2F" : "#666"}
+            color={isListening && currentField === field ? "white" : "#666"}
           />
         </TouchableOpacity>
       </View>
       {isListening && currentField === field && (
-        <ActivityIndicator style={styles.loader} color="#D32F2F" />
+        <View style={styles.recordingIndicator}>
+          <View style={styles.recordingDot} />
+          <Text style={styles.recordingText}>
+            Ses kaydediliyor... ({Math.floor(recordingTimer / 60)}:{(recordingTimer % 60).toString().padStart(2, '0')})
+          </Text>
+        </View>
+      )}
+      {loading && currentField === field && (
+        <View style={styles.processingIndicator}>
+          <ActivityIndicator size="small" color="#4CAF50" />
+          <Text style={styles.processingText}>Ses işleniyor...</Text>
+        </View>
       )}
     </View>
   );
@@ -877,9 +1030,48 @@ const styles = StyleSheet.create({
     padding: 12,
     borderLeftWidth: 1,
     borderLeftColor: '#ddd',
+    borderRadius: 4,
   },
-  loader: {
+  voiceButtonActive: {
+    backgroundColor: '#D32F2F',
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
+    padding: 8,
+    backgroundColor: '#fff3cd',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ffeaa7',
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D32F2F',
+    marginRight: 8,
+  },
+  recordingText: {
+    color: '#856404',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  processingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#d4edda',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  processingText: {
+    color: '#155724',
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 8,
   },
   pickerContainer: {
     marginBottom: 16,

@@ -905,12 +905,14 @@ const HomePage2 = ({ navigation }) => {
             </TouchableOpacity>
 
           </Animatable.View>
-          <TouchableOpacity 
-            style={styles.emergencyCallButton} 
-            onPress={handleEmergencyCall}
-          >
-            <Ionicons name="call" size={30} color="white" />
-          </TouchableOpacity>
+          {currentTab !== 'Chat' && (
+            <TouchableOpacity 
+              style={styles.emergencyCallButton} 
+              onPress={handleEmergencyCall}
+            >
+              <Ionicons name="call" size={30} color="white" />
+            </TouchableOpacity>
+          )}
         </>
       )}
     </View>
