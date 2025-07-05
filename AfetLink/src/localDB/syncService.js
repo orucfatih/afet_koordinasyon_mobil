@@ -1,9 +1,15 @@
 import NetInfo from '@react-native-community/netinfo';
-import { getUnsentPhotos, markPhotoAsSent, initDB } from './sqliteHelper';
+import { getUnsentPhotos, markPhotoAsSent, initDB, deletePhoto } from './sqliteHelper';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
+
+// Singleton pattern - tek bir listener instance'ı
+let syncListenerInstance = null;
+let isSyncing = false;
+let intervalId = null;
+let unsubscribe = null;
 
 // Severity seviyesini kişi sayısına göre belirle
 const getSeverityLevel = (personCount) => {
@@ -29,32 +35,62 @@ const getSeverityLevel = (personCount) => {
 };
 
 export const startSyncListener = () => {
+  // Eğer zaten çalışıyorsa, yeni instance oluşturma
+  if (syncListenerInstance) {
+    console.log('Senkronizasyon listener zaten çalışıyor');
+    return syncListenerInstance;
+  }
+
+  console.log('Senkronizasyon listener başlatılıyor...');
+
   // Veritabanını başlat
   initDB().catch(error => {
     console.error('Senkronizasyon veritabanı başlatma hatası:', error);
   });
   
+  // Önceki listener'ları temizle
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+  if (unsubscribe) {
+    unsubscribe();
+  }
+  
   // Her 5 dakikada bir senkronizasyonu kontrol et
-  const intervalId = setInterval(() => {
+  intervalId = setInterval(() => {
     NetInfo.fetch().then(state => {
-      if (state.isConnected && auth().currentUser) {
+      if (state.isConnected && auth().currentUser && !isSyncing) {
+        console.log('Interval tetiklendi - senkronizasyon başlatılıyor');
         syncPhotos();
       }
     });
   }, 300000); // 5 dakika
 
   // İnternet bağlantısı değişikliklerini dinle
-  const unsubscribe = NetInfo.addEventListener(state => {
-    if (state.isConnected && auth().currentUser) {
+  unsubscribe = NetInfo.addEventListener(state => {
+    if (state.isConnected && auth().currentUser && !isSyncing) {
+      console.log('İnternet bağlantısı değişikliği - senkronizasyon başlatılıyor');
       syncPhotos();
     }
   });
 
-  // Cleanup fonksiyonu döndür
-  return () => {
-    clearInterval(intervalId);
-    unsubscribe();
+  // Singleton instance'ı oluştur
+  syncListenerInstance = {
+    stop: () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      syncListenerInstance = null;
+      console.log('Senkronizasyon listener durduruldu');
+    }
   };
+
+  return syncListenerInstance;
 };
 
 const getCurrentLocation = () => {
@@ -80,20 +116,40 @@ const getCurrentLocation = () => {
 };
 
 const syncPhotos = async () => {
+  // Senkronizasyon kilidi kontrolü
+  if (isSyncing) {
+    console.log('Senkronizasyon zaten çalışıyor, bekleniyor...');
+    return;
+  }
+
   // Kullanıcı giriş yapmamışsa senkronizasyonu durdur
   if (!auth().currentUser) {
     console.log('Kullanıcı giriş yapmamış, senkronizasyon yapılamıyor');
     return;
   }
 
+  console.log('Senkronizasyon başlatılıyor...');
+  isSyncing = true;
+
   try {
     const photos = await getUnsentPhotos();
     console.log('Senkronize edilecek fotoğraf sayısı:', photos.length);
 
+    if (photos.length === 0) {
+      console.log('Senkronize edilecek fotoğraf yok');
+      return; // Senkronize edilecek fotoğraf yoksa çık
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
     for (const photo of photos) {
       try {
-        // Firebase'e yükle
-        const fileName = `${auth().currentUser.uid}_${Date.now()}.jpg`;
+        console.log(`Fotoğraf yükleniyor: ID ${photo.id}`);
+        
+        // Benzersiz dosya adı oluştur (timestamp + random + photo.id)
+        const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${photo.id}`;
+        const fileName = `${auth().currentUser.uid}_${uniqueId}.jpg`;
         const storageRef = storage().ref(`afet-bildirimleri/${auth().currentUser.uid}/${fileName}`);
         
         const response = await fetch(photo.uri);
@@ -127,72 +183,55 @@ const syncPhotos = async () => {
             severity: getSeverityLevel(photo.person_count),
           });
 
-        // Başarıyla yüklenen fotoğrafı yerel veritabanında işaretle
-        await markPhotoAsSent(photo.id);
-        console.log(`Enkaz bildirimi başarıyla senkronize edildi. ID: ${photo.id}`);
+        // Başarıyla yüklenen fotoğrafı yerel veritabanından sil
+        await deletePhoto(photo.id);
+        successCount++;
+        console.log(`Afet bildirimi başarıyla senkronize edildi ve silindi. ID: ${photo.id}`);
       } catch (error) {
         console.error('Fotoğraf senkronizasyon hatası:', error);
+        errorCount++;
+        
+        // Hata durumunda fotoğrafı silmeyi dene (muhtemelen zaten yüklenmiş)
+        try {
+          await deletePhoto(photo.id);
+          console.log(`Hata sonrası fotoğraf silindi. ID: ${photo.id}`);
+        } catch (deleteError) {
+          console.error('Fotoğraf silme hatası:', deleteError);
+        }
       }
     }
+
+    console.log(`Senkronizasyon tamamlandı. Başarılı: ${successCount}, Hata: ${errorCount}`);
+
+    // Kullanıcıya sonuç bildirimi göster
+    if (successCount > 0) {
+      Alert.alert(
+        'Senkronizasyon Tamamlandı',
+        `${successCount} afet bildirimi başarıyla yüklendi.`,
+        [{ text: 'Tamam' }]
+      );
+    }
+
+    if (errorCount > 0) {
+      Alert.alert(
+        'Senkronizasyon Hatası',
+        `${errorCount} bildirim yüklenirken hata oluştu. İnternet bağlantınızı kontrol edin.`,
+        [{ text: 'Tamam' }]
+      );
+    }
+
   } catch (error) {
     console.error('Senkronizasyon hatası:', error);
-  }
-};
-
-const uploadPhoto = async (localUri) => {
-  try {
-    const fileName = localUri.split('/').pop();
-    const ref = storage().ref(`uploads/${fileName}`);
-    await ref.putFile(localUri);
-    return true;
-  } catch (e) {
-    console.log('Yükleme hatası:', e);
-    return false;
+    Alert.alert(
+      'Senkronizasyon Hatası',
+      'Bildirimler yüklenirken bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.',
+      [{ text: 'Tamam' }]
+    );
+  } finally {
+    console.log('Senkronizasyon kilidi kaldırılıyor');
+    isSyncing = false;
   }
 };
 
 
-//------------------------------------------
 
-const uploadImageToFirebase = async (uri, coordinates, disasterInfo = {}) => {
-  try {
-    // URL formatını kontrol et
-    const correctUri = Platform.OS === 'android' ? uri : uri.replace('file://', '');
-    
-    const response = await fetch(correctUri);
-    const blob = await response.blob();
-
-    const fileName = `${auth().currentUser.uid}_${Date.now()}.jpg`;
-    const storageRef = storage().ref(`afet-bildirimleri/${auth().currentUser.uid}/${fileName}`);
-
-    await storageRef.put(blob);
-    const downloadURL = await storageRef.getDownloadURL();
-
-    await firestore()
-      .collection('afet-bildirimleri')
-      .doc(auth().currentUser.uid)
-      .collection('images')
-      .doc(fileName)
-      .set({
-        imageUrl: downloadURL,
-        timestamp: new Date(),
-        fileName: fileName,
-        status: "yeni",
-        location: coordinates || { latitude: null, longitude: null },
-        disasterInfo: {
-          disasterType: disasterInfo.disasterType || null,
-          personCount: disasterInfo.personCount || null,
-          timeSinceDisaster: disasterInfo.timeSinceDisaster || null,
-          additionalInfo: disasterInfo.additionalInfo || ""
-        },
-        description: "",
-        severity: getSeverityLevel(rubbleInfo.personCount),
-        type: "enkaz"
-      });
-
-    return downloadURL;
-  } catch (error) {
-    console.error('Fotoğraf yüklenirken hata oluştu:', error);
-    throw error;
-  }
-};

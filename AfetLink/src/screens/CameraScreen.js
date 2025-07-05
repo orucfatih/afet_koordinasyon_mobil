@@ -22,7 +22,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import auth from '@react-native-firebase/auth';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
-import { savePhoto, initDB } from '../localDB/sqliteHelper';
+import { savePhoto, initDB, getPendingPhotoCount, checkDuplicatePhoto, cleanupDuplicates } from '../localDB/sqliteHelper';
 import { startSyncListener } from '../localDB/syncService';
 import Geolocation from 'react-native-geolocation-service';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,6 +39,7 @@ const CameraScreen = ({ navigation }) => {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [personCount, setPersonCount] = useState('');
   const [personCountModalVisible, setPersonCountModalVisible] = useState(false);
+  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const [disasterTypeItems] = useState([
     {label: 'Deprem', value: 'Deprem'},
     {label: 'Sel', value: 'Sel'},
@@ -46,7 +47,6 @@ const CameraScreen = ({ navigation }) => {
     {label: 'Çığ', value: 'Çığ'},
     {label: 'Heyelan', value: 'Heyelan'},
     {label: 'Fırtına', value: 'Fırtına'},
-    {label: 'Kuraklık', value: 'Kuraklık'},
     {label: 'Diğer', value: 'Diğer'},
   ]);
 
@@ -96,9 +96,35 @@ const CameraScreen = ({ navigation }) => {
       console.error('Veritabanı başlatma hatası:', error);
     });
     
-    // Uygulama başladığında senkronizasyon servisini başlat
-    startSyncListener();
+    // Uygulama başladığında senkronizasyon servisini başlat (sadece bir kez)
+    const syncListener = startSyncListener();
+    
+    // Bekleyen fotoğraf sayısını al
+    loadPendingPhotoCount();
+    
+    // Duplicate temizleme işlemi
+    cleanupDuplicates().then(cleanedCount => {
+      if (cleanedCount > 0) {
+        console.log(`${cleanedCount} duplicate bildirim temizlendi.`);
+        loadPendingPhotoCount(); // Sayıyı güncelle
+      }
+    });
+
+    // Cleanup fonksiyonu
+    return () => {
+      // Component unmount olduğunda listener'ı durdurma (diğer ekranlar da kullanabilir)
+      // syncListener.stop();
+    };
   }, []);
+
+  const loadPendingPhotoCount = async () => {
+    try {
+      const count = await getPendingPhotoCount();
+      setPendingPhotoCount(count);
+    } catch (error) {
+      console.error('Bekleyen fotoğraf sayısını alma hatası:', error);
+    }
+  };
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -251,23 +277,39 @@ const CameraScreen = ({ navigation }) => {
         disasterInfo
       );
       
+      // Duplicate kontrolü yap
+      const timestamp = new Date().toISOString();
+      const hasDuplicates = await checkDuplicatePhoto(
+        timestamp,
+        disasterInfo.disasterType,
+        disasterInfo.personCount,
+        disasterInfo.timeSinceDisaster
+      );
+      
+      if (hasDuplicates) {
+        console.log('Duplicate bildirim tespit edildi ve temizlendi.');
+      }
+      
+      // Bekleyen fotoğraf sayısını güncelle
+      await loadPendingPhotoCount();
+      
       console.log("Kayıt başarılı.");
       Alert.alert(
         'Başarılı',
         'Afet bildirimi kaydedildi. İnternet bağlantısı olduğunda otomatik olarak yüklenecek.',
         [{ 
           text: 'Tamam', 
-                      onPress: () => {
-              // Formu sıfırla
-              setPhotoUri(null);
-              setDisasterType('');
-              setCustomDisasterType('');
-              setShowCustomInput(false);
-              setPersonCount('');
-              setTimeSinceDisaster('');
-              setAdditionalInfo('');
-              setLocation(null);
-            } 
+          onPress: () => {
+            // Formu sıfırla
+            setPhotoUri(null);
+            setDisasterType('');
+            setCustomDisasterType('');
+            setShowCustomInput(false);
+            setPersonCount('');
+            setTimeSinceDisaster('');
+            setAdditionalInfo('');
+            setLocation(null);
+          } 
         }]
       );
     } catch (error) {
@@ -506,6 +548,15 @@ const CameraScreen = ({ navigation }) => {
           <Text style={styles.title}>Afet Bildirimi</Text>
         </View>
         
+        {pendingPhotoCount > 0 && (
+          <View style={styles.pendingContainer}>
+            <Ionicons name="cloud-upload-outline" size={16} color="#007AFF" />
+            <Text style={styles.pendingInfo}>
+              {pendingPhotoCount} bildirim bekliyor. İnternet bağlantısı olduğunda otomatik yüklenecek.
+            </Text>
+          </View>
+        )}
+        
         {photoUri ? (
           renderPhotoForm()
         ) : (
@@ -560,6 +611,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#333',
     marginLeft: 16,
+    flex: 1,
   },
   content: { 
     flex: 1, 
@@ -593,6 +645,24 @@ const styles = StyleSheet.create({
     marginTop: 10, 
     fontSize: 16, 
     color: '#666' 
+  },
+
+  pendingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  pendingInfo: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
   },
   // Form stilleri
   keyboardAvoidingView: {
@@ -719,6 +789,32 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   modalItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  pendingBadge: {
+    backgroundColor: '#FF3B30',
+    borderRadius: 15,
+    padding: 5,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  pendingText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  pendingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  pendingInfo: {
+    marginLeft: 10,
     fontSize: 16,
     color: '#333',
   },

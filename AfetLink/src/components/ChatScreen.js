@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, ScrollView, SafeAreaView, Image, KeyboardAvoidingView, Platform, StatusBar, Alert, PermissionsAndroid, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, ScrollView, SafeAreaView, Image, KeyboardAvoidingView, Platform, StatusBar, Alert, PermissionsAndroid, Linking, Dimensions, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import database from '@react-native-firebase/database';
@@ -15,6 +15,8 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import Geolocation from 'react-native-geolocation-service';
 import RNFS from 'react-native-fs';
+
+const screenWidth = Dimensions.get('window').width;
 
 const ChatScreen = ({ navigation }) => {
   const [audioRecorderPlayer, setAudioRecorderPlayer] = useState(null);
@@ -65,6 +67,9 @@ const ChatScreen = ({ navigation }) => {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   
   const currentUser = auth().currentUser;
+
+  // Fotoğraf önizleme için state
+  const [previewImage, setPreviewImage] = useState(null);
 
   // İzin isteme fonksiyonları
   const requestCameraPermission = async () => {
@@ -175,25 +180,35 @@ const ChatScreen = ({ navigation }) => {
 
     launchImageLibrary(options, async (response) => {
       if (response.assets && response.assets[0]) {
-        setUploadingMedia(true);
-        setAttachmentMenuOpen(false);
-        
-        try {
-          const asset = response.assets[0];
-          const fileName = `image_${Date.now()}.jpg`;
-          const downloadURL = await uploadFileToStorage(asset.uri, fileName);
-          
-          await sendMediaMessage('image', downloadURL, {
-            fileName: asset.fileName || fileName,
-            fileSize: asset.fileSize,
-            width: asset.width,
-            height: asset.height
-          });
-        } catch (error) {
-          Alert.alert('Hata', 'Resim gönderilemedi: ' + error.message);
-        } finally {
-          setUploadingMedia(false);
-        }
+        const asset = response.assets[0];
+        Alert.alert(
+          'Fotoğraf Gönder',
+          'Bu fotoğrafı göndermek istiyor musunuz?',
+          [
+            { text: 'İptal', style: 'cancel' },
+            {
+              text: 'Gönder',
+              style: 'default',
+              onPress: async () => {
+                setUploadingMedia(true);
+                setAttachmentMenuOpen(false);
+                try {
+                  const fileName = `image_${Date.now()}.jpg`;
+                  const downloadURL = await uploadFileToStorage(asset.uri, fileName);
+                  await sendMediaMessage('image', downloadURL, {
+                    fileSize: asset.fileSize,
+                    width: asset.width,
+                    height: asset.height
+                  });
+                } catch (error) {
+                  Alert.alert('Hata', 'Resim gönderilemedi: ' + error.message);
+                } finally {
+                  setUploadingMedia(false);
+                }
+              }
+            }
+          ]
+        );
       }
     });
   };
@@ -326,6 +341,8 @@ const ChatScreen = ({ navigation }) => {
       }
       
       const result = await audioRecorderPlayer.stopRecorder();
+      // Kayıt dosyasının tam yazılması için bekle
+      await new Promise(resolve => setTimeout(resolve, 600));
       console.log('Kayıt durduruldu:', result);
       
       setIsRecording(false);
@@ -416,9 +433,8 @@ const ChatScreen = ({ navigation }) => {
   // Medya mesajı gönderme
   const sendMediaMessage = async (type, url, metadata) => {
     if (!selectedTeam || !currentUser) return;
-
     try {
-      const messageRef = database().ref(`teams/${selectedTeam}/messages`).push();
+      const messageRef = database().ref(`operations/teams/${selectedTeam}/messages`).push();
       await messageRef.set({
         type,
         url,
@@ -437,7 +453,7 @@ const ChatScreen = ({ navigation }) => {
   useEffect(() => {
     if (!currentUser) return;
 
-    const teamsRef = database().ref('teams');
+    const teamsRef = database().ref('operations/teams');
     const unsubscribe = teamsRef.on('value', (snapshot) => {
       if (snapshot.exists()) {
         const teamsData = snapshot.val();
@@ -460,8 +476,11 @@ const ChatScreen = ({ navigation }) => {
               messages
             };
           })
-          .filter(team => team.members && team.members.includes(currentUser.uid));
-        
+          .filter(team => {
+            // Üyelik kontrolü: members array'inde currentUser.email var mı?
+            if (!team.members || !Array.isArray(team.members)) return false;
+            return team.members.some(member => member.email && member.email.toLowerCase() === currentUser.email.toLowerCase());
+          });
         setTeams(teamsList);
       } else {
         setTeams([]);
@@ -478,7 +497,7 @@ const ChatScreen = ({ navigation }) => {
   const handleSend = async () => {
     if (input.trim() !== '' && selectedTeam && currentUser) {
       try {
-        const messageRef = database().ref(`teams/${selectedTeam}/messages`).push();
+        const messageRef = database().ref(`operations/teams/${selectedTeam}/messages`).push();
         await messageRef.set({
           text: input.trim(),
           type: 'text',
@@ -487,42 +506,69 @@ const ChatScreen = ({ navigation }) => {
           timestamp: database.ServerValue.TIMESTAMP,
           isUser: true
         });
-      setInput('');
+        setInput('');
       } catch (error) {
         Alert.alert('Hata', 'Mesaj gönderilemedi: ' + error.message);
       }
     }
   };
 
+  // Basit UUID v4 üretici fonksiyon
+  function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   const addTeam = async () => {
     if (newTeamName.trim() === '' || !currentUser) return;
-    
     setLoading(true);
     try {
-      // Sadece Firebase'de yasak karakterleri temizle
-      const cleanTeamName = newTeamName.trim()
-        .replace(/[.#$\[\]]/g, ''); // Sadece Firebase yasak karakterleri
-      
-      // Aynı isimde ekip var mı kontrol et
-      const existingTeamRef = database().ref(`teams/${cleanTeamName}`);
-      const existingTeamSnapshot = await existingTeamRef.once('value');
-      
-      if (existingTeamSnapshot.exists()) {
+      // Ekip için gerçek UUID üret
+      const teamUUID = uuidv4();
+      const now = Date.now() / 1000;
+      // Kullanıcıdan alınabilecek bilgiler
+      const userInfo = {
+        name: currentUser.displayName || '',
+        email: currentUser.email,
+        phone: currentUser.phoneNumber || '',
+        address: '',
+        home_phone: '',
+        tc_no: '',
+        title: '',
+        specialization: '',
+        status: 'Müsait',
+        created_at: new Date().toISOString(),
+        role: 'Üye',
+      };
+      // Ekip veri yapısı
+      const newTeamData = {
+        contact: currentUser.phoneNumber || '',
+        created_at: now,
+        equipment: '',
+        expertise: '',
+        institution: '',
+        leader: userInfo.name,
+        members: [userInfo],
+        personnel_count: 1,
+        status: 'Müsait',
+        team_id: teamUUID,
+        name: newTeamName.trim(),
+        updated_at: now,
+      };
+      // Aynı isimde ekip var mı kontrolü
+      const teamsRef = database().ref('operations/teams');
+      const snapshot = await teamsRef.once('value');
+      const teamsData = snapshot.val() || {};
+      const nameExists = Object.values(teamsData).some(team => team.name === newTeamData.name);
+      if (nameExists) {
         Alert.alert('Hata', 'Bu isimde bir ekip zaten mevcut. Lütfen farklı bir isim seçin.');
         setLoading(false);
         return;
       }
-      
-      // Ekibi direkt isim ile kaydet
-      await existingTeamRef.set({
-        name: newTeamName.trim(), // Orijinal ismi sakla
-        members: [currentUser.uid],
-        createdBy: currentUser.uid,
-        createdAt: database.ServerValue.TIMESTAMP,
-        admins: [currentUser.uid],
-        messages: {} // Boş mesaj objesi
-      });
-      
+      // Yeni ekibi kaydet
+      await database().ref(`operations/teams/${teamUUID}`).set(newTeamData);
       setNewTeamName('');
       Alert.alert('Başarılı', 'Ekip başarıyla oluşturuldu!');
     } catch (error) {
@@ -534,7 +580,7 @@ const ChatScreen = ({ navigation }) => {
 
   const deleteTeam = async (teamId) => {
     const team = teams.find(t => t.id === teamId);
-    if (!team || team.createdBy !== currentUser.uid) {
+    if (!team || team.leader !== (currentUser.displayName || '')) {
       Alert.alert('Hata', 'Bu ekibi silme yetkiniz yok.');
       return;
     }
@@ -549,9 +595,9 @@ const ChatScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await database().ref(`teams/${teamId}`).remove();
+              await database().ref(`operations/teams/${teamId}`).remove();
               if (selectedTeam === teamId) {
-      setSelectedTeam('');
+                setSelectedTeam('');
               }
               Alert.alert('Başarılı', 'Ekip ve tüm mesajları silindi.');
             } catch (error) {
@@ -565,53 +611,62 @@ const ChatScreen = ({ navigation }) => {
 
   const addMemberByEmail = async () => {
     if (!addMemberEmail.trim() || !selectedTeam) return;
-    
     setLoading(true);
     try {
-      // Yeni yapıya göre email'den userID bul
+      // Kullanıcıyı email ile bul
       const emailRef = database().ref('emailToUserId');
       const emailSnapshot = await emailRef.once('value');
-      
       if (!emailSnapshot.exists()) {
         Alert.alert('Hata', 'Kullanıcı veritabanı bulunamadı.');
         setLoading(false);
         return;
       }
-      
       const emailData = emailSnapshot.val();
-      let foundUserId = null;
-      
-      // Tüm kullanıcıları tarayarak email eşleşmesi bul
+      let foundUser = null;
       Object.keys(emailData).forEach(key => {
         const user = emailData[key];
         if (user.email && user.email.toLowerCase() === addMemberEmail.toLowerCase().trim()) {
-          foundUserId = user.id;
+          foundUser = user;
         }
       });
-      
-      if (!foundUserId) {
+      if (!foundUser) {
         Alert.alert('Hata', 'Bu email ile kayıtlı kullanıcı bulunamadı.');
         setLoading(false);
         return;
       }
-      
-      const selectedTeamData = teams.find(team => team.id === selectedTeam);
-      
+      const selectedTeamRef = database().ref(`operations/teams/${selectedTeam}`);
+      const teamSnapshot = await selectedTeamRef.once('value');
+      if (!teamSnapshot.exists()) {
+        Alert.alert('Hata', 'Ekip bulunamadı.');
+        setLoading(false);
+        return;
+      }
+      const teamData = teamSnapshot.val();
       // Zaten üye mi kontrol et
-      if (selectedTeamData.members.includes(foundUserId)) {
+      if (teamData.members && teamData.members.some(member => member.email && member.email.toLowerCase() === foundUser.email.toLowerCase())) {
         Alert.alert('Bilgi', 'Bu kullanıcı zaten ekip üyesi.');
         setLoading(false);
         return;
       }
-      
-      // Kullanıcıyı ekibe ekle
-      const updatedMembers = [...selectedTeamData.members, foundUserId];
-      await database().ref(`teams/${selectedTeam}/members`).set(updatedMembers);
-      
+      // Yeni üye nesnesi
+      const newMember = {
+        name: foundUser.name || '',
+        email: foundUser.email,
+        phone: foundUser.phone || '',
+        address: foundUser.address || '',
+        home_phone: foundUser.home_phone || '',
+        tc_no: foundUser.tc_no || '',
+        title: foundUser.title || '',
+        specialization: foundUser.specialization || '',
+        status: 'Müsait',
+        created_at: new Date().toISOString(),
+        role: foundUser.role || 'Üye',
+      };
+      const updatedMembers = teamData.members ? [...teamData.members, newMember] : [newMember];
+      await selectedTeamRef.update({ members: updatedMembers, personnel_count: updatedMembers.length });
       setAddMemberEmail('');
       setShowAddMemberModal(false);
       Alert.alert('Başarılı', 'Kullanıcı ekibe eklendi!');
-      
     } catch (error) {
       Alert.alert('Hata', 'Kullanıcı eklenemedi: ' + error.message);
     } finally {
@@ -621,6 +676,31 @@ const ChatScreen = ({ navigation }) => {
 
   const renderMessage = ({ item }) => {
     const isCurrentUser = item.senderId === currentUser.uid;
+
+    if (item.type === 'image') {
+      return (
+        <View style={[styles.messageContainer, isCurrentUser ? styles.currentUserContainer : styles.otherUserContainer]}>
+          <View style={[
+            styles.photoBubble,
+            isCurrentUser ? styles.currentUserBubble : styles.otherUserBubble,
+            { alignSelf: isCurrentUser ? 'flex-end' : 'flex-start' }
+          ]}>
+            <TouchableOpacity onPress={() => setPreviewImage(item.url)} activeOpacity={0.8}>
+              <Image
+                source={{ uri: item.url }}
+                style={styles.photoImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <View style={styles.photoTimeContainer}>
+              <Text style={[styles.photoTime, isCurrentUser ? styles.currentUserTime : styles.otherUserTime]}>
+                {new Date(item.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={[styles.messageContainer, isCurrentUser ? styles.currentUserContainer : styles.otherUserContainer]}>
@@ -634,14 +714,8 @@ const ChatScreen = ({ navigation }) => {
             <View style={styles.mediaContainer}>
               <Image 
                 source={{ uri: item.url }} 
-                style={styles.messageImage}
-                resizeMode="cover"
+                style={[styles.messageImage, { width: screenWidth * 0.68, height: undefined, aspectRatio: 1, borderRadius: 16, alignSelf: 'center', backgroundColor: '#eee' }]}
               />
-              {item.metadata?.fileName && (
-                <Text style={[styles.mediaFileName, isCurrentUser ? styles.currentUserText : styles.otherUserText]}>
-                  {item.metadata.fileName}
-                </Text>
-              )}
             </View>
           )}
           
@@ -727,7 +801,7 @@ const ChatScreen = ({ navigation }) => {
   };
 
   const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (team.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const openAttachmentMenu = () => {
@@ -897,7 +971,7 @@ const ChatScreen = ({ navigation }) => {
               </Text>
               <TouchableOpacity 
                 style={styles.stopRecordingButton}
-                onPress={stopRecording}
+                onPress={() => { setIsRecording(false); setTimeout(stopRecording, 1000); }}
               >
                 <Ionicons name="stop" size={20} color="white" />
               </TouchableOpacity>
@@ -982,7 +1056,7 @@ const ChatScreen = ({ navigation }) => {
                   </TouchableOpacity>
 
                     {/* Ekip Silme - Sadece oluşturan kişi */}
-                    {team.createdBy === currentUser?.uid && (
+                    {team.leader === (currentUser.displayName || '') && (
                   <TouchableOpacity
                     style={styles.deleteButton}
                         onPress={() => deleteTeam(team.id)}
@@ -1143,6 +1217,16 @@ const ChatScreen = ({ navigation }) => {
             </View>
           </View>
         )}
+
+        {/* Fotoğraf tam ekran önizleme modalı */}
+        <Modal visible={!!previewImage} transparent animationType="fade" onRequestClose={() => setPreviewImage(null)}>
+          <View style={styles.previewModalContainer}>
+            <TouchableOpacity style={styles.previewModalClose} onPress={() => setPreviewImage(null)}>
+              <Ionicons name="close" size={36} color="#fff" />
+            </TouchableOpacity>
+            <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="contain" />
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -1369,7 +1453,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '75%',
+    maxWidth: screenWidth * 0.7,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
@@ -1680,9 +1764,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   messageImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
+    width: screenWidth * 0.68,
+    height: undefined,
+    aspectRatio: 1,
+    borderRadius: 16,
+    alignSelf: 'center',
+    backgroundColor: '#eee',
   },
   mediaFileName: {
     fontSize: 12,
@@ -1732,6 +1819,57 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  photoBubble: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 6,
+    maxWidth: screenWidth * 0.7,
+    alignSelf: 'flex-start',
+    marginVertical: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+  },
+  photoImage: {
+    width: screenWidth * 0.68,
+    height: screenWidth * 0.68,
+    borderRadius: 14,
+    backgroundColor: '#eee',
+    alignSelf: 'center',
+  },
+  photoTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+    marginRight: 6,
+  },
+  photoTime: {
+    fontSize: 11,
+    color: '#999',
+  },
+  previewModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewModalClose: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 2,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 24,
+    padding: 4,
+  },
+  previewImage: {
+    width: screenWidth * 0.95,
+    height: screenWidth * 0.95,
+    borderRadius: 18,
+    alignSelf: 'center',
   },
 });
 

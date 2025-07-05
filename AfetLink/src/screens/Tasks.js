@@ -27,8 +27,6 @@ const Tasks = ({ navigation }) => {
 
   const [tasks, setTasks] = useState([]);
   const [taskHistory, setTaskHistory] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [searchLocation, setSearchLocation] = useState('');
   const [searchPriority, setSearchPriority] = useState('');
@@ -36,17 +34,13 @@ const Tasks = ({ navigation }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
-  // Yeni görev için state'ler
-  const [newTask, setNewTask] = useState({
-    title: '',
-    details: '',
-    location: '',
-    priority: 'Orta (2)',
-    duration: '',
-    status: 'active',
-    created_at: Date.now() / 1000,
-    updated_at: Date.now() / 1000
-  });
+  
+  // Görev tamamlama/geri bildirim modalı için state'ler
+  const [taskActionModalVisible, setTaskActionModalVisible] = useState(false);
+  const [taskActionType, setTaskActionType] = useState(''); // 'complete' veya 'feedback'
+  const [taskActionComment, setTaskActionComment] = useState('');
+
+  const [userTeams, setUserTeams] = useState([]);
 
   const priorityLevels = [
     { label: 'Düşük (1)', value: 'Düşük (1)' },
@@ -72,38 +66,58 @@ const Tasks = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading) {
-      loadTasks();
+    if (!authLoading && user) {
+      loadUserTeams();
     }
   }, [authLoading, user]);
 
-  const loadTasks = async () => {
+  const loadUserTeams = async () => {
+    // Kullanıcının ekiplerini bul
+    const teamsRef = database().ref('operations/teams');
+    const teamsSnapshot = await teamsRef.once('value');
+    const teamsData = teamsSnapshot.val();
+    if (teamsData) {
+      const userTeamIds = Object.keys(teamsData).filter(teamKey => {
+        const team = teamsData[teamKey];
+        return team.members && Array.isArray(team.members) && team.members.some(member => member.email && member.email.toLowerCase() === user.email.toLowerCase());
+      });
+      setUserTeams(userTeamIds);
+      loadTasks(userTeamIds);
+    } else {
+      setUserTeams([]);
+      loadTasks([]);
+    }
+  };
+
+  const loadTasks = async (userTeamIds = userTeams) => {
+    if (!user) return;
     setLoading(true);
     try {
       // Aktif görevleri yükle
       const tasksRef = database().ref('operations/tasks');
       const tasksSnapshot = await tasksRef.once('value');
       const tasksData = tasksSnapshot.val();
-      
       if (tasksData) {
         const tasksArray = Object.keys(tasksData).map(key => ({
           id: key,
           ...tasksData[key]
         }));
-        setTasks(tasksArray);
+        // Sadece kullanıcının ekiplerine atanmış görevleri filtrele
+        const filteredTasks = tasksArray.filter(task => userTeamIds.includes(task.team_id));
+        setTasks(filteredTasks);
       }
-
       // Görev geçmişini yükle
       const taskHistoryRef = database().ref('operations/task_history');
       const taskHistorySnapshot = await taskHistoryRef.once('value');
       const taskHistoryData = taskHistorySnapshot.val();
-      
       if (taskHistoryData) {
         const taskHistoryArray = Object.keys(taskHistoryData).map(key => ({
           id: key,
           ...taskHistoryData[key]
         }));
-        setTaskHistory(taskHistoryArray);
+        // Sadece kullanıcının ekiplerine atanmış tamamlanan görevleri filtrele
+        const filteredHistory = taskHistoryArray.filter(task => userTeamIds.includes(task.team_id));
+        setTaskHistory(filteredHistory);
       }
     } catch (error) {
       console.error('Görevler yüklenirken hata:', error);
@@ -113,158 +127,69 @@ const Tasks = ({ navigation }) => {
     }
   };
 
-  const handleAddTask = async () => {
-    if (!newTask.title || !newTask.details || !newTask.location) {
-      Alert.alert('Hata', 'Lütfen başlık, detaylar ve konum alanlarını doldurun.');
-      return;
-    }
-
-    setLoading(true);
-
-    const task = {
-      ...newTask,
-      created_at: Date.now() / 1000,
-      updated_at: Date.now() / 1000
-    };
-
-    try {
-      // Firebase Realtime Database'e kaydet
-      const tasksRef = database().ref('operations/tasks');
-      const newTaskRef = tasksRef.push();
-      await newTaskRef.set(task);
-      
-      setModalVisible(false);
-      setNewTask({
-        title: '',
-        details: '',
-        location: '',
-        priority: 'Orta (2)',
-        duration: '',
-        status: 'active',
-        created_at: Date.now() / 1000,
-        updated_at: Date.now() / 1000
-      });
-      
-      Alert.alert('Başarılı', 'Görev başarıyla eklendi.');
-      loadTasks(); // Listeyi yenile
-      
-    } catch (error) {
-      console.error('Görev ekleme hatası:', error);
-      Alert.alert('Hata', 'Görev eklenirken bir hata oluştu.');
-    } finally {
-      setLoading(false);
-    }
+  const handleTaskAction = (task, actionType) => {
+    setSelectedTask(task);
+    setTaskActionType(actionType);
+    setTaskActionComment('');
+    setTaskActionModalVisible(true);
   };
 
-  const handleUpdateTask = async () => {
+  const submitTaskAction = async () => {
     if (!selectedTask) return;
 
     setLoading(true);
 
-    const updatedTask = {
-      ...selectedTask,
-      updated_at: Date.now() / 1000
-    };
-
     try {
-      // Firebase Realtime Database'de güncelle
-      const taskRef = database().ref(`operations/tasks/${selectedTask.id}`);
-      await taskRef.update(updatedTask);
+      if (taskActionType === 'complete') {
+        // Görevi tamamlandı olarak işaretle
+        const taskRef = database().ref(`operations/tasks/${selectedTask.id}`);
+        const taskSnapshot = await taskRef.once('value');
+        const taskData = taskSnapshot.val();
+        
+        if (taskData) {
+          // Görevi task_history'ye taşı
+          const taskHistoryRef = database().ref(`operations/task_history/${selectedTask.id}`);
+          const completedTask = {
+            ...taskData,
+            status: 'completed',
+            completed_at: Date.now() / 1000,
+            updated_at: Date.now() / 1000,
+            completion_comment: taskActionComment || null
+          };
+          
+          await taskHistoryRef.set(completedTask);
+          
+          // Görevi tasks'tan sil
+          await taskRef.remove();
+          
+          Alert.alert('Başarılı', 'Görev tamamlandı olarak işaretlendi.');
+        }
+      } else if (taskActionType === 'feedback') {
+        // Görev için geri bildirim ekle
+        const taskRef = database().ref(`operations/tasks/${selectedTask.id}`);
+        const updatedTask = {
+          ...selectedTask,
+          feedback: taskActionComment,
+          feedback_at: Date.now() / 1000,
+          updated_at: Date.now() / 1000
+        };
+        
+        await taskRef.update(updatedTask);
+        
+        Alert.alert('Başarılı', 'Geri bildirim başarıyla eklendi.');
+      }
       
-      setEditModalVisible(false);
+      setTaskActionModalVisible(false);
       setSelectedTask(null);
-      
-      Alert.alert('Başarılı', 'Görev başarıyla güncellendi.');
+      setTaskActionComment('');
       loadTasks(); // Listeyi yenile
       
     } catch (error) {
-      console.error('Görev güncelleme hatası:', error);
-      Alert.alert('Hata', 'Görev güncellenirken bir hata oluştu.');
+      console.error('İşlem hatası:', error);
+      Alert.alert('Hata', 'İşlem sırasında bir hata oluştu.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCompleteTask = async (taskId) => {
-    Alert.alert(
-      'Görevi Tamamla',
-      'Bu görevi tamamlandı olarak işaretlemek istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Tamamla',
-          style: 'default',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              // Görevi tasks'tan al
-              const taskRef = database().ref(`operations/tasks/${taskId}`);
-              const taskSnapshot = await taskRef.once('value');
-              const taskData = taskSnapshot.val();
-              
-              if (taskData) {
-                // Görevi task_history'ye taşı
-                const taskHistoryRef = database().ref(`operations/task_history/${taskId}`);
-                const completedTask = {
-                  ...taskData,
-                  status: 'completed',
-                  completed_at: Date.now() / 1000,
-                  updated_at: Date.now() / 1000
-                };
-                
-                await taskHistoryRef.set(completedTask);
-                
-                // Görevi tasks'tan sil
-                await taskRef.remove();
-                
-                Alert.alert('Başarılı', 'Görev tamamlandı olarak işaretlendi.');
-                loadTasks(); // Listeyi yenile
-              }
-            } catch (error) {
-              console.error('Görev tamamlama hatası:', error);
-              Alert.alert('Hata', 'Görev tamamlanırken bir hata oluştu.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleDeleteTask = async (taskId) => {
-    Alert.alert(
-      'Onay',
-      'Bu görevi silmek istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const taskRef = database().ref(`operations/tasks/${taskId}`);
-              await taskRef.remove();
-              
-              Alert.alert('Başarılı', 'Görev başarıyla silindi.');
-              loadTasks(); // Listeyi yenile
-            } catch (error) {
-              console.error('Görev silme hatası:', error);
-              Alert.alert('Hata', 'Görev silinirken bir hata oluştu.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ],
-    );
   };
 
   const filterTasks = () => {
@@ -305,28 +230,21 @@ const Tasks = ({ navigation }) => {
         </View>
         <View style={styles.taskActions}>
           {activeTab === 'active' && (
-            <TouchableOpacity
-              onPress={() => handleCompleteTask(item.id)}
-              style={[styles.actionButton, styles.completeButton]}
-            >
-              <Ionicons name="checkmark-circle-outline" size={24} color="#4CAF50" />
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                onPress={() => handleTaskAction(item, 'complete')}
+                style={[styles.actionButton, styles.completeButton]}
+              >
+                <Ionicons name="checkmark-circle-outline" size={24} color="#4CAF50" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleTaskAction(item, 'feedback')}
+                style={[styles.actionButton, styles.feedbackButton]}
+              >
+                <Ionicons name="chatbubble-outline" size={24} color="#FF9800" />
+              </TouchableOpacity>
+            </>
           )}
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedTask(item);
-              setEditModalVisible(true);
-            }}
-            style={styles.actionButton}
-          >
-            <Ionicons name="create-outline" size={24} color="#2196F3" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDeleteTask(item.id)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="trash-outline" size={24} color="#D32F2F" />
-          </TouchableOpacity>
         </View>
       </View>
       
@@ -345,10 +263,27 @@ const Tasks = ({ navigation }) => {
         📅 Oluşturulma: {formatDate(item.created_at)}
       </Text>
       
+      {item.feedback && (
+        <View style={styles.feedbackContainer}>
+          <Text style={styles.feedbackLabel}>💬 Geri Bildirim:</Text>
+          <Text style={styles.feedbackText}>{item.feedback}</Text>
+          <Text style={styles.feedbackDate}>
+            📅 {formatDate(item.feedback_at)}
+          </Text>
+        </View>
+      )}
+      
       {item.completed_at && (
         <Text style={styles.taskCompletedDate}>
           ✅ Tamamlanma: {formatDate(item.completed_at)}
         </Text>
+      )}
+      
+      {item.completion_comment && (
+        <View style={styles.completionCommentContainer}>
+          <Text style={styles.completionCommentLabel}>📝 Tamamlama Notu:</Text>
+          <Text style={styles.completionCommentText}>{item.completion_comment}</Text>
+        </View>
       )}
     </View>
   );
@@ -357,11 +292,11 @@ const Tasks = ({ navigation }) => {
     <View style={styles.emptyListContainer}>
       <Ionicons name="list-outline" size={60} color="#ccc" />
       <Text style={styles.emptyListText}>
-        {activeTab === 'active' ? 'Henüz aktif görev bulunmuyor' : 'Henüz tamamlanmış görev bulunmuyor'}
+        {activeTab === 'active' ? 'Henüz size atanan görev bulunmuyor' : 'Henüz tamamlanmış görev bulunmuyor'}
       </Text>
       <Text style={styles.emptyListSubText}>
         {activeTab === 'active' 
-          ? 'Yeni bir görev eklemek için sağ üstteki "Yeni Görev" butonunu kullanın'
+          ? 'Size atanan görevler burada görünecek'
           : 'Tamamlanan görevler burada görünecek'
         }
       </Text>
@@ -389,15 +324,8 @@ const Tasks = ({ navigation }) => {
           >
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Görevler</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setModalVisible(true)}
-            disabled={loading}
-          >
-            <Ionicons name="add" size={24} color="white" />
-            <Text style={styles.addButtonText}>Yeni Görev</Text>
-          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Görevlerim</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Tab Navigation */}
@@ -481,12 +409,12 @@ const Tasks = ({ navigation }) => {
           onRefresh={loadTasks}
         />
 
-        {/* Yeni Görev Modalı */}
+        {/* Görev İşlem Modalı */}
         <Modal
-          visible={modalVisible}
+          visible={taskActionModalVisible}
           animationType="slide"
           transparent={true}
-          onRequestClose={() => setModalVisible(false)}
+          onRequestClose={() => setTaskActionModalVisible(false)}
         >
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -494,98 +422,33 @@ const Tasks = ({ navigation }) => {
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Yeni Görev</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalTitle}>
+                  {taskActionType === 'complete' ? 'Görevi Tamamla' : 'Geri Bildirim Ekle'}
+                </Text>
+                <TouchableOpacity onPress={() => setTaskActionModalVisible(false)}>
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
               
               <ScrollView style={styles.modalScrollView}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Görev Başlığı</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newTask.title}
-                    onChangeText={text => setNewTask({...newTask, title: text})}
-                    placeholder="Görev başlığını giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="default"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
+                <View style={styles.taskInfoContainer}>
+                  <Text style={styles.taskInfoTitle}>{selectedTask?.title}</Text>
+                  <Text style={styles.taskInfoLocation}>📍 {selectedTask?.location}</Text>
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Konum</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newTask.location}
-                    onChangeText={text => setNewTask({...newTask, location: text})}
-                    placeholder="Görev konumunu giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="default"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
-                </View>
-
-                <View style={styles.pickerContainer}>
-                  <Text style={styles.inputLabel}>Öncelik</Text>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={newTask.priority}
-                      onValueChange={value => setNewTask({...newTask, priority: value})}
-                      style={styles.picker}
-                      mode="dropdown"
-                    >
-                      {priorityLevels.map(priority => (
-                        <Picker.Item
-                          key={priority.value}
-                          label={priority.label}
-                          value={priority.value}
-                          color="#999"
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Süre (Saat)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newTask.duration}
-                    onChangeText={text => setNewTask({...newTask, duration: text})}
-                    placeholder="Tahmini süreyi giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="numeric"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Detaylar</Text>
+                  <Text style={styles.inputLabel}>
+                    {taskActionType === 'complete' ? 'Tamamlama Notu (İsteğe bağlı)' : 'Geri Bildirim'}
+                  </Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
-                    value={newTask.details}
-                    onChangeText={text => setNewTask({...newTask, details: text})}
-                    placeholder="Görev detaylarını giriniz..."
+                    value={taskActionComment}
+                    onChangeText={setTaskActionComment}
+                    placeholder={
+                      taskActionType === 'complete' 
+                        ? 'Görev tamamlanırken eklemek istediğiniz notları yazın...'
+                        : 'Görev hakkında geri bildiriminizi yazın...'
+                    }
                     placeholderTextColor="#999"
                     multiline
                     numberOfLines={4}
@@ -601,162 +464,22 @@ const Tasks = ({ navigation }) => {
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setModalVisible(false)}
+                    onPress={() => setTaskActionModalVisible(false)}
                     disabled={loading}
                   >
                     <Text style={styles.modalButtonText}>İptal</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.saveButton, loading && styles.disabledButton]}
-                    onPress={handleAddTask}
+                    onPress={submitTaskAction}
                     disabled={loading}
                   >
                     {loading ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
-                    <Text style={styles.modalButtonText}>Kaydet</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
-
-        {/* Düzenleme Modalı */}
-        <Modal
-          visible={editModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setEditModalVisible(false)}
-        >
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Görevi Düzenle</Text>
-                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                  <Ionicons name="close" size={24} color="#333" />
-                </TouchableOpacity>
-              </View>
-              
-              <ScrollView style={styles.modalScrollView}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Görev Başlığı</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={selectedTask?.title || ''}
-                    onChangeText={text => setSelectedTask({...selectedTask, title: text})}
-                    placeholder="Görev başlığını giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="default"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Konum</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={selectedTask?.location || ''}
-                    onChangeText={text => setSelectedTask({...selectedTask, location: text})}
-                    placeholder="Görev konumunu giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="default"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
-                </View>
-
-                <View style={styles.pickerContainer}>
-                  <Text style={styles.inputLabel}>Öncelik</Text>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={selectedTask?.priority}
-                      onValueChange={value => setSelectedTask({...selectedTask, priority: value})}
-                      style={styles.picker}
-                      mode="dropdown"
-                    >
-                      {priorityLevels.map(priority => (
-                        <Picker.Item
-                          key={priority.value}
-                          label={priority.label}
-                          value={priority.value}
-                          color="#999"
-                        />
-                      ))}
-                    </Picker>
-                  </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Süre (Saat)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={selectedTask?.duration || ''}
-                    onChangeText={text => setSelectedTask({...selectedTask, duration: text})}
-                    placeholder="Tahmini süreyi giriniz..."
-                    placeholderTextColor="#999"
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="numeric"
-                    returnKeyType="next"
-                    {...(Platform.OS === 'ios' && {
-                      clearButtonMode: 'while-editing',
-                    })}
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Detaylar</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={selectedTask?.details || ''}
-                    onChangeText={text => setSelectedTask({...selectedTask, details: text})}
-                    placeholder="Görev detaylarını giriniz..."
-                    placeholderTextColor="#999"
-                    multiline
-                    numberOfLines={4}
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    keyboardType="default"
-                    returnKeyType="default"
-                    blurOnSubmit={false}
-                  />
-                </View>
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setEditModalVisible(false)}
-                    disabled={loading}
-                  >
-                    <Text style={styles.modalButtonText}>İptal</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton, loading && styles.disabledButton]}
-                    onPress={handleUpdateTask}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                    <Text style={styles.modalButtonText}>Güncelle</Text>
+                      <Text style={styles.modalButtonText}>
+                        {taskActionType === 'complete' ? 'Tamamla' : 'Gönder'}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -806,16 +529,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    padding: 8,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: 'white',
-    marginLeft: 4,
+  headerSpacer: {
+    width: 40,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -946,6 +661,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(76, 175, 80, 0.1)',
     borderRadius: 4,
   },
+  feedbackButton: {
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    borderRadius: 4,
+  },
   taskLocation: {
     color: '#666',
     marginBottom: 4,
@@ -976,6 +695,49 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginTop: 2,
+  },
+  feedbackContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9800',
+  },
+  feedbackLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FF9800',
+    marginBottom: 4,
+  },
+  feedbackText: {
+    fontSize: 12,
+    color: '#333',
+    lineHeight: 16,
+  },
+  feedbackDate: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 4,
+  },
+  completionCommentContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#E8F5E8',
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  completionCommentLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 4,
+  },
+  completionCommentText: {
+    fontSize: 12,
+    color: '#333',
+    lineHeight: 16,
   },
   emptyListContainer: {
     flex: 1,
@@ -1029,6 +791,22 @@ const styles = StyleSheet.create({
     padding: 16,
     maxHeight: '100%',
   },
+  taskInfoContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  taskInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  taskInfoLocation: {
+    fontSize: 14,
+    color: '#666',
+  },
   inputContainer: {
     marginBottom: 16,
   },
@@ -1050,20 +828,6 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  pickerContainer: {
-    marginBottom: 16,
-  },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#fafafa',
-  },
-  picker: {
-    height: 50,
-    color: '#black',
   },
   modalButtons: {
     flexDirection: 'row',
