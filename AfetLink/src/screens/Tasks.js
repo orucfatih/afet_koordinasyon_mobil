@@ -41,6 +41,7 @@ const Tasks = ({ navigation }) => {
   const [taskActionComment, setTaskActionComment] = useState('');
 
   const [userTeams, setUserTeams] = useState([]);
+  const [teamsData, setTeamsData] = useState({});
 
   const priorityLevels = [
     { label: 'Düşük (1)', value: 'Düşük (1)' },
@@ -82,9 +83,11 @@ const Tasks = ({ navigation }) => {
         return team.members && Array.isArray(team.members) && team.members.some(member => member.email && member.email.toLowerCase() === user.email.toLowerCase());
       });
       setUserTeams(userTeamIds);
+      setTeamsData(teamsData);
       loadTasks(userTeamIds);
     } else {
       setUserTeams([]);
+      setTeamsData({});
       loadTasks([]);
     }
   };
@@ -255,8 +258,8 @@ const Tasks = ({ navigation }) => {
         <Text style={styles.taskDuration}>⏱️ Süre: {item.duration}</Text>
       )}
       
-      {item.team && (
-        <Text style={styles.taskTeam}>👥 Ekip: {item.team}</Text>
+      {item.team_id && teamsData[item.team_id] && (
+        <Text style={styles.taskTeam}>👥 Ekip: {teamsData[item.team_id].name}</Text>
       )}
       
       <Text style={styles.taskDate}>

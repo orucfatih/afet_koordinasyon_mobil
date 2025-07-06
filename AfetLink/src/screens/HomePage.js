@@ -24,6 +24,7 @@ import { ProfileScreen, SettingsScreen, Info, CustomButton } from '../components
 import * as Animatable from 'react-native-animatable';
 import Geolocation from 'react-native-geolocation-service';
 import toplanmaAlanlari from '../../afet_toplanma_alanlari.json';
+import {GOOGLE_CLOUD_API_KEY} from '@env';
 
 const { width } = Dimensions.get('window');
 
@@ -105,7 +106,7 @@ const getCurrentLocation = async () => {
   });
 };
 
-const GOOGLE_PLACES_API_KEY = 'AIzaSyDJA0mwT65t6sEDg4qow-L00LuK1nZycPo';
+const GOOGLE_PLACES_API_KEY = GOOGLE_CLOUD_API_KEY;
 
 const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -580,7 +581,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
                 }}
                 title={hospital.name}
                 description={`${hospital.address}\nUzaklık: ${hospital.distance.toFixed(2)} km`}
-                pinColor="red"
+                pinColor="green"
               />
             ))}
             {userLocation && (

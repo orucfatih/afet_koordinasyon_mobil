@@ -944,11 +944,6 @@ const ChatScreen = ({ navigation }) => {
             <Text style={styles.topBarTitle}>
               {selectedTeamData ? selectedTeamData.name : 'AfetLink Sohbet'}
             </Text>
-            {selectedTeamData && (
-              <Text style={styles.topBarSubtitle}>
-                {selectedTeamData.members ? selectedTeamData.members.length : 0} üye aktif
-              </Text>
-            )}
           </View>
           {selectedTeam && (
             <TouchableOpacity 

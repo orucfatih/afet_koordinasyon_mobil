@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { register } from '../redux/userSlice';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as Animatable from 'react-native-animatable';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SignUpPage2 = ({ navigation }) => {
   const [name, setName] = useState("");
@@ -17,6 +18,8 @@ const SignUpPage2 = ({ navigation }) => {
 
   const dispatch = useDispatch();
   const { isLoading } = useSelector(state => state.user);
+
+  const insets = useSafeAreaInsets();
 
   const signUp = () => {
     if (!email || !password || !confirmPassword || !name || !surname || !phone) {
@@ -37,7 +40,7 @@ const SignUpPage2 = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { marginBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       
       {/* Background Gradient */}

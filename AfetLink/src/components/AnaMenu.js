@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar, Dimensions, Linking } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
 import { Loading } from './index.js';
@@ -86,15 +86,20 @@ const AnaMenu = ({ navigation }) => {
         </View>
 
         {/* Emergency Info */}
-        <Animatable.View 
-          animation="pulse" 
-          iterationCount="infinite" 
-          duration={2000}
-          style={styles.emergencyInfo}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('tel:112')}
+          activeOpacity={0.8}
         >
-          <MaterialCommunityIcons name="phone" size={20} color="#D32F2F" />
-          <Text style={styles.emergencyText}>Acil Durum: 112</Text>
-        </Animatable.View>
+          <Animatable.View 
+            animation="pulse" 
+            iterationCount="infinite" 
+            duration={2000}
+            style={styles.emergencyInfo}
+          >
+            <MaterialCommunityIcons name="phone" size={20} color="#D32F2F" />
+            <Text style={styles.emergencyText}>Acil Durum: 112</Text>
+          </Animatable.View>
+        </TouchableOpacity>
       </Animatable.View>
 
       {/* Footer */}

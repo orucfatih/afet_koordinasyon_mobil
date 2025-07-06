@@ -23,8 +23,11 @@ import firestore from '@react-native-firebase/firestore';
 import DropDownPicker from 'react-native-dropdown-picker';
 import Geolocation from 'react-native-geolocation-service';
 import MapView, { Marker } from 'react-native-maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 
 const Missing = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
   // İlçeler listesi
   const districts = [
     'Aliağa', 'Balçova', 'Bayraklı', 'Bornova', 'Buca', 'Çiğli', 'Gaziemir',
@@ -299,7 +302,7 @@ const Missing = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { marginBottom: insets.bottom }]}>
       <StatusBar
         barStyle="light-content"
         backgroundColor="#2D2D2D"
