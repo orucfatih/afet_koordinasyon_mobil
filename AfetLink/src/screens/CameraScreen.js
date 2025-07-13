@@ -561,7 +561,7 @@ const CameraScreen = ({ navigation }) => {
           renderPhotoForm()
         ) : (
           <View style={styles.content}>
-            <Text style={styles.description}>Afet bölgesini fotoğraflamak için kamerayı kullanın.</Text>
+            <Text style={styles.description}>Afet bölgesini ve hasarlı altyapıyı fotoğraflamak için kamerayı kullanın.</Text>
             {uploading ? (
               <View style={styles.uploadingContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />
