@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {KOERI_SCRAPER_URL} from '@env';
 
 const ViewAll = ({ navigation }) => {
   const [earthquakeData, setEarthquakeData] = useState([]);
@@ -20,9 +21,8 @@ const ViewAll = ({ navigation }) => {
   useEffect(() => {
     const fetchEarthquakeData = async () => {
       try {
-        const response = await axios.get(
-          'https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes'
-        );
+        const response = await axios.get(KOERI_SCRAPER_URL);
+        
         const data = response.data.data.map(item => ({
           id: `${item.Date}-${item.Magnitude}`,
           magnitude: parseFloat(item.Magnitude) || 0,

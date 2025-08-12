@@ -28,7 +28,7 @@ import toplanmaAlanlari from '../../afet_toplanma_alanlari.json';
 import LocationTrackingService from '../services/LocationTrackingService';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
-import {GOOGLE_CLOUD_API_KEY} from '@env';
+import {GOOGLE_CLOUD_API_KEY, KOERI_SCRAPER_URL} from '@env';
 
 const { width } = Dimensions.get('window');
 
@@ -274,7 +274,7 @@ const EarthquakeScreen = ({ setCameraVisible, navigation }) => {
     const fetchEarthquakeData = async () => {
       try {
         console.log('Veri çekme başladı...');
-        const response = await axios.get('https://us-central1-afad-proje.cloudfunctions.net/scrapeKoeriEarthquakes');
+        const response = await axios.get(KOERI_SCRAPER_URL);
         console.log('Tam yanıt:', JSON.stringify(response.data, null, 2));
 
         if (!response.data || !Array.isArray(response.data.data)) {
