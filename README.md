@@ -51,5 +51,4 @@ Katkıda bulunmak isterseniz, lütfen bir **fork** oluşturun, değişikliklerin
 
 ## 📬 İletişim
 Herhangi bir sorunuz veya öneriniz varsa bizimle iletişime geçebilirsiniz:  
-**✉️ Email:** mpolat7635@gmail.com
-**🌐 Web:** [Afet-Link](https://github.com/kullaniciAdi/afet-link)  
+**✉️ Email:** orucfatiih@gmail.com  
