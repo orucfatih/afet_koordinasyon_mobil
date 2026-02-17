@@ -5,7 +5,7 @@
 ## 📖 Abstract
 Afet-Link projesi, afet öncesi, sırası ve sonrasında etkin koordinasyon sağlamak amacıyla geliştirilmiş bir afet yönetim sistemidir. **AFAD** ile iş birliği içerisinde geliştirilen bu platform, **ekip koordinasyonu**, **kaynak yönetimi** ve **rapor takibi** gibi afet öncesi kritik süreçleri kolaylaştırmayı hedeflemektedir.
 
-Afet anında ise vatandaşların aktif katılımını sağlayarak **enkaz tespiti**, **hasarlı yol bildirimi** ve **toplanma alanları** gibi önemli verilerin hızla paylaşılmasını mümkün kılar. Afet sonrası süreçte **kayıp kişi takibi**, **yardım koordinasyonu** ve **güvenli iletişim ağlarını** destekleyen sistemimiz, kriz anlarında etkin karar alma süreçlerini hızlandırmayı amaçlamaktadır.
+Afet-Link; sadece olay anına müdahale etmekle kalmaz, afet öncesi hazırlık, risk azaltımı, kaynak yönetimi, ekip koordinasyonu ve simülasyon tabanlı eğitimler gibi kritik önleyici adımları da destekler. Afet anında ise vatandaşların aktif katılımını sağlayarak **enkaz tespiti**, **hasarlı yol bildirimi** ve **toplanma alanları** gibi önemli verilerin hızla paylaşılmasını mümkün kılar. Afet sonrası süreçte **kayıp kişi takibi**, **yardım koordinasyonu** ve **güvenli iletişim ağlarını** destekleyen sistemimiz, kriz anlarında etkin karar alma süreçlerini hızlandırmayı amaçlamaktadır.
 
 ---
 
