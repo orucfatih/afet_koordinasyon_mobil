@@ -90,13 +90,16 @@ Güvenlik sebebiyle Github'da (`.gitignore` içinde) bulunmayan **3 kritik dosya
   FIREBASE_MEASUREMENT_ID=G-XXXXXXXX
   ```
 
-### 4. Windows Kullanıcıları İçin Ekstra Ayar (Uzun Yol Hatası)
-Windows üzerinde derleme alırken React Native'in derin C++ dosyaları `Filename longer than 260 characters` hatasına sebep olabilir. Bunu önlemek için PowerShell'i **Yönetici olarak** çalıştırıp şu komutu girin ve bilgisayarınızı yeniden başlatın:
-```powershell
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-```
+### 4. Firebase Functions Kurulumu (Deprem API)
+Uygulama içinde en son depremleri listeleyebilmek için bir JSON API'sine ihtiyaç vardır. Proje ana dizininde bulunan \`son-depremler.js\` dosyasını [Firebase Functions](https://firebase.google.com/docs/functions) (veya benzeri bir servise) yükleyerek (deploy ederek) kendi API'nizi oluşturmalısınız. Elde ettiğiniz bu API URL'ini, \`.env\` dosyanızdaki \`KOERI_SCRAPER_URL=\` değişkenine atamanız gerekmektedir.
 
-### 5. Uygulamayı Başlatma
+### 5. Windows Kullanıcıları İçin Ekstra Ayar (Uzun Yol Hatası)
+Windows üzerinde derleme alırken React Native'in derin C++ dosyaları \`Filename longer than 260 characters\` hatasına sebep olabilir. Bunu önlemek için PowerShell'i **Yönetici olarak** çalıştırıp şu komutu girin ve bilgisayarınızı yeniden başlatın:
+\`\`\`powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+\`\`\`
+
+### 6. Uygulamayı Başlatma
 Tüm ayarları tamamladıktan sonra Android emülatörünüzü başlatın (veya fiziksel cihazınızı bağlayın) ve uygulamayı derleyin:
 ```bash
 npx react-native run-android
