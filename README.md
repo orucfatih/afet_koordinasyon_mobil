@@ -71,7 +71,24 @@ Güvenlik sebebiyle Github'da (`.gitignore` içinde) bulunmayan **3 kritik dosya
 
 - **`android/app/google-services.json`:** Firebase servislerinin çalışması için zorunludur. Firebase Console üzerinden projeye ait `google-services.json` dosyasını indirin ve tam olarak `android/app/` dizininin içine yapıştırın.
 
-- **`.env` Dosyası:** Projenin ana dizininde (`AfetLink` klasörü içinde) bir `.env` dosyası oluşturun ve projeye ait API anahtarlarını (Google Maps, Backend URL vb.) içine ekleyin.
+- **`.env` Dosyası:** Projenin ana dizininde (`AfetLink` klasörü içinde) bir `.env` dosyası oluşturun ve projeye ait API anahtarlarını (Google Maps, Backend URL vb.) aşağıdaki gibi içine ekleyin:
+  ```env
+  # Google Maps API Anahtarı (Harita ve Hastaneler vb. için)
+  GOOGLE_CLOUD_API_KEY=buraya_google_cloud_api_anahtarinizi_yazin
+
+  # Son Depremleri Listelemek İçin Gereken API URL'si
+  KOERI_SCRAPER_URL=buraya_deprem_api_adresinizi_yazin
+
+  # Firebase Web API/Bağlantı Ayarları
+  FIREBASE_API_KEY=buraya_firebase_api_anahtarinizi_yazin
+  FIREBASE_AUTH_DOMAIN=afetlink-projeniz.firebaseapp.com
+  FIREBASE_DATABASE_URL=https://afetlink-projeniz.firebaseio.com
+  FIREBASE_PROJECT_ID=afetlink-projeniz
+  FIREBASE_STORAGE_BUCKET=afetlink-projeniz.appspot.com
+  FIREBASE_MESSAGING_SENDER_ID=buraya_sender_id_yazin
+  FIREBASE_APP_ID=1:xxxxxxxx:web:xxxxxxxx
+  FIREBASE_MEASUREMENT_ID=G-XXXXXXXX
+  ```
 
 ### 4. Windows Kullanıcıları İçin Ekstra Ayar (Uzun Yol Hatası)
 Windows üzerinde derleme alırken React Native'in derin C++ dosyaları `Filename longer than 260 characters` hatasına sebep olabilir. Bunu önlemek için PowerShell'i **Yönetici olarak** çalıştırıp şu komutu girin ve bilgisayarınızı yeniden başlatın:
